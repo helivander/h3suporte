@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=RustDesk
+Name=H3 Suporte
 NoDisplay=true
-MimeType=x-scheme-handler/rustdesk;
-TryExec=rustdesk
-Exec=rustdesk %u
-Icon=rustdesk
+MimeType=x-scheme-handler/h3suporte;
+TryExec=h3suporte
+Exec=h3suporte %u
+Icon=h3suporte
 Terminal=false
 Type=Application
 StartupNotify=false
-StartupWMClass=rustdesk
+StartupWMClass=h3suporte

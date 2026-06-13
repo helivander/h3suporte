@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">RustDesk</string>
-    <string name="accessibility_service_description">Allow other devices to control your phone using virtual touch, when RustDesk screen sharing is established</string>
+    <string name="app_name">H3 Suporte</string>
+    <string name="accessibility_service_description">Permite que outros dispositivos controlem seu telefone via toque virtual, quando o compartilhamento de tela do H3 Suporte estiver ativo</string>
 </resources>
