@@ -1,11 +1,11 @@
 [package]
-name = "h3suporte"
+name = "rustdesk"
 version = "1.4.7"
 authors = ["H3 Informatica <contato@h3info.com>"]
 edition = "2021"
 build= "build.rs"
 description = "H3 Suporte - Acesso Remoto"
-default-run = "h3suporte"
+default-run = "rustdesk"
 rust-version = "1.75"
 
 [lib]
@@ -216,7 +216,7 @@ libxdo-sys = { path = "libs/libxdo-sys-stub" }
 LegalCopyright = "Copyright © 2025 H3 Informatica. Baseado em tecnologia RustDesk."
 ProductName = "H3 Suporte"
 FileDescription = "H3 Suporte - Acesso Remoto"
-OriginalFilename = "h3suporte.exe"
+OriginalFilename = "rustdesk.exe"
 
 [target.'cfg(target_os="windows")'.build-dependencies]
 winres = "0.1"
