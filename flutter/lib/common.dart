@@ -3713,31 +3713,72 @@ Widget loadPowered(BuildContext context) {
   ).marginOnly(top: 6);
 }
 
-// max 300 x 60
-Widget loadLogo() {
-  return Builder(builder: (context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final asset = isDark ? 'assets/logo_dark.png' : 'assets/logo.png';
-    return FutureBuilder<ByteData>(
-        future: rootBundle.load(asset),
-        builder: (BuildContext context, AsyncSnapshot<ByteData> snapshot) {
-          if (snapshot.hasData) {
-            final image = Image.asset(
-              asset,
-              fit: BoxFit.contain,
-              errorBuilder: (ctx, error, stackTrace) {
-                return Container();
-              },
-            );
-            return Container(
-              constraints: BoxConstraints(maxWidth: 300, maxHeight: 60),
-              child: image,
-            ).marginOnly(left: 12, right: 12, top: 12);
-          }
-          return const Offstage();
-        });
-  });
+const _kDefaultLogoAsset = 'assets/logo.png';
+const _kLightLogoAsset = 'assets/logo_light.png';
+const _kDarkLogoAsset = 'assets/logo_dark.png';
+
+List<String> _logoAssetCandidatesForBrightness(Brightness brightness) {
+  return brightness == Brightness.dark
+      ? [_kDarkLogoAsset, _kDefaultLogoAsset]
+      : [_kLightLogoAsset, _kDefaultLogoAsset];
 }
+
+Future<String?> _resolveLogoAsset(Brightness brightness) async {
+  for (final asset in _logoAssetCandidatesForBrightness(brightness)) {
+    try {
+      await rootBundle.load(asset);
+      return asset;
+    } on FlutterError {
+      continue;
+    }
+  }
+  return null;
+}
+
+class _Logo extends StatefulWidget {
+  const _Logo();
+
+  @override
+  State<_Logo> createState() => _LogoState();
+}
+
+class _LogoState extends State<_Logo> {
+  final Map<Brightness, Future<String?>> _logoFutures = {};
+
+  Future<String?> _logoFutureFor(Brightness brightness) {
+    return _logoFutures.putIfAbsent(
+      brightness,
+      () => _resolveLogoAsset(brightness),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: _logoFutureFor(Theme.of(context).brightness),
+      builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+        final asset = snapshot.data;
+        if (asset != null) {
+          final image = Image.asset(
+            asset,
+            fit: BoxFit.contain,
+            errorBuilder: (ctx, error, stackTrace) {
+              return Container();
+            },
+          );
+          return Container(
+            constraints: BoxConstraints(maxWidth: 300, maxHeight: 60),
+            child: image,
+          ).marginOnly(left: 12, right: 12, top: 12);
+        }
+        return const Offstage();
+      },
+    );
+  }
+}
+
+// max 300 x 60
+Widget loadLogo() => const _Logo();
 
 Widget loadIcon(double size) {
   return Image.asset('assets/icon.png',
