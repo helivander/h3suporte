@@ -33,6 +33,17 @@ pub fn core_main() -> Option<Vec<String>> {
         return None;
     }
     crate::load_custom_client();
+    // H3 Suporte: build-time client direction. Compile with CONN_TYPE=incoming to
+    // produce a receive-only client (hides the "control a remote computer" panel).
+    // Applied after load_custom_client so it wins over any embedded config.
+    if let Some(conn_type) = option_env!("CONN_TYPE") {
+        if conn_type == "incoming" || conn_type == "outgoing" {
+            config::HARD_SETTINGS
+                .write()
+                .unwrap()
+                .insert("conn-type".to_owned(), conn_type.to_owned());
+        }
+    }
     #[cfg(windows)]
     if !crate::platform::windows::bootstrap() {
         // return None to terminate the process

@@ -1,0 +1,80 @@
+name: Release (build + publish)
+
+# 1-clique: descobre a última tag vBASE-N, incrementa N, compila a matriz
+# completa e publica um release NOVO (prerelease) com esse nome, com notas limpas.
+# Não depende do gatilho de push de tag (que o GITHUB_TOKEN não dispara dentro
+# do Actions): chama o flutter-build.yml diretamente, e o action-gh-release cria
+# a tag + o release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_version:
+        description: "Versão base (sem sufixo). O release será vBASE-N com N auto-incrementado."
+        type: string
+        default: "1.4.8"
+
+jobs:
+  compute-version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.calc.outputs.tag }}
+      date: ${{ steps.calc.outputs.date }}
+    steps:
+      - name: Compute next tag
+        id: calc
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ inputs.base_version }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          esc=$(printf '%s' "$BASE" | sed 's/\./\\./g')
+          max=0
+          page=1
+          while :; do
+            names=$(gh api "repos/${REPO}/tags?per_page=100&page=${page}" --jq '.[].name' || true)
+            [ -z "$names" ] && break
+            while IFS= read -r t; do
+              if [[ "$t" =~ ^v?${esc}-([0-9]+)$ ]]; then
+                n="${BASH_REMATCH[1]}"
+                if [ "$n" -gt "$max" ]; then max="$n"; fi
+              fi
+            done <<< "$names"
+            cnt=$(printf '%s\n' "$names" | grep -c . || true)
+            [ "$cnt" -lt 100 ] && break
+            page=$((page+1))
+          done
+          next=$((max+1))
+          echo "tag=v${BASE}-${next}" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+          echo "Próxima tag: v${BASE}-${next}"
+
+  build-and-release:
+    needs: compute-version
+    uses: ./.github/workflows/flutter-build.yml
+    secrets: inherit
+    with:
+      upload-artifact: true
+      upload-tag: ${{ needs.compute-version.outputs.tag }}
+
+  finalize-notes:
+    needs: [compute-version, build-and-release]
+    if: ${{ always() && needs.compute-version.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set clean release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.compute-version.outputs.tag }}
+          DATE: ${{ needs.compute-version.outputs.date }}
+        run: |
+          set -euo pipefail
+          printf 'H3 Suporte — versão %s\n\nBuild automático de %s.\n\nInstaladores para Windows (incluindo o cliente incoming-only), macOS, Linux, Android e Web anexados abaixo.\n' "$TAG" "$DATE" > notes.md
+          if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
+            gh release edit "$TAG" -R "$REPO" --title "H3 Suporte $TAG" --prerelease --notes-file notes.md
+            echo "Notas atualizadas para $TAG."
+          else
+            echo "Release $TAG não encontrado (o build pode ter falhado antes do publish)."
+          fi
