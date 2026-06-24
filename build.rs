@@ -91,4 +91,6 @@ fn main() {
         println!("cargo:rustc-link-lib=framework=ApplicationServices");
     }
     println!("cargo:rerun-if-changed=build.rs");
+    // H3 Suporte: rebuild when the client direction changes (incoming-only client).
+    println!("cargo:rerun-if-env-changed=CONN_TYPE");
 }
