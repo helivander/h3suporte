@@ -1005,6 +1005,19 @@ pub fn get_app_name() -> String {
     hbb_common::config::APP_NAME.read().unwrap().clone()
 }
 
+// User-facing display name (with space), e.g. for shortcut labels.
+// Kept separate from the technical app name (`get_app_name`), which stays joined
+// for exe / install dir / service / registry. Falls back to the app name for RustDesk.
+#[inline]
+pub fn get_app_display_name() -> String {
+    let name = get_app_name();
+    if name == "RustDesk" {
+        name
+    } else {
+        "H3 Suporte".to_owned()
+    }
+}
+
 #[inline]
 pub fn is_rustdesk() -> bool {
     hbb_common::config::APP_NAME.read().unwrap().eq("RustDesk")
