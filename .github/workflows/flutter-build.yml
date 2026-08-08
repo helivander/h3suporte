@@ -9,6 +9,19 @@ on:
       upload-tag:
         type: string
         default: "nightly"
+  # Gatilho manual para validar a compilacao sem publicar nada.
+  # Com upload-artifact=false, os passos "Publish Release" (guardados por
+  # env.UPLOAD_ARTIFACT == 'true') sao pulados: so compila.
+  workflow_dispatch:
+    inputs:
+      upload-artifact:
+        description: "Publicar os binarios em um release (deixe desmarcado para apenas compilar)"
+        type: boolean
+        default: false
+      upload-tag:
+        description: "Tag do release (usada apenas se a opcao acima estiver marcada)"
+        type: string
+        default: "nightly"
 
 # NOTE: F-Droid builder script 'flutter/build_fdroid.sh' reads environment
 # variables from this workflow!
