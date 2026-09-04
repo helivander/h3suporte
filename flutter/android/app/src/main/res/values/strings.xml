@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">H3 Suporte</string>
     <string name="accessibility_service_description">Permite que outros dispositivos controlem seu telefone via toque virtual, quando o compartilhamento de tela do H3 Suporte estiver ativo</string>
+    <string name="foreground_service_special_use_subtype">Mantem o host de acesso remoto do H3 Suporte disponivel para conexoes autorizadas nao assistidas e notificacoes em primeiro plano, sem iniciar a captura de tela antes da aprovacao do usuario.</string>
 </resources>
