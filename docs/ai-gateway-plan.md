@@ -188,6 +188,8 @@ uso sai do plano dele, sem gateway.
     - **funções próprias funcionam**: com uma função `click(x, y)` e a captura
       como imagem, o `gpt-6.1-sol` clicou em (850, 590), dentro do botão Salvar
       de uma tela de teste de 1280x800. Foi um único teste em tela sintética.
+  - Implementado no app em 14/11/2026 como provedor alternativo (ver
+    [ai-assistant.md](ai-assistant.md)).
   - Consequência: o caminho OpenAI é viável definindo as ações (clicar,
     digitar, teclas, rolar, captura) como funções próprias, executadas pelas
     mesmas rotinas que o app já tem. Exige um adaptador OpenAI ao lado do

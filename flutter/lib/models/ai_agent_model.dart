@@ -14,6 +14,8 @@ import '../common.dart';
 import '../common/widgets/overlay.dart';
 import '../consts.dart';
 import '../desktop/widgets/ai_chat_panel.dart';
+import 'ai_chatgpt_auth.dart';
+import 'ai_chatgpt_utils.dart';
 import 'ai_agent_utils.dart';
 import 'model.dart';
 import 'platform_model.dart';
@@ -23,6 +25,11 @@ const kAiOptionModel = 'ai-agent-model';
 const kAiOptionBaseUrl = 'ai-agent-base-url';
 const kAiDefaultModel = 'claude-opus-5-5';
 const kAiDefaultBaseUrl = 'https://api.anthropic.com';
+const kAiOptionProvider = 'ai-agent-provider';
+const kAiOptionChatGptModel = 'ai-agent-chatgpt-model';
+const kAiProviderClaude = 'claude';
+const kAiProviderChatGpt = 'chatgpt';
+const kAiDefaultChatGptModel = 'gpt-6.1-sol';
 
 const _kMaxTurns = 50;
 // The Messages API rejects requests above 32 MB.
@@ -61,6 +68,8 @@ class AiAgentModel {
   final pendingActions = <String>[].obs;
 
   final List<Map<String, dynamic>> _messages = [];
+  final List<Map<String, dynamic>> _chatGptInput = [];
+  final chatGpt = ChatGptAuth();
   final List<String> _queuedTexts = [];
   Completer<String>? _screenshot;
   Completer<bool>? _approval;
@@ -86,13 +95,32 @@ class AiAgentModel {
     return v.isEmpty ? kAiDefaultBaseUrl : v;
   }
 
+  String get provider =>
+      bind.mainGetLocalOption(key: kAiOptionProvider) == kAiProviderChatGpt
+          ? kAiProviderChatGpt
+          : kAiProviderClaude;
+
+  String get chatGptModel {
+    final v = bind.mainGetLocalOption(key: kAiOptionChatGptModel);
+    return v.isEmpty ? kAiDefaultChatGptModel : v;
+  }
+
   Future<void> saveSettings(
       {required String apiKey,
       required String model,
-      required String baseUrl}) async {
+      required String baseUrl,
+      String? provider,
+      String? chatGptModel}) async {
     await bind.mainSetLocalOption(key: kAiOptionApiKey, value: apiKey.trim());
     await bind.mainSetLocalOption(key: kAiOptionModel, value: model.trim());
     await bind.mainSetLocalOption(key: kAiOptionBaseUrl, value: baseUrl.trim());
+    if (provider != null) {
+      await bind.mainSetLocalOption(key: kAiOptionProvider, value: provider);
+    }
+    if (chatGptModel != null) {
+      await bind.mainSetLocalOption(
+          key: kAiOptionChatGptModel, value: chatGptModel.trim());
+    }
   }
 
   // ---- panel ----
@@ -155,6 +183,11 @@ class AiAgentModel {
       _queuedTexts.add(text);
       return;
     }
+    if (provider == kAiProviderChatGpt) {
+      _chatGptInput.add({'role': 'user', 'content': text});
+      await _runChatGpt();
+      return;
+    }
     _messages.add({'role': 'user', 'content': text});
     await _run();
   }
@@ -173,6 +206,7 @@ class AiAgentModel {
   void clear() {
     if (status.value != AiAgentStatus.idle) return;
     _messages.clear();
+    _chatGptInput.clear();
     _queuedTexts.clear();
     entries.clear();
     _sentWidth = _sentHeight = 0;
@@ -390,6 +424,200 @@ class AiAgentModel {
       if (msg is String && msg.isNotEmpty) return msg;
     } catch (_) {}
     return text;
+  }
+
+  // ---- ChatGPT (Responses API with ChatGPT plan usage) ----
+
+  Future<void> _runChatGpt() async {
+    if (!chatGpt.isSignedIn) {
+      _add(AiEntryKind.error, translate('ai-agent-chatgpt-login-tip'));
+      return;
+    }
+    _stop = false;
+    status.value = AiAgentStatus.running;
+    try {
+      var turn = 0;
+      for (; turn < _kMaxTurns && !_stop; turn++) {
+        final resp = await _callChatGpt();
+        if (_stop) break;
+        final output = ((resp['output'] as List?) ?? [])
+            .whereType<Map>()
+            .map((o) => Map<String, dynamic>.from(o))
+            .toList();
+        if (output.isEmpty) break;
+        _chatGptInput.addAll(output);
+        for (final o in output) {
+          if (o['type'] == 'message') {
+            for (final c in (o['content'] as List? ?? [])) {
+              if (c is Map && c['type'] == 'output_text') {
+                _add(AiEntryKind.assistant, (c['text'] ?? '').toString());
+              } else if (c is Map && c['type'] == 'refusal') {
+                _add(AiEntryKind.error, (c['refusal'] ?? '').toString());
+              }
+            }
+          }
+        }
+        final uses = output.where((o) => o['type'] == 'function_call').map((o) {
+          dynamic args;
+          try {
+            args = jsonDecode((o['arguments'] ?? '{}').toString());
+          } catch (_) {
+            args = null;
+          }
+          return <String, dynamic>{
+            'id': o['call_id'],
+            'name': o['name'],
+            'input': args is Map ? Map<String, dynamic>.from(args) : {},
+            'bad_args': args is! Map,
+          };
+        }).toList();
+        if (uses.isEmpty) {
+          if (_queuedTexts.isEmpty) break;
+          _flushQueuedChatGpt();
+          continue;
+        }
+        final approved = await _awaitApproval(uses);
+        _chatGptInput.addAll(await _executeChatGptBatch(uses, approved));
+        _flushQueuedChatGpt();
+        if (!approved) break;
+      }
+      if (turn >= _kMaxTurns) {
+        _add(AiEntryKind.info, translate('ai-agent-step-limit-tip'));
+      }
+    } on _Stopped {
+      // reported below
+    } on ChatGptLoginRequired {
+      _add(AiEntryKind.error, translate('ai-agent-chatgpt-login-tip'));
+    } catch (e) {
+      if (!_stop) _add(AiEntryKind.error, e.toString());
+    } finally {
+      if (_stop) _add(AiEntryKind.info, translate('Stopped'));
+      _flushQueuedChatGpt();
+      pendingActions.clear();
+      _approval = null;
+      status.value = AiAgentStatus.idle;
+    }
+  }
+
+  void _flushQueuedChatGpt() {
+    for (final t in _queuedTexts) {
+      _chatGptInput.add({'role': 'user', 'content': t});
+    }
+    _queuedTexts.clear();
+  }
+
+  Future<List<Map<String, dynamic>>> _executeChatGptBatch(
+      List<Map<String, dynamic>> uses, bool approved) async {
+    final results = <Map<String, dynamic>>[];
+    var failed = false;
+    for (final u in uses) {
+      final result = <String, dynamic>{
+        'type': 'function_call_output',
+        'call_id': u['id'],
+      };
+      final name = u['name'].toString();
+      final input = _inputOf(u);
+      if (!approved || _stop) {
+        result['output'] = 'The operator declined this action.';
+      } else if (failed) {
+        result['output'] = _kSkipped;
+      } else if (u['bad_args'] == true) {
+        failed = true;
+        result['output'] = 'Error: invalid JSON arguments';
+      } else {
+        try {
+          final images = (await _execute(name, input))
+              .where((b) => b is Map && b['type'] == 'image')
+              .map((b) => {
+                    'type': 'input_image',
+                    'image_url':
+                        'data:${b['source']['media_type']};base64,${b['source']['data']}',
+                    'detail': 'original',
+                  })
+              .toList();
+          result['output'] = images.isEmpty ? 'OK' : images;
+          _add(AiEntryKind.action, describeAiAction(name, input));
+        } on _Stopped {
+          result['output'] = 'The operator declined this action.';
+        } catch (e) {
+          failed = true;
+          result['output'] = 'Error: $e';
+          _add(AiEntryKind.error, '$name: $e');
+        }
+      }
+      results.add(result);
+    }
+    return results;
+  }
+
+  Future<Map<String, dynamic>> _callChatGpt() async {
+    final platform = parent.target?.ffiModel.pi.platform ?? '';
+    final body = jsonEncode({
+      'model': chatGptModel,
+      'instructions': platform.isEmpty
+          ? _kSystemPrompt
+          : '$_kSystemPrompt\n\nRemote operating system: $platform.',
+      'tools': kChatGptComputerTools,
+      'include': ['reasoning.encrypted_content'],
+      'input': _chatGptInput,
+      'store': false,
+      'stream': true,
+    });
+    if (body.length > _kMaxBodyBytes) {
+      throw translate('ai-agent-context-full-tip');
+    }
+    final uri = Uri.parse('$kChatGptResource/responses');
+    var refreshed = false;
+    for (var attempt = 0;; attempt++) {
+      final token = await chatGpt.accessToken();
+      final client = http.Client();
+      _client = client;
+      try {
+        final resp = await client.post(uri,
+            headers: {
+              'content-type': 'application/json',
+              'authorization': 'Bearer $token',
+            },
+            body: body).timeout(const Duration(minutes: 5));
+        final text = utf8.decode(resp.bodyBytes, allowMalformed: true);
+        if (resp.statusCode == 200) {
+          try {
+            return parseChatGptStream(text);
+          } on ChatGptStreamError catch (e) {
+            throw _chatGptError(e.code, e.message);
+          }
+        }
+        final code = chatGptErrorCode(text);
+        if (resp.statusCode == 401 && !refreshed) {
+          refreshed = true;
+          if (await chatGpt.accessToken(forceRefresh: true) != token) continue;
+          throw ChatGptLoginRequired();
+        }
+        final retryable = resp.statusCode == 503 ||
+            (resp.statusCode >= 500 && resp.statusCode != 501);
+        if (!retryable || attempt >= 2) {
+          throw _chatGptError(code, 'HTTP ${resp.statusCode}');
+        }
+      } finally {
+        client.close();
+        _client = null;
+      }
+      await Future.delayed(Duration(seconds: 2 << attempt));
+      if (_stop) throw _Stopped();
+    }
+  }
+
+  String _chatGptError(String code, String detail) {
+    switch (code) {
+      case 'subscription_sharing_usage_limit_exceeded':
+        return translate('ai-agent-chatgpt-limit-tip');
+      case 'subscription_sharing_user_not_eligible':
+        return translate('ai-agent-chatgpt-not-eligible-tip');
+      case 'subscription_sharing_usage_unavailable':
+      case 'subscription_sharing_user_unavailable':
+        return translate('ai-agent-chatgpt-unavailable-tip');
+    }
+    return detail.isEmpty ? code : '$code ($detail)';
   }
 
   // ---- actions ----

@@ -839,5 +839,15 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("ai-agent-no-key-tip", ""),
         ("ai-agent-step-limit-tip", ""),
         ("ai-agent-context-full-tip", ""),
+        ("Claude (API key)", ""),
+        ("ChatGPT (sign in with your account)", ""),
+        ("Sign in with ChatGPT", ""),
+        ("Signed in", ""),
+        ("Not signed in", ""),
+        ("ai-agent-chatgpt-plan-tip", ""),
+        ("ai-agent-chatgpt-login-tip", ""),
+        ("ai-agent-chatgpt-limit-tip", ""),
+        ("ai-agent-chatgpt-not-eligible-tip", ""),
+        ("ai-agent-chatgpt-unavailable-tip", ""),
     ].iter().cloned().collect();
 }

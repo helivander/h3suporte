@@ -25,13 +25,18 @@ class _AiChatPanelState extends State<AiChatPanel> {
   late final _apiKey = TextEditingController(text: widget.model.apiKey);
   late final _modelName = TextEditingController(text: widget.model.model);
   late final _baseUrl = TextEditingController(text: widget.model.baseUrl);
+  late final _chatGptModel =
+      TextEditingController(text: widget.model.chatGptModel);
+  late String _provider = widget.model.provider;
+  bool _signingIn = false;
+  String _loginError = '';
 
   AiAgentModel get model => widget.model;
 
   @override
   void initState() {
     super.initState();
-    _showSettings = model.apiKey.isEmpty;
+    _showSettings = _needsSetup;
     _inputNode = FocusNode(onKeyEvent: (_, event) {
       if (event is KeyDownEvent &&
           event.logicalKey == LogicalKeyboardKey.enter &&
@@ -54,6 +59,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
     _apiKey.dispose();
     _modelName.dispose();
     _baseUrl.dispose();
+    _chatGptModel.dispose();
     super.dispose();
   }
 
@@ -72,10 +78,36 @@ class _AiChatPanelState extends State<AiChatPanel> {
     model.send(text);
   }
 
+  bool get _needsSetup => model.provider == kAiProviderChatGpt
+      ? !model.chatGpt.isSignedIn
+      : model.apiKey.isEmpty;
+
   Future<void> _saveSettings() async {
     await model.saveSettings(
-        apiKey: _apiKey.text, model: _modelName.text, baseUrl: _baseUrl.text);
-    if (mounted) setState(() => _showSettings = model.apiKey.isEmpty);
+        apiKey: _apiKey.text,
+        model: _modelName.text,
+        baseUrl: _baseUrl.text,
+        provider: _provider,
+        chatGptModel: _chatGptModel.text);
+    if (mounted) setState(() => _showSettings = _needsSetup);
+  }
+
+  Future<void> _chatGptLogin() async {
+    setState(() {
+      _signingIn = true;
+      _loginError = '';
+    });
+    try {
+      await model.chatGpt.login();
+    } catch (e) {
+      _loginError = e.toString();
+    }
+    if (mounted) setState(() => _signingIn = false);
+  }
+
+  Future<void> _chatGptLogout() async {
+    await model.chatGpt.logout();
+    if (mounted) setState(() {});
   }
 
   @override
@@ -139,10 +171,56 @@ class _AiChatPanelState extends State<AiChatPanel> {
                   isDense: true,
                   border: const OutlineInputBorder())),
         );
+    final hint = TextStyle(fontSize: 12, color: Theme.of(context).hintColor);
     return ListView(padding: const EdgeInsets.all(12), children: [
-      field('API key', _apiKey, secret: true),
-      field('Model', _modelName),
-      field('API address', _baseUrl),
+      for (final p in [kAiProviderClaude, kAiProviderChatGpt])
+        RadioListTile<String>(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            value: p,
+            groupValue: _provider,
+            title: Text(translate(p == kAiProviderChatGpt
+                ? 'ChatGPT (sign in with your account)'
+                : 'Claude (API key)')),
+            onChanged: (v) => setState(() => _provider = v ?? _provider)),
+      const SizedBox(height: 8),
+      if (_provider == kAiProviderClaude) ...[
+        field('API key', _apiKey, secret: true),
+        field('Model', _modelName),
+        field('API address', _baseUrl),
+      ] else ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(children: [
+            Expanded(
+                child: Text(
+                    model.chatGpt.isSignedIn
+                        ? '${translate('Signed in')}: ${model.chatGpt.email}'
+                        : translate('Not signed in'),
+                    style: hint)),
+            if (_signingIn)
+              const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+            else if (model.chatGpt.isSignedIn)
+              TextButton(
+                  onPressed: _chatGptLogout, child: Text(translate('Logout')))
+            else
+              ElevatedButton(
+                  onPressed: _chatGptLogin,
+                  child: Text(translate('Sign in with ChatGPT'))),
+          ]),
+        ),
+        if (_loginError.isNotEmpty)
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SelectableText(_loginError,
+                  style: const TextStyle(fontSize: 12, color: Colors.red))),
+        field('Model', _chatGptModel),
+        Text(translate('ai-agent-chatgpt-plan-tip'), style: hint),
+        const SizedBox(height: 12),
+      ],
       Text(translate('ai-agent-privacy-tip'),
           style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
       const SizedBox(height: 12),

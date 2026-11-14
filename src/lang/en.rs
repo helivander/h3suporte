@@ -296,5 +296,10 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("ai-agent-no-key-tip", "Enter the API key in the AI assistant settings."),
         ("ai-agent-step-limit-tip", "Step limit reached. Send a new message to continue."),
         ("ai-agent-context-full-tip", "The conversation is too large. Clear it and continue with a new instruction."),
+        ("ai-agent-chatgpt-plan-tip", "Usage counts against your ChatGPT plan (Plus or Pro). You can disconnect the app in your ChatGPT settings."),
+        ("ai-agent-chatgpt-login-tip", "Sign in with ChatGPT in the AI assistant settings."),
+        ("ai-agent-chatgpt-limit-tip", "Your ChatGPT plan usage limit was reached. Check it in ChatGPT > Settings > Usage."),
+        ("ai-agent-chatgpt-not-eligible-tip", "Your ChatGPT account or plan does not allow usage by other apps."),
+        ("ai-agent-chatgpt-unavailable-tip", "ChatGPT is unavailable right now. Try again in a few minutes."),
     ].iter().cloned().collect();
 }

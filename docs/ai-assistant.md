@@ -43,6 +43,38 @@ Na engrenagem do painel, gravada nas opções locais do app:
 
 O endereço é configurável para apontar para um proxy próprio (fase 2).
 
+## Provedor ChatGPT (login com a conta)
+
+Na engrenagem do painel, escolha "ChatGPT (entrar com sua conta)" e clique em
+"Entrar com o ChatGPT". O navegador abre o login da OpenAI; ao autorizar, o uso
+sai do plano ChatGPT (Plus ou Pro) do técnico.
+
+- Login: "Sign in with ChatGPT" com uso do plano, OAuth 2.0 com PKCE e retorno
+  para `http://127.0.0.1:1455/auth/callback` (porta aleatória se a 1455 estiver
+  ocupada). O identificador da máquina segue o formato `urn:uuid:<uuid>`.
+- Na primeira vez a OpenAI registra o app e devolve um `client_id`
+  (`ai-agent-chatgpt-client-id`), reaproveitado nos logins seguintes.
+- O token de acesso dura cerca de 1 hora e é renovado sozinho; se a renovação
+  for recusada, o painel pede novo login.
+- Chamadas: `POST https://api.openai.com/v1/responses` com `store: false` e
+  `stream: true`. Modelo padrão `gpt-6.1-sol` (`ai-agent-chatgpt-model`).
+- A ferramenta nativa de computer use da OpenAI não é aceita pelo plano. As
+  ações são oferecidas como funções próprias com os mesmos nomes e campos do
+  Claude (`screenshot`, `left_click`, `type`, `key` ...), e a mesma rotina do
+  app executa os dois provedores.
+- Código: `flutter/lib/models/ai_chatgpt_auth.dart` (login e tokens),
+  `flutter/lib/models/ai_chatgpt_utils.dart` (funções puras, com testes em
+  `flutter/test/ai_chatgpt_utils_test.dart`) e `_runChatGpt` em
+  `ai_agent_model.dart`.
+
+Limites do provedor ChatGPT:
+
+- Tokens gravados em texto simples nas opções locais, como a chave da API.
+- A assinatura do `id_token` não é verificada; ele só serve para mostrar o
+  e-mail. A autorização real é feita pela API com o token de acesso.
+- Uso do plano por apps comerciais pode exigir o formulário de interesse da
+  OpenAI; o teste foi feito com a conta do usuário.
+
 ## Segurança
 
 - "Confirmar cada ação" vem ligado: o técnico aprova cada lote de ações antes
