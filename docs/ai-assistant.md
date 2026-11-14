@@ -103,10 +103,14 @@ Limites do provedor ChatGPT:
 
 ## Estado da verificação
 
-Escrito sem Flutter instalado na máquina de desenvolvimento: o código Dart não
-foi compilado nem os testes executados localmente. Antes de usar, rodar
-`flutter analyze` e `flutter test test/ai_agent_utils_test.dart` em `flutter/`
-e testar uma sessão real.
+- Build do CI em 14/11/2026 ([execução 43606931446](https://github.com/helivander/h3suporte/actions/runs/43606931446),
+  commit `7e58c2c34`): compilou em Windows (x64, x86, ARM64 e variante
+  cliente), macOS (Intel e Apple Silicon), Linux (x86_64, ARM64 e DRM) e
+  Android (ARM64, ARMv7 e x86_64). Os testes Dart passaram (180 passaram, 2
+  pulados), incluindo `ai_agent_utils_test.dart` e `ai_chatgpt_utils_test.dart`.
+- As ferramentas e o prompt do provedor ChatGPT foram validados contra a API
+  real com uma tela de teste.
+- Falta testar numa sessão remota real, nos dois provedores.
 
 ## Próximas fases
 
