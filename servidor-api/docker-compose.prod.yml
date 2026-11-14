@@ -1,0 +1,37 @@
+# servidor-api do h3suporte no mesmo servidor da Central de Ativação.
+# Sem porta publicada: entra na rede interna da Central e o Caddy dela entrega
+# https://keys.h3info.com/h3suporte/* -> h3suporte-api:21114 (docs/central-producao-h3suporte.md).
+# Subir: docker compose -f docker-compose.prod.yml up -d --build
+name: h3suporte-api
+
+services:
+  h3suporte-api:
+    build: .
+    image: h3suporte-api:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Fala com a API da Central direto pela rede interna (sem sair pela Cloudflare).
+      # HTTP só é aceito porque o tráfego não sai da rede do Docker.
+      CENTRAL_URL: ${CENTRAL_URL:-http://api:3001}
+      PERMITIR_HTTP: "1"
+      # O Caddy da Central entrega o IP real do cliente como único X-Forwarded-For.
+      CONFIAR_PROXY: "1"
+      BANCO: /app/dados/h3suporte.db
+    volumes:
+      - dados:/app/dados
+    networks:
+      central:
+        aliases: [h3suporte-api]
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: 20m, max-file: "5" }
+
+volumes:
+  dados:
+
+networks:
+  central:
+    external: true
+    name: ${REDE_CENTRAL:-central_interna}

@@ -6,7 +6,7 @@ assinaturas à Central de Ativação** pelas rotas `/api-servico/contas/*`
 ([especificação](../docs/central-contas-assinante.md)).
 
 ```
-App h3suporte ──https──► suporte-api.h3info.com (este servidor) ──Bearer sva_…──► Central (keys.h3info.com)
+App h3suporte ──https──► keys.h3info.com/h3suporte ──Caddy da Central──► este servidor ──Bearer sva_…──► API da Central (rede interna)
 ```
 
 Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
@@ -42,19 +42,35 @@ próximo pedido dá `401` e o app volta para a tela de login. Com a Central fora
 valendo por `TOLERANCIA_HORAS` desde a última validação; depois disso responde `503` (o app mostra o erro
 e não apaga o login).
 
-## Rodar
+## Produção (servidor da Central)
+
+O app usa `https://keys.h3info.com/h3suporte` quando nenhum servidor de API foi configurado
+(`src/common.rs`, `get_api_server_`). O container não publica porta: entra na rede interna da Central
+(`central_interna`) e o Caddy dela repassa `/h3suporte/*` para `h3suporte-api:21114`; o servidor-api fala com a
+API da Central direto em `http://api:3001`. O que a Central precisa ter: [docs/central-producao-h3suporte.md](../docs/central-producao-h3suporte.md).
+
+Primeira vez, no servidor: criar `/opt/h3suporte-api/.env` a partir de `.env.example` com a `CENTRAL_CREDENCIAL`.
+Depois, da sua máquina:
 
 ```bash
-cp .env.example .env   # preencha CENTRAL_URL e CENTRAL_CREDENCIAL
+servidor-api/publicar.sh usuario@servidor
+```
+
+O script copia a pasta (sem `.env`, `dados` e testes), roda `docker compose -f docker-compose.prod.yml up -d --build`
+e confere `/saude` dentro da rede e pelo domínio. Atualizar = rodar de novo. Logs:
+`docker compose -f /opt/h3suporte-api/docker-compose.prod.yml logs -f`.
+
+## Rodar em outro lugar
+
+```bash
+cp .env.example .env   # preencha CENTRAL_URL (https://…/api) e CENTRAL_CREDENCIAL
 docker build -t h3suporte-api .
 docker run -d --name h3suporte-api --restart unless-stopped --env-file .env \
   -p 127.0.0.1:21114:21114 -v h3suporte-api-dados:/app/dados h3suporte-api
 ```
 
-Na frente, um proxy reverso com TLS para `https://suporte-api.h3info.com` → `127.0.0.1:21114`
-(com `CONFIAR_PROXY=1`). O app usa esse endereço quando nenhum servidor de API foi configurado
-(`src/common.rs`, `get_api_server_`). Para trocar o domínio, mude essa linha ou configure
-`api-server` no app.
+Na frente, um proxy reverso com TLS (com `CONFIAR_PROXY=1`). Para o app usar outro endereço, mude a linha em
+`src/common.rs` ou configure `api-server` no app.
 
 Sem Docker: `node src/main.js` com as variáveis do `.env` no ambiente.
 

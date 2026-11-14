@@ -1321,8 +1321,8 @@ fn get_api_server_(api: String, custom: String) -> String {
             return format!("http://{}", s);
         }
     }
-    // Servidor de API da H3 (servidor-api/): contas e assinaturas vêm da Central de Ativação.
-    "https://suporte-api.h3info.com".to_owned()
+    // Servidor de API da H3 (servidor-api/), atrás do domínio da Central: contas e assinaturas vêm dela.
+    "https://keys.h3info.com/h3suporte".to_owned()
 }
 
 #[inline]
