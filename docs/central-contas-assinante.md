@@ -8,8 +8,9 @@ que mudou na implementação:
 - Sem códigos de recuperação do 2FA: quem perde o celular pede ao titular para zerar.
 - As sessões do portal ficam na mesma tabela das do serviço (`origem = PORTAL`, token `cp_…`, 12 h).
 - O login do portal aceita entrar sem `?produto=` quando o e-mail tem conta em um único produto.
-- Ainda não feitos: aba **Contas** na ficha da ativação (admin/parceiro), contas na exportação LGPD (a anonimização já
-  apaga) e transferência de titularidade.
+- Também prontos: seção **Contas do assinante** na ficha da ativação (admin age, parceiro consulta), contas na exportação
+  e na anonimização LGPD, e transferência de titularidade (pelo titular no portal, com a senha, ou pelo administrador).
+- Login de pessoas só por e-mail e senha pela API, sem OAuth/OIDC (decisão de 14/11/2026).
 
 ## Objetivo
 
