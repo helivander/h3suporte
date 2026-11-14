@@ -1,0 +1,14 @@
+{
+  "name": "h3suporte-servidor-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de API do h3suporte: login das contas da Central de Ativação no formato que o cliente RustDesk espera",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test"
+  }
+}

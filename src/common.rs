@@ -1321,7 +1321,8 @@ fn get_api_server_(api: String, custom: String) -> String {
             return format!("http://{}", s);
         }
     }
-    "https://admin.rustdesk.com".to_owned()
+    // Servidor de API da H3 (servidor-api/): contas e assinaturas vêm da Central de Ativação.
+    "https://suporte-api.h3info.com".to_owned()
 }
 
 #[inline]
