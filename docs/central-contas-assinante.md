@@ -1,7 +1,15 @@
 # Implementar na Central: contas do assinante (login do h3suporte)
 
-Status: especificação para o time da Central de Ativação. O lado do h3suporte já está pronto
-([servidor-api/](../servidor-api/README.md)) e conversa com estas rotas.
+Status: **implementado na Central** (repositório `central de ativação`, `docs/contas-assinante.md`) e testado de ponta
+a ponta com o [servidor-api/](../servidor-api/README.md) do h3suporte. Esta página ficou como a especificação original; o
+que mudou na implementação:
+
+- O titular nasce **só pela chave** (`/assinante/criar-conta`). A criação automática pelo e-mail do cadastro ficou de fora.
+- Sem códigos de recuperação do 2FA: quem perde o celular pede ao titular para zerar.
+- As sessões do portal ficam na mesma tabela das do serviço (`origem = PORTAL`, token `cp_…`, 12 h).
+- O login do portal aceita entrar sem `?produto=` quando o e-mail tem conta em um único produto.
+- Ainda não feitos: aba **Contas** na ficha da ativação (admin/parceiro), contas na exportação LGPD (a anonimização já
+  apaga) e transferência de titularidade.
 
 ## Objetivo
 
