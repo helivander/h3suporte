@@ -847,6 +847,19 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       toolbarItems.add(_KeyboardMenu(id: widget.id, ffi: widget.ffi));
     }
     toolbarItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
+    if (!isWeb && widget.ffi.connType == ConnType.defaultConn) {
+      toolbarItems.add(_IconMenuButton(
+        icon: SizedBox(
+            width: _ToolbarTheme.buttonSize,
+            height: _ToolbarTheme.buttonSize,
+            child: const Icon(Icons.smart_toy_outlined,
+                color: Colors.white, size: 20)),
+        tooltip: 'AI assistant',
+        color: _ToolbarTheme.blueColor,
+        hoverColor: _ToolbarTheme.hoverBlueColor,
+        onPressed: widget.ffi.aiAgentModel.togglePanel,
+      ));
+    }
     if (!isWeb) {
       toolbarItems.add(_VoiceCallMenu(id: widget.id, ffi: widget.ffi));
     }

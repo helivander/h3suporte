@@ -13,6 +13,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_hbb/common/widgets/peers_view.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/models/ab_model.dart';
+import 'package:flutter_hbb/models/ai_agent_model.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
 import 'package:flutter_hbb/models/cm_file_model.dart';
 import 'package:flutter_hbb/models/file_model.dart';
@@ -483,6 +484,7 @@ class FfiModel with ChangeNotifier {
 
   _handleScreenshot(
       Map<String, dynamic> evt, SessionID sessionId, String peerId) {
+    if (parent.target?.aiAgentModel.onScreenshotEvent(evt) == true) return;
     timerScreenshot?.cancel();
     timerScreenshot = null;
     final msg = evt['msg'] ?? '';
@@ -4055,6 +4057,7 @@ class FFI {
   late final CmFileModel cmFileModel; // cm
   late final TextureModel textureModel; //session
   late final ShortcutModel shortcutModel; // session
+  late final AiAgentModel aiAgentModel; // session
   late final Peers recentPeersModel; // global
   late final Peers favoritePeersModel; // global
   late final Peers lanPeersModel; // global
@@ -4085,6 +4088,7 @@ class FFI {
     cmFileModel = CmFileModel(WeakReference(this));
     textureModel = TextureModel(WeakReference(this));
     shortcutModel = ShortcutModel(WeakReference(this));
+    aiAgentModel = AiAgentModel(WeakReference(this));
     recentPeersModel = Peers(
         name: PeersModelName.recent,
         loadEvent: LoadEvent.recent,
@@ -4378,6 +4382,7 @@ class FFI {
       platformFFI.clearVideoFrameCallback();
     }
     chatModel.close();
+    aiAgentModel.dispose();
     // Close all terminal models
     for (final model in _terminalModels.values) {
       model.dispose();

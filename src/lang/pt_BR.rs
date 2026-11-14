@@ -815,5 +815,18 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Off", "Desativado"),
         ("api_server_connection_tip", ""),
         ("api_server_empty_tip", ""),
+        ("AI assistant", "Assistente de IA"),
+        ("Describe the task for the remote computer", "Descreva a tarefa para o computador remoto"),
+        ("Confirm each action", "Confirmar cada ação"),
+        ("The AI wants to run these actions", "A IA quer executar estas ações"),
+        ("The AI declined this request", "A IA recusou este pedido"),
+        ("Stopped", "Interrompido"),
+        ("API key", "Chave da API"),
+        ("Model", "Modelo"),
+        ("API address", "Endereço da API"),
+        ("ai-agent-privacy-tip", "As capturas da tela remota são enviadas ao provedor de IA. Confirme que o cliente concordou antes de usar."),
+        ("ai-agent-no-key-tip", "Informe a chave da API nas configurações do assistente de IA."),
+        ("ai-agent-step-limit-tip", "Limite de passos atingido. Envie uma nova mensagem para continuar."),
+        ("ai-agent-context-full-tip", "A conversa ficou grande demais. Limpe a conversa e continue com uma nova instrução."),
     ].iter().cloned().collect();
 }

@@ -815,5 +815,18 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Off", "OFF"),
         ("api_server_connection_tip", "Il server personalizzato usa 'HTTP non crittografato'. Per abilitare HTTPS contatta l'amministratore."),
         ("api_server_empty_tip", "Con 'Server API' vuoto, il server personalizzato predefinito è 'HTTP'. Per abilitare HTTPS contatta l'amministratore."),
+        ("AI assistant", ""),
+        ("Describe the task for the remote computer", ""),
+        ("Confirm each action", ""),
+        ("The AI wants to run these actions", ""),
+        ("The AI declined this request", ""),
+        ("Stopped", ""),
+        ("API key", ""),
+        ("Model", ""),
+        ("API address", ""),
+        ("ai-agent-privacy-tip", ""),
+        ("ai-agent-no-key-tip", ""),
+        ("ai-agent-step-limit-tip", ""),
+        ("ai-agent-context-full-tip", ""),
     ].iter().cloned().collect();
 }

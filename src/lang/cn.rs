@@ -815,5 +815,18 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Off", "关"),
         ("api_server_connection_tip", "自定义服务器正在使用未加密的 HTTP。请联系管理员启用 HTTPS。"),
         ("api_server_empty_tip", "API 服务器留空时，自定义服务器默认使用 HTTP。请联系管理员启用 HTTPS。"),
+        ("AI assistant", ""),
+        ("Describe the task for the remote computer", ""),
+        ("Confirm each action", ""),
+        ("The AI wants to run these actions", ""),
+        ("The AI declined this request", ""),
+        ("Stopped", ""),
+        ("API key", ""),
+        ("Model", ""),
+        ("API address", ""),
+        ("ai-agent-privacy-tip", ""),
+        ("ai-agent-no-key-tip", ""),
+        ("ai-agent-step-limit-tip", ""),
+        ("ai-agent-context-full-tip", ""),
     ].iter().cloned().collect();
 }
