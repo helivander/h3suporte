@@ -176,10 +176,22 @@ uso sai do plano dele, sem gateway.
   apps pagos ou hospedados precisam do formulário de interesse. O H3 Suporte é
   AGPL e público, mas é usado num serviço comercial, então a elegibilidade
   precisa ser confirmada com a OpenAI.
-  - Não confirmado na documentação: se o uso do plano aceita a ferramenta de
-    computer use e imagens, que o agente exige.
-  - Exige um segundo formato de agente no app (ações e ferramenta da OpenAI
-    são diferentes das do Claude).
+  - Teste real em 14/11/2026 (script descartável, conta ChatGPT do usuário):
+    - login OAuth com PKCE e loopback em `127.0.0.1:1455` funcionou e concedeu
+      `chatgpt.tokens.use.direct`; o `ext_agent_host_id` precisa estar no
+      formato `urn:uuid:<uuid>` (só o UUID dá `invalid_authorize_request`);
+    - modelos liberados: `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6.1-terra`,
+      `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`;
+    - texto e leitura de imagem funcionaram;
+    - **a ferramenta nativa de computer use não é aceita pelo plano**:
+      `computer` e `computer_use_preview` voltam 400 `Unsupported tool type`;
+    - **funções próprias funcionam**: com uma função `click(x, y)` e a captura
+      como imagem, o `gpt-6.1-sol` clicou em (850, 590), dentro do botão Salvar
+      de uma tela de teste de 1280x800. Foi um único teste em tela sintética.
+  - Consequência: o caminho OpenAI é viável definindo as ações (clicar,
+    digitar, teclas, rolar, captura) como funções próprias, executadas pelas
+    mesmas rotinas que o app já tem. Exige um adaptador OpenAI ao lado do
+    Claude no `ai_agent_model.dart`.
   - O uso conta no plano pessoal de cada técnico (no Plus, um limite de 5 horas
     compartilhado entre todos os apps).
 
