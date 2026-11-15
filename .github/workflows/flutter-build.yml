@@ -1231,6 +1231,21 @@ jobs:
           path: ./${{ env.PKG_NAME }}-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
           if-no-files-found: error
 
+      # H3: instalador .pkg (instala em /Applications); BundleIsRelocatable=false para não cair em cima de outro
+      # app com o mesmo bundle id.
+      - name: Create macOS pkg installer
+        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
+        shell: bash
+        run: |
+          nome=$([ "${{ matrix.job.arch }}" = aarch64 ] && echo apple-silicon || echo intel)
+          mkdir -p pkgroot && ditto ./flutter/build/macos/Build/Products/Release/H3Suporte.app pkgroot/H3Suporte.app
+          codesign --verify --deep --strict pkgroot/H3Suporte.app
+          pkgbuild --analyze --root pkgroot pkg-components.plist
+          /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" pkg-components.plist
+          pkgbuild --root pkgroot --component-plist pkg-components.plist --install-location /Applications \
+            --identifier br.com.h3info.h3suporte --version "${{ env.VERSION }}" \
+            "${{ env.PKG_NAME }}-${{ env.VERSION }}-macos-${nome}.pkg"
+
       - name: Publish DMG package
         if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
@@ -1239,6 +1254,7 @@ jobs:
           tag_name: ${{ env.TAG_NAME }}
           files: |
             ${{ env.PKG_NAME }}*-${{ matrix.job.arch }}.dmg
+            ${{ env.PKG_NAME }}-*-macos-*.pkg
 
   publish-signed-update-metadata:
     needs: [build-for-windows-flutter, build-for-windows-sciter, build-for-macOS]
