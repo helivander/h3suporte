@@ -31,6 +31,7 @@ Commits na `main` do repositório da Central (todos já enviados ao Gitea e ao G
 - `33fd3c3` Contas do assinante: correções da revisão contra a spec
 - `47a8cb9` Contas do assinante: titular automático e códigos de recuperação do 2FA
 - `d41ff31` Caddy: rota /h3suporte para o servidor-api do h3suporte
+- `3c1dce5` Produto H3 Suporte já cadastrado e computadores = contas do plano
 
 ```bash
 git pull && make deploy
@@ -44,6 +45,7 @@ O `make deploy` aplica, em ordem, as migrações pendentes (nenhuma apaga dados)
 | `20261114200000_contas_servico`                   | 4 tabelas das contas e 3 colunas com padrão                                  |
 | `20261114210000_contas_servico_rls`               | Parceiro só lê contas e computadores (troca de policies)                     |
 | `20261114220000_titular_automatico_recuperacao`   | Tipo de token para códigos de recuperação e `venda_direta.email`             |
+| `20261115120000_produto_h3suporte`                | Cria o produto H3 Suporte (se o slug `h3suporte` ainda não existir)          |
 
 Só não use `migrate dev` em produção.
 
@@ -91,13 +93,17 @@ curl -s -X POST https://keys.h3info.com/h3suporte/api/heartbeat -d '{"id":"teste
 
 ## 4. Produto h3suporte no painel (Admin → Produtos)
 
-1. Criar o produto **H3 Suporte** (ou usar o existente), situação **Publicado**.
-2. **Contas do assinante: Sim (titular e equipe)**.
-3. **Limite de instalações** = quantos computadores de técnico cada assinatura pode usar.
-4. Em cada plano, **Limite de contas por assinatura** (ex.: plano Equipe 5 → 5).
-5. Instruções do produto (aparecem na entrega da chave), por exemplo:
-   > Crie a conta do responsável em https://keys.h3info.com/assinante/criar-conta com esta chave. Você recebe um e-mail
-   > para criar a senha. Depois convide sua equipe no portal e entre no H3 Suporte com o seu e-mail e senha.
+O produto **já nasce no deploy**: a migração `20261115120000_produto_h3suporte` (commit `3c1dce5`) cria o H3 Suporte
+(slug `h3suporte`, **Publicado**, **Contas do assinante: Sim**, com descrição e instruções). O h3suporte não tem site para
+"Conectar à Central"; o resto se faz no painel:
+
+1. Criar os planos e, em cada um, o **Limite de contas por assinatura** (ex.: plano Equipe 5 → 5). O limite de
+   **computadores** acompanha o de contas: um computador por técnico. Plano sem limite de contas usa o **Limite de
+   instalações** do produto (vem 1; ajuste se for usar plano sem limite).
+2. Termos de uso, preços (da Central e/ou dos parceiros) e liberação aos parceiros, como qualquer produto.
+3. Revisar as instruções que aparecem na entrega da chave (já vêm preenchidas):
+   > Crie a conta do responsável em https://keys.h3info.com/assinante/criar-conta com a sua chave. Você recebe um e-mail
+   > para criar a senha. Depois convide sua equipe no portal do assinante e entre no H3 Suporte com o seu e-mail e senha.
 
    Na venda direta da Central e na habilitação pelo app, o titular é criado sozinho com o e-mail da compra e recebe o
    link para criar a senha; a chave serve só se esse e-mail não chegar (dá para corrigir o e-mail com a chave enquanto a
