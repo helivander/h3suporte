@@ -189,6 +189,7 @@ export function criarApp({ config, banco, central, relogio = Date.now }) {
 
   async function login(req, res) {
     const corpo = await lerJson(req);
+    if (config.loginDesligado) return erro(res, 503, "Login indisponível no momento. Avise o suporte da H3.");
     const ip = ipDe(req);
     if (!limiteLogin.consumir(ip, relogio())) return erro(res, 429, MENSAGENS.MUITAS_TENTATIVAS);
     const uuid = texto(corpo.uuid, 256);

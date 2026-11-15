@@ -242,3 +242,17 @@ test("heartbeat, sysinfo, auditoria e opções de login respondem como o cliente
   assert.equal((await chamar("POST", "/api/sysinfo_ver", undefined)).texto, "1");
   assert.equal((await chamar("POST", "/api/audit/conn", { id: "1", nonce: "n1", action: "new" })).status, 200);
 });
+
+test("sem credencial da Central o login responde indisponível e o resto funciona", async () => {
+  const banco = abrirBanco(":memory:");
+  const semCredencial = createServer(
+    criarApp({ config: { ...config, loginDesligado: true }, banco, central: {}, relogio: () => agora }),
+  );
+  await new Promise((r) => semCredencial.listen(0, "127.0.0.1", r));
+  const url = `http://127.0.0.1:${semCredencial.address().port}`;
+  const login = await fetch(`${url}/api/login`, { method: "POST", body: JSON.stringify({ username: "a@b.c", password: "x", uuid: "u" }) });
+  assert.equal(login.status, 503);
+  const hb = await fetch(`${url}/api/heartbeat`, { method: "POST", body: JSON.stringify({ id: "1" }) });
+  assert.equal(hb.status, 200);
+  semCredencial.close();
+});

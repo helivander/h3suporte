@@ -1,12 +1,16 @@
 # Central de Ativação: o que falta em produção para o h3suporte funcionar
 
-Para repassar ao time da Central. Situação conferida em 14/11/2026 em `https://keys.h3info.com` (revisado no mesmo dia,
-depois da revisão das contas na Central):
+Para repassar ao time da Central. Situação conferida no servidor (CT 110 do Proxmox, `10.0.4.19`, pasta
+`/root/centralkeys`) em 14/11/2026, 21h:
 
-- `GET /api/saude` responde, mas `/assinante/entrar` e `/api/assinante/painel` dão **404**: o código das contas ainda não
-  foi implantado.
-- `https://keys.h3info.com/h3suporte/*` dá 404 do painel web: a rota do servidor-api já está no repositório da Central
-  (`ops/Caddyfile`), mas ainda não foi implantada.
+- Feito: código das contas implantado (API e web; `/api/assinante/painel` responde 401), rota `/h3suporte` no
+  `ops/Caddyfile` do repositório (validada com `caddy validate`) e **servidor-api publicado** em `/opt/h3suporte-api`
+  (container `h3suporte-api-h3suporte-api-1`, saudável, na rede `central_interna`; o Caddy já o alcança).
+- Falta: **reiniciar o Caddy** para carregar a rota (o container tem o Caddyfile antigo montado; `docker compose -p central
+  -f docker-compose.prod.yml restart caddy`, cerca de 1 s fora do ar), criar o **produto H3 Suporte** com contas e a
+  **credencial `sva_`** (hoje só existem os produtos Micron), a regra da **Cloudflare** e o **SMTP** (seções 3 a 6).
+- Com a credencial em `/opt/h3suporte-api/.env`: `cd /opt/h3suporte-api && docker compose -f docker-compose.prod.yml up -d`.
+  Até lá o login do app responde "Login indisponível"; heartbeat e saúde funcionam.
 
 Como fica:
 

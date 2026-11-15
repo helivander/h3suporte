@@ -6,9 +6,7 @@ const numero = (valor, padrao) => {
 export function lerConfig(env = process.env) {
   const central = (env.CENTRAL_URL ?? "").trim().replace(/\/+$/, "");
   const credencial = (env.CENTRAL_CREDENCIAL ?? "").trim();
-  if (!central || !credencial) {
-    throw new Error("Defina CENTRAL_URL e CENTRAL_CREDENCIAL (veja .env.example).");
-  }
+  if (!central) throw new Error("Defina CENTRAL_URL (veja .env.example).");
   if (!central.startsWith("https://") && env.PERMITIR_HTTP !== "1") {
     throw new Error("CENTRAL_URL precisa ser https:// (PERMITIR_HTTP=1 só em desenvolvimento).");
   }
@@ -18,6 +16,8 @@ export function lerConfig(env = process.env) {
     banco: env.BANCO || "dados/h3suporte.db",
     central,
     credencial,
+    // Sem credencial o serviço sobe (saúde, heartbeat), mas o login responde "indisponível".
+    loginDesligado: !credencial.startsWith("sva_"),
     timeoutMs: numero(env.CENTRAL_TIMEOUT_MS, 8000),
     revalidarMs: numero(env.REVALIDAR_SEG, 300) * 1000,
     toleranciaMs: numero(env.TOLERANCIA_HORAS, 72) * 3600_000,

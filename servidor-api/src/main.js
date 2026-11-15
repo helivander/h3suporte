@@ -15,6 +15,9 @@ banco.limpar(Date.now());
 const limpeza = setInterval(() => banco.limpar(Date.now()), 6 * 3600_000);
 limpeza.unref();
 
+if (config.loginDesligado)
+  console.warn("CENTRAL_CREDENCIAL ausente ou inválida: o login fica desligado até ela ser configurada.");
+
 servidor.listen(config.porta, config.host, () => {
   console.log(`servidor-api do h3suporte em ${config.host}:${config.porta}, central ${config.central}`);
 });
