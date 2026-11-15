@@ -78,12 +78,19 @@ informe para colocarmos em `REDE_CENTRAL` no `.env` do servidor-api.
 
 ## 3. Cloudflare
 
-O app h3suporte não é um navegador e manda `POST` com JSON a cada 15 s (heartbeat) de cada computador. A Cloudflare hoje
-injeta o script anti-robô nas páginas (`/cdn-cgi/challenge-platform`). Para não bloquear o app:
+**Feito em 15/11/2026** na zona `h3info.com` (plano Free), as duas regras valendo só para `keys.h3info.com` com caminho
+começando em `/h3suporte/` (o resto do domínio não muda):
 
-- Regra (Security → WAF → Custom rules): se o caminho começa com `/h3suporte/`, **Skip** em Bot Fight Mode / Super Bot
-  Fight Mode, gerenciadores de desafio e rate limiting da Cloudflare (os limites ficam no servidor-api e na Central).
-- Regra de cache: `/h3suporte/*` **sem cache** (Bypass).
+- Regras de segurança → regra personalizada **"h3suporte: app sem desafio"**, primeira da lista, ação **Ignorar**:
+  regras personalizadas restantes, Rate Limiting, regras gerenciadas, Verificação de integridade do navegador e Nível
+  de segurança. Expressão:
+  `(http.host eq "keys.h3info.com" and starts_with(http.request.uri.path, "/h3suporte/"))`
+- Caching → Cache Rules → **"h3suporte: sem cache"**, mesma expressão, **Ignorar cache**.
+
+Ambas estão dentro da cota gratuita do plano Free (sem cobrança). Limitação: no plano Free o **Modo Bot Fight** (ligado
+na zona) não pode ser pulado por regra. Hoje o app passa normalmente; se aparecerem desafios (respostas HTML ou 403 em
+`/h3suporte/*`), as saídas são desligar o Bot Fight na zona (vale para todo o `h3info.com`) ou o plano Pro (Super Bot
+Fight Mode pode ser pulado na mesma regra).
 
 Conferir de fora (não pode vir HTML de desafio):
 
