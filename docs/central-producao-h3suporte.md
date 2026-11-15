@@ -108,7 +108,6 @@ O produto **já nasce no deploy**: a migração `20261115120000_produto_h3suport
    Na venda direta da Central e na habilitação pelo app, o titular é criado sozinho com o e-mail da compra e recebe o
    link para criar a senha; a chave serve só se esse e-mail não chegar (dá para corrigir o e-mail com a chave enquanto a
    senha não foi criada).
-6. Liberar o produto aos parceiros e definir preços, como qualquer produto.
 
 ## 5. Credencial do servidor-api
 
