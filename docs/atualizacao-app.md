@@ -69,3 +69,14 @@ anterior estável (quem já atualizou fica na nova; corrija lançando outra vers
   `.exe`. Teste esse caso antes de vender instalação por MSI.
 - O endereço do servidor-api é fixo no app (`H3_UPDATE_CHECK_URL`); mudar exige lançar uma versão antes.
 - Linux e Android não instalam sozinhos.
+
+## Assinatura Apple (Mac)
+
+- Certificado **Developer ID Application** do time `4AJ2L98BR4`, criado em 15/11/2026, **vence em 15/12/2027**
+  (renove antes no developer.apple.com com um CSR novo e atualize os segredos).
+- Chave privada, `.p12` e senha: `~/.config/h3suporte/apple/` no Mac do responsável (fora do git; guarde cópia no
+  cofre de senhas). Também instalado no keychain de login.
+- Segredos do GitHub: `MACOS_P12_BASE64`, `MACOS_P12_PASSWORD`, `MACOS_CODESIGN_IDENTITY` (com as aspas).
+  O build assina o app com hardened runtime (`.github/scripts/sign-macos-app.sh`).
+- Notarização: segredo `MACOS_NOTARIZE_JSON` (chave de API da App Store Connect no formato do `rcodesign`). Sem ele
+  o `.dmg` sai assinado mas não notarizado, e o Mac ainda avisa na primeira abertura.
