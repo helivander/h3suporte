@@ -78,5 +78,7 @@ anterior estável (quem já atualizou fica na nova; corrija lançando outra vers
   cofre de senhas). Também instalado no keychain de login.
 - Segredos do GitHub: `MACOS_P12_BASE64`, `MACOS_P12_PASSWORD`, `MACOS_CODESIGN_IDENTITY` (com as aspas).
   O build assina o app com hardened runtime (`.github/scripts/sign-macos-app.sh`).
-- Notarização: segredo `MACOS_NOTARIZE_JSON` (chave de API da App Store Connect no formato do `rcodesign`). Sem ele
-  o `.dmg` sai assinado mas não notarizado, e o Mac ainda avisa na primeira abertura.
+- Notarização: segredo `MACOS_NOTARIZE_JSON` (chave de API da App Store Connect "H3 Suporte notarizacao", ID
+  `BS8844T493`, função Desenvolvedor, criada em 15/11/2026; no formato do `rcodesign`). O `.p8` e o JSON ficam em
+  `~/.config/h3suporte/apple/` (a Apple só deixa baixar o `.p8` uma vez). Neste Mac também há o perfil
+  `h3suporte-notary` do `notarytool`. Sem o segredo o `.dmg` sai assinado mas não notarizado.
