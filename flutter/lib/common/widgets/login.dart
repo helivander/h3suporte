@@ -696,6 +696,29 @@ class LoginWidgetUserPass extends StatelessWidget {
   }
 }
 
+// H3: as contas são criadas e recuperadas no portal do assinante da Central de Ativação.
+const _kH3PortalAssinante = 'https://keys.h3info.com/assinante';
+
+class _H3ContaCentralLinks extends StatelessWidget {
+  const _H3ContaCentralLinks();
+
+  Widget _link(String rotulo, String rota) => TextButton(
+        onPressed: () => launchUrl(Uri.parse('$_kH3PortalAssinante/$rota'),
+            mode: LaunchMode.externalApplication),
+        child: Text(translate(rotulo)),
+      );
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        children: [
+          _link('Create account', 'criar-conta'),
+          _link('Forgot password?', 'esqueci'),
+        ],
+      ).marginOnly(top: 8);
+}
+
 const kAuthReqTypeOidc = 'oidc/';
 
 Future<bool?>? _activeLoginDialog;
@@ -985,6 +1008,7 @@ Future<bool?> _openLoginDialog() async {
             onLogin: onLogin,
             userFocusNode: userFocusNode,
           ),
+          const _H3ContaCentralLinks(),
           thirdAuthWidget(),
         ],
       ),
