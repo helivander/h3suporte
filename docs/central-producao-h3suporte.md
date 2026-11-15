@@ -118,14 +118,13 @@ O produto **já nasce no deploy**: a migração `20261115120000_produto_h3suport
 
 ## 5. Credencial do servidor-api
 
-Admin → Produtos → H3 Suporte → Credenciais → **nova credencial de Licenciamento** (`sva_…`). Ela aparece uma vez.
-Coloque direto no servidor, em `/opt/h3suporte-api/.env`:
+**Automática desde o commit `733b5f8` da Central.** O `make deploy`/`make up` da Central garante a credencial `sva_` de
+licenciamento do produto `h3suporte` e a guarda em `H3SUPORTE_CREDENCIAL` no `.env` da Central (reaproveita a de
+`/opt/h3suporte-api/.env` na primeira vez; se não houver, cria outra direto no banco). Ninguém precisa copiar a credencial.
 
-```
-CENTRAL_CREDENCIAL=sva_...
-```
-
-Não mande a credencial por chat ou e-mail. Ela nunca vai para o app.
+Situação em 14/11/2026: a credencial "Servidor h3suporte-api" foi criada no painel e colocada em `/opt/h3suporte-api/.env`;
+o login pelo app já fala com a Central (e-mail inexistente responde "E-mail ou senha incorretos"). O próximo `make deploy`
+leva essa mesma credencial para o `.env` da Central.
 
 ## 6. E-mail (obrigatório antes de vender)
 
@@ -150,11 +149,15 @@ Contrato de `/api-servico/contas/*` igual; mudou o comportamento:
 
 ## 8. Publicar o servidor-api
 
-Do repositório do h3suporte (precisa de acesso SSH ao servidor e Docker lá):
+**Sobe junto com a Central** (`make up` e `make deploy`, ou só `make servicos`), pelo `ops/servicos.sh` do repositório da
+Central: constrói a imagem direto deste repositório no GitHub (`master`, pasta `servidor-api`; outra fonte em
+`H3SUPORTE_FONTE`), sobe o container `h3suporte-api` no projeto `central` (rede interna, volume `h3suporte-api_dados`) e
+remove o container do deploy separado antigo, se existir. Desligar: `H3SUPORTE=0` no `.env` da Central. Detalhes e mudança
+de servidor: `docs/operacao.md` da Central, seção "Serviços de produtos no mesmo servidor".
 
-```bash
-servidor-api/publicar.sh usuario@servidor
-```
+Para publicar uma versão nova do servidor-api: commit e push no `master` deste repositório e `make deploy` (ou
+`make servicos`) no servidor da Central. O `servidor-api/publicar.sh` (cópia por SSH, projeto separado) fica só como
+alternativa; não use os dois juntos.
 
 ## 9. Verificação final
 
