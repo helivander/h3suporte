@@ -99,6 +99,15 @@ const usuario = (conta) => ({
   is_admin: false,
 });
 
+/**
+ * Usuário logado neste app: inclui as funções liberadas pelo plano da assinatura (Central). `null` = o produto não
+ * separa por função (tudo liberado); lista = só essas. O app guarda em `user_info` e bloqueia o resto.
+ */
+const usuarioComPlano = (conta, assinatura) => ({
+  ...usuario(conta),
+  funcoes: Array.isArray(assinatura?.funcoes) ? assinatura.funcoes : null,
+});
+
 function paginar(url, lista) {
   const atual = Math.max(1, Number(url.searchParams.get("current")) || 1);
   const tamanho = Math.min(100, Math.max(1, Number(url.searchParams.get("pageSize")) || 100));
@@ -216,7 +225,7 @@ export function criarApp({ config, banco, central, versao = async () => null, re
       }
       banco.salvarSessao(hash(r.sessao.token), r, relogio());
       vincular(corpo, r);
-      return enviar(res, 200, { type: "access_token", access_token: r.sessao.token, user: usuario(r.conta) });
+      return enviar(res, 200, { type: "access_token", access_token: r.sessao.token, user: usuarioComPlano(r.conta, r.assinatura) });
     } catch (e) {
       if (e.codigo === "TOTP_NECESSARIO" && typeof e.corpo?.desafio === "string") {
         return enviar(res, 200, {
@@ -272,7 +281,7 @@ export function criarApp({ config, banco, central, versao = async () => null, re
         const corpo = await lerJson(req);
         const sessao = await autenticar(req);
         vincular(corpo, sessao);
-        return enviar(res, 200, usuario(sessao.conta));
+        return enviar(res, 200, usuarioComPlano(sessao.conta, sessao.assinatura));
       }
       case "POST /api/logout": {
         const corpo = await lerJson(req);

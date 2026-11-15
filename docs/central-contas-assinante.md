@@ -316,3 +316,25 @@ auditoria ou webhook. O `rotulo` do dispositivo é o nome do computador: tratar 
    definir `limiteInstalacoes` e, em cada plano, `limiteContas`.
 2. Criar a credencial de **licenciamento** `sva_…` e colocá-la no `.env` do servidor-api do h3suporte
    (`CENTRAL_CREDENCIAL`). Ela nunca vai para o app.
+
+## Funções por plano (16/11/2026)
+
+A Central devolve `assinatura.funcoes` no login e na validação. O servidor-api repassa como `user.funcoes` no
+`/api/login` e no `/api/currentUser`; o app guarda em `user_info`.
+
+| Código | Conexão bloqueada sem a função |
+| --- | --- |
+| `transferencia_arquivos` | Transferência de arquivos |
+| `terminal` | Terminal remoto |
+| `tunel` | Túnel TCP e RDP |
+| `camera` | Câmera remota |
+
+Regras (`src/plano.rs` no núcleo e `bloqueioDoPlano` em `flutter/lib/common.dart`, mesma lógica):
+
+- sem login: as quatro bloqueadas, com o aviso para entrar com a conta;
+- logado com `funcoes` ausente ou `null` (produto sem catálogo ou servidor antigo): tudo liberado;
+- logado com lista: só os códigos da lista.
+
+O controle remoto comum não depende do plano. A interface avisa e não abre a janela; o núcleo recusa a sessão também,
+para outros caminhos de conexão. Copiar e colar arquivos pela área de transferência dentro do controle remoto ainda
+não é bloqueado pelo plano.

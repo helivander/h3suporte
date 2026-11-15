@@ -1333,6 +1333,10 @@ pub fn session_add(
     } else {
         ConnType::DEFAULT_CONN
     };
+    // Funções que dependem do plano da assinatura (transferência, terminal, túnel, câmera).
+    if let Some(motivo) = crate::plano::bloqueio(conn_type) {
+        bail!(motivo);
+    }
 
     // to-do: check the same id session.
     if let Some(session) = sessions::get_session_by_session_id(&session_id) {

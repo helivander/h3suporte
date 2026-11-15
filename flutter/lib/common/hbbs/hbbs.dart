@@ -33,6 +33,11 @@ class UserPayload {
   UserStatus status;
   bool isAdmin = false;
 
+  /// Funções do aplicativo liberadas pelo plano (Central). Guardadas em
+  /// `user_info`: ausente/null = tudo liberado; lista = só essas.
+  bool temFuncoes = false;
+  List<String>? funcoes;
+
   UserPayload.fromJson(Map<String, dynamic> json)
       : name = json['name'] ?? '',
         displayName = json['display_name'] ?? '',
@@ -45,7 +50,9 @@ class UserPayload {
             : json['status'] == -1
                 ? UserStatus.kUnverified
                 : UserStatus.kNormal,
-        isAdmin = json['is_admin'] == true;
+        isAdmin = json['is_admin'] == true,
+        temFuncoes = json.containsKey('funcoes'),
+        funcoes = (json['funcoes'] as List?)?.map((e) => e.toString()).toList();
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> map = {
@@ -58,6 +65,7 @@ class UserPayload {
               ? -1
               : 1,
     };
+    if (temFuncoes) map['funcoes'] = funcoes;
     return map;
   }
 

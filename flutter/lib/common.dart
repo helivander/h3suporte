@@ -2599,6 +2599,44 @@ connectMainDesktop(String id,
 /// If [isViewCamera], starts a session only for view camera.
 /// If [isTcpTunneling], starts a session only for tcp tunneling.
 /// If [isRDP], starts a session only for rdp.
+/// Motivo para não abrir uma conexão que depende do plano da assinatura
+/// (mesmas regras de `src/plano.rs`), ou null se o plano libera.
+String? bloqueioDoPlano(
+    {bool isFileTransfer = false,
+    bool isViewCamera = false,
+    bool isTerminal = false,
+    bool isTunel = false}) {
+  final String funcao;
+  final String nome;
+  if (isFileTransfer) {
+    funcao = 'transferencia_arquivos';
+    nome = 'Transferência de arquivos';
+  } else if (isViewCamera) {
+    funcao = 'camera';
+    nome = 'Câmera remota';
+  } else if (isTerminal) {
+    funcao = 'terminal';
+    nome = 'Terminal remoto';
+  } else if (isTunel) {
+    funcao = 'tunel';
+    nome = 'Túnel (TCP/RDP)';
+  } else {
+    return null;
+  }
+  final bruto = bind.mainGetLocalOption(key: 'user_info');
+  if (bruto.trim().isEmpty) {
+    return '$nome: entre com sua conta H3 Suporte para usar.';
+  }
+  try {
+    final info = jsonDecode(bruto);
+    final funcoes = info is Map ? info['funcoes'] : null;
+    if (funcoes == null || (funcoes is List && funcoes.contains(funcao))) {
+      return null;
+    }
+  } catch (_) {}
+  return '$nome: não incluída no plano da sua assinatura.';
+}
+
 connect(BuildContext context, String id,
     {bool isFileTransfer = false,
     bool isViewCamera = false,
@@ -2611,6 +2649,15 @@ connect(BuildContext context, String id,
     bool? isSharedPassword,
     String loginMethod = ''}) async {
   if (id == '') return;
+  final bloqueio = bloqueioDoPlano(
+      isFileTransfer: isFileTransfer,
+      isViewCamera: isViewCamera,
+      isTerminal: isTerminal,
+      isTunel: isTcpTunneling || isRDP);
+  if (bloqueio != null) {
+    showToast(bloqueio, timeout: const Duration(seconds: 5));
+    return;
+  }
   if (!isDesktop || desktopType == DesktopType.main) {
     try {
       if (Get.isRegistered<IDTextEditingController>()) {

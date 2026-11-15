@@ -132,6 +132,7 @@ test("login com e-mail e senha devolve o token no formato do cliente e libera cu
   assert.match(r.json.access_token, /^cs_c1_/);
   assert.equal(r.json.user.name, "ana@empresa.com");
   assert.equal(r.json.user.display_name, "Ana");
+  assert.equal(r.json.user.funcoes, null, "produto sem funções por plano: tudo liberado");
   assert.equal(estado.credencialRecebida, "Bearer sva_teste");
   const token = r.json.access_token;
 
@@ -147,6 +148,19 @@ test("login com e-mail e senha devolve o token no formato do cliente e libera cu
 
   const pessoal = await chamar("POST", "/api/ab/personal", undefined, token);
   assert.equal(pessoal.status, 404, "404 põe o cliente no modo de catálogo legado");
+});
+
+test("login e currentUser levam ao app as funções liberadas pelo plano", async () => {
+  estado.assinatura.funcoes = ["terminal"];
+  try {
+    const r = await loginAna();
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json.user.funcoes, ["terminal"]);
+    const eu = await chamar("POST", "/api/currentUser", {}, r.json.access_token);
+    assert.deepEqual(eu.json.funcoes, ["terminal"]);
+  } finally {
+    delete estado.assinatura.funcoes;
+  }
 });
 
 test("senha errada e chamadas sem token são recusadas com mensagem em português", async () => {
