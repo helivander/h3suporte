@@ -76,6 +76,9 @@ anterior estável (quem já atualizou fica na nova; corrija lançando outra vers
   (renove antes no developer.apple.com com um CSR novo e atualize os segredos).
 - Chave privada, `.p12` e senha: `~/.config/h3suporte/apple/` no Mac do responsável (fora do git; guarde cópia no
   cofre de senhas). Também instalado no keychain de login.
+- **Developer ID Installer** (assina o `.pkg`), criado em 15/11/2026, também **vence em 15/12/2027**; chave e
+  `installer-id.p12` na mesma pasta, com a mesma senha. Segredo `MACOS_INSTALLER_P12_BASE64`; o build assina o
+  `.pkg`, notariza e grampeia (staple) quando há a chave de notarização.
 - Segredos do GitHub: `MACOS_P12_BASE64`, `MACOS_P12_PASSWORD`, `MACOS_CODESIGN_IDENTITY` (com as aspas).
   O build assina o app com hardened runtime (`.github/scripts/sign-macos-app.sh`).
 - Notarização: segredo `MACOS_NOTARIZE_JSON` (chave de API da App Store Connect "H3 Suporte notarizacao", ID
