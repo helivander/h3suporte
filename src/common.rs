@@ -1058,14 +1058,16 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
-    if is_custom_client() {
-        return;
-    }
     let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
     if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
         std::thread::spawn(move || allow_err!(do_check_software_update()));
     }
 }
+
+// H3: as atualizações vêm dos releases deste repositório, anunciadas pelo servidor-api da H3.
+pub(crate) const H3_UPDATE_REPO_OWNER: &str = "helivander";
+pub(crate) const H3_UPDATE_REPO_NAME: &str = "h3suporte";
+const H3_UPDATE_CHECK_URL: &str = "https://keys.h3info.com/h3suporte/api/versao";
 
 pub(crate) fn release_id_from_update_url(update_url: &str) -> ResultType<String> {
     let url = url::Url::parse(update_url)?;
@@ -1097,10 +1099,12 @@ pub(crate) fn release_id_from_update_url(update_url: &str) -> ResultType<String>
     };
     let segments = segments.collect::<Vec<_>>();
     let release_id = match segments.as_slice() {
-        ["rustdesk", "rustdesk", "releases", "tag", release_id] => *release_id,
-        ["rustdesk", "rustdesk", "releases", "tag", release_id, ""] => *release_id,
+        [H3_UPDATE_REPO_OWNER, H3_UPDATE_REPO_NAME, "releases", "tag", release_id] => *release_id,
+        [H3_UPDATE_REPO_OWNER, H3_UPDATE_REPO_NAME, "releases", "tag", release_id, ""] => {
+            *release_id
+        }
         _ => bail!(
-            "Update URL is not a RustDesk release tag URL: {}",
+            "Update URL is not an H3 Suporte release tag URL: {}",
             update_url
         ),
     };
@@ -1174,11 +1178,12 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 }
 
 // No need to check `danger_accept_invalid_cert` for now.
-// Because the url is always `https://api.rustdesk.com/version/latest`.
+// Because the url is always `H3_UPDATE_CHECK_URL`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
-    let (request, url) =
+    let (request, _) =
         hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
+    let url = H3_UPDATE_CHECK_URL.to_owned();
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);
@@ -3133,8 +3138,8 @@ mod tests {
     }
 
     #[test]
-    fn parses_stable_rustdesk_release_url() {
-        let update_url = "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6";
+    fn parses_stable_h3_release_url() {
+        let update_url = "https://github.com/helivander/h3suporte/releases/tag/v1.4.6";
 
         assert_eq!(release_id_from_update_url(update_url).unwrap(), "v1.4.6");
         assert_eq!(display_version_from_release_id("v1.4.6").unwrap(), "1.4.6");
@@ -3147,19 +3152,20 @@ mod tests {
     #[test]
     fn rejects_untrusted_release_urls_and_unstable_versions() {
         for update_url in [
-            "http://github.com/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://github.com:8443/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://github.com:443/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://user@github.com/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://example.com/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://github.com/other/rustdesk/releases/tag/v1.4.6",
-            "https://github.com/rustdesk/other/releases/tag/v1.4.6",
-            "https://github.com/rustdesk/rustdesk/releases/download/v1.4.6/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6?x=1",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6#asset",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6/extra",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1%2F4%2F6",
-            "https://github.com/rustdesk/rustdesk/releases/tag/%2e%2e",
+            "http://github.com/helivander/h3suporte/releases/tag/v1.4.6",
+            "https://github.com:8443/helivander/h3suporte/releases/tag/v1.4.6",
+            "https://github.com:443/helivander/h3suporte/releases/tag/v1.4.6",
+            "https://user@github.com/helivander/h3suporte/releases/tag/v1.4.6",
+            "https://example.com/helivander/h3suporte/releases/tag/v1.4.6",
+            "https://github.com/other/h3suporte/releases/tag/v1.4.6",
+            "https://github.com/helivander/other/releases/tag/v1.4.6",
+            "https://github.com/helivander/h3suporte/releases/download/v1.4.6/rustdesk.exe",
+            "https://github.com/helivander/h3suporte/releases/tag/v1.4.6?x=1",
+            "https://github.com/helivander/h3suporte/releases/tag/v1.4.6#asset",
+            "https://github.com/helivander/h3suporte/releases/tag/v1.4.6/extra",
+            "https://github.com/helivander/h3suporte/releases/tag/v1%2F4%2F6",
+            "https://github.com/helivander/h3suporte/releases/tag/%2e%2e",
+            "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6",
         ] {
             assert!(release_id_from_update_url(update_url).is_err());
         }

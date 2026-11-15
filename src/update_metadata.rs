@@ -30,9 +30,10 @@ const SIGNATURE_ALGORITHM: &str = "ed25519";
 const TRUSTED_UPDATE_KEYS: &[TrustedUpdateKey] = &[TrustedUpdateKey {
     key_id: "2026-ed25519-main",
     algorithm: SIGNATURE_ALGORITHM,
+    // H3: chave pública da H3 (a privada fica só no segredo H3_UPDATE_ED25519_SEED do GitHub).
     public_key: [
-        52, 214, 32, 65, 191, 134, 137, 75, 157, 74, 67, 221, 150, 161, 118, 215, 218, 35, 236,
-        156, 127, 120, 133, 156, 197, 141, 37, 22, 47, 106, 181, 177,
+        251, 103, 233, 239, 162, 168, 209, 240, 191, 25, 138, 23, 239, 183, 86, 47, 27, 80, 255,
+        184, 199, 81, 92, 135, 19, 30, 202, 7, 218, 97, 100, 67,
     ],
 }];
 

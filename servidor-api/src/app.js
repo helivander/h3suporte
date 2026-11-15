@@ -112,7 +112,7 @@ const texto = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0,
  * Contas, senhas e assinaturas ficam na Central; aqui ficam só o catálogo de endereços,
  * os dispositivos e a auditoria.
  */
-export function criarApp({ config, banco, central, relogio = Date.now }) {
+export function criarApp({ config, banco, central, versao = async () => null, relogio = Date.now }) {
   const limiteLogin = criarLimite(10, 60_000);
   const limiteAuditoria = criarLimite(120, 60_000);
   const validando = new Map();
@@ -259,6 +259,13 @@ export function criarApp({ config, banco, central, relogio = Date.now }) {
         return enviar(res, 200, { ok: true });
       case "GET /api/login-options":
         return enviar(res, 200, []);
+      // Atualizador do app: responde {url} com a página do último release assinado.
+      case "GET /api/versao":
+      case "POST /api/versao": {
+        if (req.method === "POST") await lerCorpo(req, LIMITE_CORPO);
+        const url = await versao();
+        return url ? enviar(res, 200, { url }) : erro(res, 404, "Nenhuma versão publicada.");
+      }
       case "POST /api/login":
         return login(req, res);
       case "POST /api/currentUser": {

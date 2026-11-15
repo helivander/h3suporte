@@ -22,5 +22,8 @@ export function lerConfig(env = process.env) {
     revalidarMs: numero(env.REVALIDAR_SEG, 300) * 1000,
     toleranciaMs: numero(env.TOLERANCIA_HORAS, 72) * 3600_000,
     confiarProxy: env.CONFIAR_PROXY === "1",
+    // Releases do app para o atualizador; o token é opcional (só aumenta o limite de consultas ao GitHub).
+    repoGithub: (env.GITHUB_REPO || "helivander/h3suporte").trim(),
+    tokenGithub: (env.GITHUB_TOKEN ?? "").trim(),
   };
 }
