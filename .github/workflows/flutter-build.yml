@@ -1241,7 +1241,8 @@ jobs:
           mkdir -p pkgroot && ditto ./flutter/build/macos/Build/Products/Release/H3Suporte.app pkgroot/H3Suporte.app
           codesign --verify --deep --strict pkgroot/H3Suporte.app
           pkgbuild --analyze --root pkgroot pkg-components.plist
-          /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" pkg-components.plist
+          /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" pkg-components.plist ||
+            /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" pkg-components.plist
           pkgbuild --root pkgroot --component-plist pkg-components.plist --install-location /Applications \
             --identifier br.com.h3info.h3suporte --version "${{ env.VERSION }}" \
             "${{ env.PKG_NAME }}-${{ env.VERSION }}-macos-${nome}.pkg"
