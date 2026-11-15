@@ -18,8 +18,8 @@ App ──► baixa rustdesk-update.json e .sig do release, confere a assinatura
   serviço quando "Atualização automática" estiver ligada (Configurações → Geral).
 - **Windows:** baixa o `.exe` da arquitetura e instala sem perguntar, quando não há conexão remota em andamento
   (atualização automática) ou pelo botão "Atualizar" do aviso.
-- **Mac:** baixa o `.dmg` e instala pelo serviço (precisa do serviço instalado). Sem o app assinado com Developer ID
-  da Apple, a primeira instalação ainda pede "Abrir mesmo assim".
+- **Mac:** baixa o `.dmg` e instala pelo serviço (precisa do serviço instalado). Desde o build `v1.5.3-10` o app,
+  o `.dmg` e o `.pkg` saem assinados com Developer ID e notarizados: abrem sem aviso do Gatekeeper.
 - **Linux e Android:** o aviso abre a página do release para baixar.
 - **Builds de teste** (`v1.5.3-1`, `v1.5.3-2`…) são pré-release e nunca são oferecidos aos clientes.
 
