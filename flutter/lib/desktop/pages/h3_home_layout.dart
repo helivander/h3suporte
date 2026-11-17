@@ -9,6 +9,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
+import 'package:flutter_hbb/desktop/pages/h3_meus_dispositivos.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
@@ -33,7 +34,7 @@ class H3Cores {
 }
 
 /// Tela inicial do app de acesso (não usada no build `-cliente`, que é
-/// incoming-only): menu lateral com Visão geral e Relatórios.
+/// incoming-only): menu lateral com Visão geral, Meus dispositivos e Relatórios.
 class H3HomeLayout extends StatefulWidget {
   /// ID, senha e aviso de senha predefinida deste computador.
   final Widget deviceBoard;
@@ -118,7 +119,13 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                 Expanded(
                   child: Obx(() => IndexedStack(
                         index: _aba.value,
-                        children: [_visaoGeral(), _relatorios()],
+                        children: [
+                          _visaoGeral(),
+                          _aba.value == 1
+                              ? const H3MeusDispositivosPage()
+                              : const SizedBox.shrink(),
+                          _relatorios(),
+                        ],
                       )),
                 ),
               ],
@@ -191,8 +198,12 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           item(Icons.home_outlined, 'Visão geral', () => _aba.value = 0,
               aba: 0),
           const SizedBox(height: 2),
-          item(Icons.insights_outlined, 'Relatórios', () => _aba.value = 1,
+          item(Icons.devices_outlined, 'Meus dispositivos',
+              () => _aba.value = 1,
               aba: 1),
+          const SizedBox(height: 2),
+          item(Icons.insights_outlined, 'Relatórios', () => _aba.value = 2,
+              aba: 2),
           const SizedBox(height: 2),
           item(Icons.shield_outlined, 'Segurança',
               () => DesktopSettingPage.switch2page(SettingsTabKey.safety)),
