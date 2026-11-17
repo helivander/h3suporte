@@ -35,6 +35,16 @@ export function abrirBanco(caminho) {
       visto_em INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS dispositivo_assinatura ON dispositivo (assinatura_id);
+    CREATE TABLE IF NOT EXISTS dispositivo_conta (
+      conta_id TEXT NOT NULL,
+      id TEXT NOT NULL,
+      nome TEXT,
+      so TEXT,
+      senha TEXT NOT NULL,
+      criado_em INTEGER NOT NULL,
+      atualizado_em INTEGER NOT NULL,
+      PRIMARY KEY (conta_id, id)
+    );
     CREATE TABLE IF NOT EXISTS auditoria (
       id INTEGER PRIMARY KEY,
       tipo TEXT NOT NULL,
@@ -68,6 +78,16 @@ export function abrirBanco(caminho) {
     visto: q("UPDATE dispositivo SET visto_em = ? WHERE id = ?"),
     daAssinatura: q(`SELECT id, nome, so, conta_id, visto_em FROM dispositivo
       WHERE assinatura_id = ? ORDER BY nome, id`),
+    contaSalvar: q(`INSERT INTO dispositivo_conta (conta_id, id, nome, so, senha, criado_em, atualizado_em)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (conta_id, id) DO UPDATE SET nome = coalesce(excluded.nome, dispositivo_conta.nome),
+        so = coalesce(excluded.so, dispositivo_conta.so), senha = excluded.senha, atualizado_em = excluded.atualizado_em`),
+    contaLista: q(`SELECT c.id, c.nome, c.so, c.atualizado_em, v.visto_em FROM dispositivo_conta c
+      LEFT JOIN dispositivo v ON v.id = c.id WHERE c.conta_id = ? ORDER BY lower(coalesce(c.nome, c.id)), c.id`),
+    contaSenha: q("SELECT senha FROM dispositivo_conta WHERE conta_id = ? AND id = ?"),
+    contaTem: q("SELECT 1 AS ok FROM dispositivo_conta WHERE conta_id = ? AND id = ?"),
+    contaTotal: q("SELECT count(*) AS n FROM dispositivo_conta WHERE conta_id = ?"),
+    contaRemover: q("DELETE FROM dispositivo_conta WHERE conta_id = ? AND id = ?"),
     auditoria: q(`INSERT OR IGNORE INTO auditoria (tipo, dispositivo, nonce, dados, criado_em)
       VALUES (?, ?, ?, ?, ?)`),
     limparAuditoria: q("DELETE FROM auditoria WHERE criado_em < ?"),
@@ -93,6 +113,13 @@ export function abrirBanco(caminho) {
       st.sysinfo.run(id, uuid ?? null, nome ?? null, so ?? null, versao ?? null, agora),
     marcarVisto: (id, agora) => st.visto.run(agora, id),
     dispositivosDaAssinatura: (assinaturaId) => st.daAssinatura.all(assinaturaId),
+    salvarDispositivoConta: ({ contaId, id, nome, so, senha }, agora) =>
+      st.contaSalvar.run(contaId, id, nome ?? null, so ?? null, senha, agora, agora),
+    dispositivosDaConta: (contaId) => st.contaLista.all(contaId),
+    senhaDoDispositivoConta: (contaId, id) => st.contaSenha.get(contaId, id)?.senha ?? null,
+    temDispositivoConta: (contaId, id) => st.contaTem.get(contaId, id) !== undefined,
+    totalDispositivosConta: (contaId) => st.contaTotal.get(contaId).n,
+    removerDispositivoConta: (contaId, id) => Number(st.contaRemover.run(contaId, id).changes) > 0,
     registrarAuditoria: ({ tipo, dispositivo, nonce, dados }, agora) =>
       st.auditoria.run(tipo, dispositivo ?? null, nonce ?? null, dados, agora),
     limpar(agora) {

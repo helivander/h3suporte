@@ -78,7 +78,7 @@ const central = createServer(async (req, res) => {
 let agora = 1_000_000;
 let api;
 let base;
-const config = { revalidarMs: 300_000, toleranciaMs: 72 * 3600_000, confiarProxy: false };
+const config = { revalidarMs: 300_000, toleranciaMs: 72 * 3600_000, confiarProxy: false, chaveDispositivos: Buffer.alloc(32, 7) };
 
 before(async () => {
   await new Promise((r) => central.listen(0, "127.0.0.1", r));
@@ -328,4 +328,74 @@ test("sem credencial da Central o login responde indisponível e o resto funcion
   const hb = await fetch(`${url}/api/heartbeat`, { method: "POST", body: JSON.stringify({ id: "1" }) });
   assert.equal(hb.status, 200);
   semCredencial.close();
+});
+
+test("meus dispositivos: registra ID e senha na conta, lista sem a senha e entrega a senha de um dispositivo por vez", async () => {
+  const ana = (await loginAna()).json.access_token;
+
+  assert.equal((await chamar("GET", "/api/dispositivos-conta")).status, 401, "sem login não lista");
+  const salvo = await chamar("POST", "/api/dispositivos-conta", { id: "555111222", nome: "PC-FINANCEIRO", so: "windows", senha: "Segredo123" }, ana);
+  assert.equal(salvo.status, 200);
+
+  const lista = await chamar("GET", "/api/dispositivos-conta", undefined, ana);
+  assert.equal(lista.json.total, 1);
+  assert.deepEqual(
+    { id: lista.json.data[0].id, nome: lista.json.data[0].nome, so: lista.json.data[0].so, online: lista.json.data[0].online },
+    { id: "555111222", nome: "PC-FINANCEIRO", so: "windows", online: false },
+  );
+  assert.ok(!lista.texto.includes("Segredo123"), "a lista nunca traz a senha");
+
+  await chamar("POST", "/api/sysinfo", { id: "555111222", hostname: "PC-FINANCEIRO" });
+  await chamar("POST", "/api/heartbeat", { id: "555111222" });
+  assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, ana)).json.data[0].online, true);
+
+  assert.equal((await chamar("POST", "/api/dispositivos-conta/senha", { id: "555111222" }, ana)).json.senha, "Segredo123");
+  assert.equal((await chamar("POST", "/api/dispositivos-conta/senha", { id: "000" }, ana)).status, 404);
+
+  // Registrar de novo troca a senha e mantém o nome.
+  await chamar("POST", "/api/dispositivos-conta", { id: "555111222", senha: "Outra456" }, ana);
+  const de = await chamar("POST", "/api/dispositivos-conta/senha", { id: "555111222" }, ana);
+  assert.equal(de.json.senha, "Outra456");
+  assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, ana)).json.data[0].nome, "PC-FINANCEIRO");
+
+  assert.equal((await chamar("POST", "/api/dispositivos-conta/remover", { id: "555111222" }, ana)).status, 200);
+  assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, ana)).json.total, 0);
+});
+
+test("meus dispositivos: cada conta só vê e lê os seus, e a senha fica cifrada no banco", async () => {
+  const banco = abrirBanco(":memory:");
+  const chave = Buffer.alloc(32, 9);
+  const cliente = criarCentral({ url: `http://127.0.0.1:${central.address().port}/api`, credencial: "sva_teste", timeoutMs: 2000 });
+  const outra = createServer(criarApp({ config: { ...config, chaveDispositivos: chave }, banco, central: cliente, relogio: () => agora }));
+  await new Promise((r) => outra.listen(0, "127.0.0.1", r));
+  const url = `http://127.0.0.1:${outra.address().port}`;
+  const post = async (caminho, corpo, token) =>
+    (await fetch(url + caminho, { method: "POST", headers: { authorization: `Bearer ${token}` }, body: JSON.stringify(corpo) }));
+  const entrar = async (email, senha) =>
+    (await (await fetch(url + "/api/login", { method: "POST", body: JSON.stringify({ username: email, password: senha, uuid: email }) })).json()).access_token;
+  const ana = await entrar("ana@empresa.com", "senha-da-ana-123");
+  estado.contas[1].totp = undefined;
+  const bia = await entrar("bia@empresa.com", "senha-da-bia-123");
+
+  assert.equal((await post("/api/dispositivos-conta", { id: "777", senha: "SoDaAna1" }, ana)).status, 200);
+  assert.equal((await post("/api/dispositivos-conta/senha", { id: "777" }, bia)).status, 404, "outra conta não lê");
+  assert.equal((await post("/api/dispositivos-conta/remover", { id: "777" }, bia)).status, 404, "outra conta não remove");
+  const guardada = banco.senhaDoDispositivoConta("c1", "777");
+  assert.ok(guardada.startsWith("v1:") && !guardada.includes("SoDaAna1"));
+  // Linha copiada para outro dispositivo/conta não decifra (o contexto entra na autenticação).
+  banco.salvarDispositivoConta({ contaId: "c1", id: "888", senha: guardada }, agora);
+  assert.equal((await post("/api/dispositivos-conta/senha", { id: "888" }, ana)).status, 500);
+  outra.close();
+});
+
+test("meus dispositivos: sem a chave de cifra o recurso responde indisponível", async () => {
+  const banco = abrirBanco(":memory:");
+  const cliente = criarCentral({ url: `http://127.0.0.1:${central.address().port}/api`, credencial: "sva_teste", timeoutMs: 2000 });
+  const semChave = createServer(criarApp({ config: { ...config, chaveDispositivos: null }, banco, central: cliente, relogio: () => agora }));
+  await new Promise((r) => semChave.listen(0, "127.0.0.1", r));
+  const url = `http://127.0.0.1:${semChave.address().port}`;
+  const login = await (await fetch(url + "/api/login", { method: "POST", body: JSON.stringify({ username: "ana@empresa.com", password: "senha-da-ana-123", uuid: "u" }) })).json();
+  const r = await fetch(url + "/api/dispositivos-conta", { headers: { authorization: `Bearer ${login.access_token}` } });
+  assert.equal(r.status, 503);
+  semChave.close();
 });

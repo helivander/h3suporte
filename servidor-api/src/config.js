@@ -3,6 +3,15 @@ const numero = (valor, padrao) => {
   return valor !== undefined && valor !== "" && Number.isFinite(n) && n >= 0 ? n : padrao;
 };
 
+/** Chave AES-256 das senhas dos dispositivos: 64 caracteres hex ou 32 bytes em base64. Vazia = recurso desligado. */
+function lerChave(valor) {
+  const v = (valor ?? "").trim();
+  if (!v) return null;
+  const chave = /^[0-9a-fA-F]{64}$/.test(v) ? Buffer.from(v, "hex") : Buffer.from(v, "base64");
+  if (chave.length !== 32) throw new Error("CHAVE_DISPOSITIVOS precisa ter 32 bytes (64 caracteres hex ou base64).");
+  return chave;
+}
+
 export function lerConfig(env = process.env) {
   const central = (env.CENTRAL_URL ?? "").trim().replace(/\/+$/, "");
   const credencial = (env.CENTRAL_CREDENCIAL ?? "").trim();
@@ -22,6 +31,8 @@ export function lerConfig(env = process.env) {
     revalidarMs: numero(env.REVALIDAR_SEG, 300) * 1000,
     toleranciaMs: numero(env.TOLERANCIA_HORAS, 72) * 3600_000,
     confiarProxy: env.CONFIAR_PROXY === "1",
+    // Cifra as senhas guardadas em "Meus dispositivos". Sem a chave, essas rotas respondem "indisponível".
+    chaveDispositivos: lerChave(env.CHAVE_DISPOSITIVOS),
     // Releases do app para o atualizador; o token é opcional (só aumenta o limite de consultas ao GitHub).
     repoGithub: (env.GITHUB_REPO || "helivander/h3suporte").trim(),
     tokenGithub: (env.GITHUB_TOKEN ?? "").trim(),

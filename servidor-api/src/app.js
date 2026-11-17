@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { ErroCentral } from "./central.js";
 
 const KB = 1024;
@@ -8,6 +8,9 @@ const EQUIPE_CACHE_MS = 60_000;
 const VISTO_INTERVALO_MS = 60_000;
 // O app renova o acesso aberto a cada 60 s; sem renovação (app fechado à força) a vaga volta sozinha.
 const ACESSO_VALIDADE_MS = 150_000;
+const MAX_DISPOSITIVOS_CONTA = 200;
+// O app manda heartbeat a cada poucos segundos, mas o servidor só grava o "visto" a cada VISTO_INTERVALO_MS.
+const ONLINE_MS = 3 * 60_000;
 
 const MENSAGENS = {
   CREDENCIAIS_INVALIDAS: "E-mail ou senha incorretos.",
@@ -116,6 +119,24 @@ function paginar(url, lista) {
   return { total: lista.length, data: lista.slice((atual - 1) * tamanho, atual * tamanho) };
 }
 
+/** AES-256-GCM; o par conta+dispositivo entra como dado autenticado, então uma linha não vale em outra. */
+function cifrar(chave, senha, contexto) {
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", chave, iv);
+  c.setAAD(Buffer.from(contexto));
+  const dados = Buffer.concat([c.update(senha, "utf8"), c.final()]);
+  return ["v1", iv, c.getAuthTag(), dados].map((p) => (typeof p === "string" ? p : p.toString("base64"))).join(":");
+}
+
+function decifrar(chave, guardado, contexto) {
+  const [versao, iv, tag, dados] = guardado.split(":");
+  if (versao !== "v1" || !iv || !tag || !dados) throw new Error("formato de senha desconhecido");
+  const d = createDecipheriv("aes-256-gcm", chave, Buffer.from(iv, "base64"));
+  d.setAAD(Buffer.from(contexto));
+  d.setAuthTag(Buffer.from(tag, "base64"));
+  return Buffer.concat([d.update(Buffer.from(dados, "base64")), d.final()]).toString("utf8");
+}
+
 const texto = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
 
 /**
@@ -126,6 +147,7 @@ const texto = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0,
 export function criarApp({ config, banco, central, versao = async () => null, relogio = Date.now }) {
   const limiteLogin = criarLimite(10, 60_000);
   const limiteAuditoria = criarLimite(120, 60_000);
+  const limiteSenhas = criarLimite(30, 60_000);
   const validando = new Map();
   const equipes = new Map();
   const vistos = new Map();
@@ -292,6 +314,62 @@ export function criarApp({ config, banco, central, versao = async () => null, re
     return enviar(res, 200, { limite, em_uso: emUso.add(alvo).size });
   }
 
+  /**
+   * "Meus dispositivos": ID e senha de acesso dos computadores da conta, para abrir de qualquer app logado nela.
+   * A senha só sai pela rota própria (um dispositivo por vez) e fica cifrada no banco.
+   */
+  async function dispositivosDaConta(req, res, rota) {
+    const url = new URL(req.url ?? "/", "http://local");
+    const corpo = req.method === "POST" ? await lerJson(req) : {};
+    const sessao = await autenticar(req);
+    if (!config.chaveDispositivos) {
+      return erro(res, 503, "Os dispositivos da conta não estão ativados neste servidor. Avise o suporte da H3.");
+    }
+    const contaId = sessao.conta.id;
+    const agora = relogio();
+    if (rota === "GET /api/dispositivos-conta") {
+      const lista = banco.dispositivosDaConta(contaId).map((d) => ({
+        id: d.id,
+        nome: d.nome ?? "",
+        so: d.so ?? "",
+        online: d.visto_em != null && agora - d.visto_em < ONLINE_MS,
+        atualizado_em: d.atualizado_em,
+      }));
+      return enviar(res, 200, { total: lista.length, data: paginar(url, lista).data });
+    }
+    const id = texto(corpo.id, 64);
+    if (!id) return erro(res, 400, "Dispositivo sem identificação.");
+    const contexto = `${contaId}
+${id}`;
+    if (rota === "POST /api/dispositivos-conta") {
+      const senha = typeof corpo.senha === "string" ? corpo.senha : "";
+      if (!senha || senha.length > 128) return erro(res, 400, "Senha inválida.");
+      if (!banco.temDispositivoConta(contaId, id) && banco.totalDispositivosConta(contaId) >= MAX_DISPOSITIVOS_CONTA) {
+        return erro(res, 409, `Cada conta guarda até ${MAX_DISPOSITIVOS_CONTA} dispositivos. Remova algum para registrar outro.`);
+      }
+      banco.salvarDispositivoConta(
+        { contaId, id, nome: texto(corpo.nome, 120), so: texto(corpo.so, 120), senha: cifrar(config.chaveDispositivos, senha, contexto) },
+        agora,
+      );
+      return enviar(res, 200, {});
+    }
+    if (rota === "POST /api/dispositivos-conta/senha") {
+      if (!limiteSenhas.consumir(contaId, agora)) return erro(res, 429, MENSAGENS.MUITAS_TENTATIVAS);
+      const guardado = banco.senhaDoDispositivoConta(contaId, id);
+      if (!guardado) return erro(res, 404, "Dispositivo não registrado nesta conta.");
+      let senha;
+      try {
+        senha = decifrar(config.chaveDispositivos, guardado, contexto);
+      } catch {
+        return erro(res, 500, "Não foi possível ler a senha guardada. Registre o dispositivo de novo.");
+      }
+      banco.registrarAuditoria({ tipo: "senha_dispositivo", dispositivo: id, dados: JSON.stringify({ conta: contaId }) }, agora);
+      return enviar(res, 200, { senha });
+    }
+    // POST /api/dispositivos-conta/remover
+    return banco.removerDispositivoConta(contaId, id) ? enviar(res, 200, {}) : erro(res, 404, "Dispositivo não registrado nesta conta.");
+  }
+
   async function equipe(sessao) {
     const id = sessao.assinatura.id;
     const cache = equipes.get(id);
@@ -420,6 +498,11 @@ export function criarApp({ config, banco, central, versao = async () => null, re
           }));
         return enviar(res, 200, paginar(url, lista));
       }
+      case "GET /api/dispositivos-conta":
+      case "POST /api/dispositivos-conta":
+      case "POST /api/dispositivos-conta/senha":
+      case "POST /api/dispositivos-conta/remover":
+        return dispositivosDaConta(req, res, rota);
       case "GET /api/device-group/accessible":
         await autenticar(req);
         return enviar(res, 200, { total: 0, data: [] });

@@ -19,6 +19,7 @@ Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
 | Sessão (só o hash do token `cs_…`)       | aqui, cache da validação     |
 | Catálogo de endereços de cada conta      | aqui (SQLite)                |
 | Computadores (ID, nome, sistema, versão) | aqui, apaga 90 dias sem uso  |
+| Meus dispositivos (ID e senha de acesso) | aqui, senha cifrada (AES-256-GCM) |
 | Auditoria de conexões e arquivos         | aqui, apaga em 180 dias      |
 
 ## Rotas atendidas
@@ -32,6 +33,10 @@ Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
 | `POST /api/ab/personal` e demais `/api/ab/*`            | `404`: o cliente entra no modo legado                                                           |
 | `GET /api/users`, `GET /api/peers`                      | Aba Grupo: contas da equipe e os computadores em que elas entraram                              |
 | `GET /api/device-group/accessible`                      | Lista vazia                                                                                     |
+| `GET /api/dispositivos-conta`                           | Meus dispositivos: lista da conta (ID, nome, sistema, online), **sem** a senha                  |
+| `POST /api/dispositivos-conta`                          | Registra ou atualiza `{id, nome, so, senha}` (até 200 por conta); `503` sem `CHAVE_DISPOSITIVOS` |
+| `POST /api/dispositivos-conta/senha`                    | `{id}` → `{senha}` de um dispositivo da conta (30/min por conta; fica na auditoria)             |
+| `POST /api/dispositivos-conta/remover`                  | `{id}` apaga o registro da conta                                                                |
 | `POST /api/acessos/abrir`, `/api/acessos/fechar` | Acessos remotos simultâneos: o app pede a vaga antes de conectar; `409` quando passa de `assinatura.limiteAcessos` |
 | `POST /api/heartbeat`, `/api/sysinfo`, `/api/sysinfo_ver` | Registro de computadores                                                                      |
 | `POST /api/audit/{conn,file,alarm}`                     | Guarda a auditoria (64 KB por registro, 120/min por IP)                                         |
@@ -45,6 +50,20 @@ valendo por `TOLERANCIA_HORAS` desde a última validação; depois disso respond
 e não apaga o login). Se a assinatura traz `pagoAte` (compra direta), a sessão nunca é mantida depois dessa
 data: o limite é `min(pagoAte, última validação + tolerância)` e, passado `pagoAte`, responde `401` (volta ao
 login). Com `pagoAte` nulo (cobrança no provedor) vale só a tolerância.
+
+## Meus dispositivos
+
+O computador registra o próprio ID e uma senha de acesso na conta; em qualquer outro app logado nela, o dispositivo
+aparece na lista e conecta sem digitar a senha. A senha é cifrada com `CHAVE_DISPOSITIVOS` (32 bytes, hex ou base64)
+antes de ir para o SQLite, presa à conta e ao ID. Só a conta dona a lê, uma por vez, e cada leitura entra na
+auditoria (`senha_dispositivo`). Sem a chave o recurso fica desligado. Gerar a chave:
+
+```bash
+openssl rand -hex 32
+```
+
+Guarde a chave fora do banco e do repositório (no `.env` do servidor). **Perder a chave** deixa as senhas guardadas
+ilegíveis: cada dispositivo precisa ser registrado de novo. **Trocar a chave** tem o mesmo efeito.
 
 ## Produção (servidor da Central)
 
