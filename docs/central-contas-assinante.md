@@ -346,3 +346,36 @@ O controle remoto comum exige só o login, não uma função do plano. Assinatur
 servidor-api responde `503`, o app mantém o login guardado e o controle remoto comum segue abrindo. A interface avisa e não abre a janela; o núcleo recusa a sessão também,
 para outros caminhos de conexão. Copiar e colar arquivos pela área de transferência dentro do controle remoto ainda
 não é bloqueado pelo plano.
+
+## Limites do plano: computadores e acessos simultâneos (17/11/2026)
+
+Os dois limites vêm da assinatura que a Central devolve no `entrar` e no `validar`, ou seja, do plano da conta logada.
+
+| Limite | Campo em `assinatura` | Quem aplica | Situação |
+| --- | --- | --- | --- |
+| Computadores em que a conta pode logar | `limiteDispositivos` | Central, no `entrar` (`409 LIMITE_DISPOSITIVOS`) | No ar. Hoje a Central calcula como `Plano.limiteContas`, ou o limite de instalações do produto |
+| Acessos remotos ao mesmo tempo | `limiteAcessos` (inteiro; ausente ou `null` = sem limite) | servidor-api do h3suporte | Pronto aqui; **a Central ainda não manda o campo** |
+
+### O que falta na Central
+
+1. `Plano.limiteAcessos Int?` (acessos remotos simultâneos por assinatura), editável em Admin → Planos, devolvido como
+   `assinatura.limiteAcessos` no `entrar` e no `validar`.
+2. Se o número de computadores tiver de ser independente do número de contas: `Plano.limiteDispositivos Int?`, usado
+   em `limiteComputadores` antes de `limiteContas`. O h3suporte não muda: continua lendo `assinatura.limiteDispositivos`.
+
+Enquanto a Central não manda `limiteAcessos`, o servidor-api conta os acessos mas não recusa nenhum.
+
+### Como o acesso simultâneo é contado
+
+- Antes de conectar, o app (`src/acessos.rs`, chamado no início de `io_loop`) faz `POST /api/acessos/abrir`
+  `{ id, peer }` com o token do login. `id` é aleatório por conexão; `peer` é o ID do computador acessado.
+- `200 { limite, em_uso }`: liberado. `409 { error }`: o plano está no limite; o app mostra a mensagem e não conecta.
+  `401`: login não vale mais; também não conecta.
+- Um acesso é o par **conta + computador acessado**. Controle remoto, arquivos e terminal abertos pela mesma conta no
+  mesmo computador contam como um. A conta soma todos os técnicos da assinatura.
+- O app repete o `abrir` a cada 60 s enquanto a conexão existe e chama `POST /api/acessos/fechar` `{ id }` ao encerrar.
+  Sem renovação por 150 s (app fechado à força, queda de rede) a vaga volta sozinha.
+- A contagem fica em memória no servidor-api; se ele reinicia, os apps repõem os acessos na renovação seguinte.
+
+Limites conhecidos: servidor-api fora do ar, lento (8 s) ou sem a rota não impede o acesso (o suporte não para por causa
+da API); o cliente web não passa por essa checagem (o núcleo dele fica fora deste repositório).

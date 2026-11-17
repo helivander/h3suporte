@@ -32,6 +32,7 @@ Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
 | `POST /api/ab/personal` e demais `/api/ab/*`            | `404`: o cliente entra no modo legado                                                           |
 | `GET /api/users`, `GET /api/peers`                      | Aba Grupo: contas da equipe e os computadores em que elas entraram                              |
 | `GET /api/device-group/accessible`                      | Lista vazia                                                                                     |
+| `POST /api/acessos/abrir`, `/api/acessos/fechar` | Acessos remotos simultâneos: o app pede a vaga antes de conectar; `409` quando passa de `assinatura.limiteAcessos` |
 | `POST /api/heartbeat`, `/api/sysinfo`, `/api/sysinfo_ver` | Registro de computadores                                                                      |
 | `POST /api/audit/{conn,file,alarm}`                     | Guarda a auditoria (64 KB por registro, 120/min por IP)                                         |
 | `GET /api/login-options`                                | `[]` (sem login por Google/Microsoft)                                                           |

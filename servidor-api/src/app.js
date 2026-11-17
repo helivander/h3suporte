@@ -6,6 +6,8 @@ const LIMITE_CORPO = 64 * KB;
 const LIMITE_CATALOGO = 2048 * KB;
 const EQUIPE_CACHE_MS = 60_000;
 const VISTO_INTERVALO_MS = 60_000;
+// O app renova o acesso aberto a cada 60 s; sem renovação (app fechado à força) a vaga volta sozinha.
+const ACESSO_VALIDADE_MS = 150_000;
 
 const MENSAGENS = {
   CREDENCIAIS_INVALIDAS: "E-mail ou senha incorretos.",
@@ -127,6 +129,7 @@ export function criarApp({ config, banco, central, versao = async () => null, re
   const validando = new Map();
   const equipes = new Map();
   const vistos = new Map();
+  const acessos = new Map();
 
   const ipDe = (req) => {
     if (config.confiarProxy) {
@@ -246,6 +249,49 @@ export function criarApp({ config, banco, central, versao = async () => null, re
     }
   }
 
+  /**
+   * Acessos remotos abertos da assinatura: id do acesso → { alvo, ate }. Fica em memória: se o serviço reinicia,
+   * os apps repõem os seus na renovação seguinte.
+   */
+  function acessosDa(assinaturaId, agora) {
+    let abertos = acessos.get(assinaturaId);
+    if (!abertos) {
+      if (acessos.size > 50_000) acessos.clear();
+      abertos = new Map();
+      acessos.set(assinaturaId, abertos);
+    }
+    for (const [id, a] of abertos) if (a.ate <= agora) abertos.delete(id);
+    return abertos;
+  }
+
+  /** Limite de acessos simultâneos do plano (`assinatura.limiteAcessos`); null = sem limite. */
+  const limiteAcessos = (assinatura) =>
+    Number.isInteger(assinatura?.limiteAcessos) && assinatura.limiteAcessos > 0 ? assinatura.limiteAcessos : null;
+
+  async function abrirAcesso(req, res) {
+    const corpo = await lerJson(req);
+    const sessao = await autenticar(req);
+    const id = texto(corpo.id, 64);
+    const peer = texto(corpo.peer, 64);
+    if (!id || !peer) return erro(res, 400, "Acesso sem identificação. Atualize o H3 Suporte.");
+    const agora = relogio();
+    const abertos = acessosDa(sessao.assinatura.id, agora);
+    // Várias janelas da mesma conta no mesmo computador (controle, arquivos, terminal) contam como um acesso.
+    const alvo = `${sessao.conta.id} ${peer}`;
+    const limite = limiteAcessos(sessao.assinatura);
+    const emUso = new Set([...abertos].filter(([outro]) => outro !== id).map(([, a]) => a.alvo));
+    if (limite !== null && !abertos.has(id) && !emUso.has(alvo) && emUso.size >= limite) {
+      return erro(
+        res,
+        409,
+        `O plano permite ${limite} ${limite === 1 ? "acesso remoto" : "acessos remotos"} ao mesmo tempo. ` +
+          "Encerre um acesso aberto ou fale com o responsável pela assinatura.",
+      );
+    }
+    abertos.set(id, { alvo, ate: agora + ACESSO_VALIDADE_MS });
+    return enviar(res, 200, { limite, em_uso: emUso.add(alvo).size });
+  }
+
   async function equipe(sessao) {
     const id = sessao.assinatura.id;
     const cache = equipes.get(id);
@@ -296,6 +342,15 @@ export function criarApp({ config, banco, central, versao = async () => null, re
           banco.apagarSessao(tokenHash);
           central.sair(token).catch(() => {});
         }
+        return enviar(res, 200, {});
+      }
+      case "POST /api/acessos/abrir":
+        return abrirAcesso(req, res);
+      case "POST /api/acessos/fechar": {
+        const corpo = await lerJson(req);
+        const sessao = await autenticar(req);
+        const id = texto(corpo.id, 64);
+        if (id) acessos.get(sessao.assinatura.id)?.delete(id);
         return enviar(res, 200, {});
       }
       case "POST /api/heartbeat": {

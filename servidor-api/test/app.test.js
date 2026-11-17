@@ -262,6 +262,34 @@ test("Central fora com pagoAte nulo (provedor) segue a tolerância de 72 h", asy
   assert.equal((await chamar("POST", "/api/currentUser", {}, token)).status, 503);
 });
 
+test("limite de acessos simultâneos do plano: recusa o que passa, libera ao fechar e ao expirar", async () => {
+  estado.assinatura.limiteAcessos = 2;
+  const token = (await loginAna()).json.access_token;
+  const abrir = (id, peer) => chamar("POST", "/api/acessos/abrir", { id, peer }, token);
+  assert.deepEqual((await abrir("a1", "111")).json, { limite: 2, em_uso: 1 });
+  assert.equal((await abrir("a2", "111")).json.em_uso, 1, "outra janela no mesmo computador não conta de novo");
+  assert.equal((await abrir("a3", "222")).status, 200);
+  const recusado = await abrir("a4", "333");
+  assert.equal(recusado.status, 409);
+  assert.match(recusado.json.error, /2 acessos remotos ao mesmo tempo/);
+  assert.equal((await abrir("a1", "111")).status, 200, "renovar um acesso aberto sempre passa");
+  await chamar("POST", "/api/acessos/fechar", { id: "a3" }, token);
+  assert.equal((await abrir("a4", "333")).status, 200, "fechar libera a vaga");
+  assert.equal((await abrir("a5", "444")).status, 409);
+  agora += 150_000;
+  assert.equal((await abrir("a5", "444")).status, 200, "acesso sem renovação expira");
+  assert.equal((await chamar("POST", "/api/acessos/abrir", { id: "x", peer: "1" })).status, 401, "exige login");
+});
+
+test("plano sem limite de acessos (campo ausente) não recusa", async () => {
+  const token = (await loginAna()).json.access_token;
+  for (const n of [1, 2, 3, 4, 5]) {
+    const r = await chamar("POST", "/api/acessos/abrir", { id: `s${n}`, peer: `9${n}` }, token);
+    assert.equal(r.status, 200);
+    assert.equal(r.json.limite, null);
+  }
+});
+
 test("grupo mostra a equipe e os computadores em que cada conta entrou", async () => {
   const ana = (await loginAna()).json.access_token;
   await chamar("POST", "/api/sysinfo", { id: "123456789", hostname: "NOTE-ANA", os: "Windows 11" });
