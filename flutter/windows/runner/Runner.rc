@@ -93,7 +93,7 @@ BEGIN
             VALUE "FileDescription", "H3 Suporte - Acesso Remoto" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "h3suporte" "\0"
-            VALUE "LegalCopyright", "Copyright © 2025 H3 Informatica. Baseado em tecnologia RustDesk." "\0"
+            VALUE "LegalCopyright", "Copyright © 2025 H3 Informatica." "\0"
             VALUE "OriginalFilename", "h3suporte.exe" "\0"
             VALUE "ProductName", "H3 Suporte" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

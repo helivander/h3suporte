@@ -11,4 +11,4 @@ PRODUCT_NAME = H3Suporte
 PRODUCT_BUNDLE_IDENTIFIER = com.h3informatica.h3suporte
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 H3 Informatica. Baseado em tecnologia RustDesk.
+PRODUCT_COPYRIGHT = Copyright © 2025 H3 Informatica.
