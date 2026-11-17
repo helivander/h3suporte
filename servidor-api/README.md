@@ -41,7 +41,9 @@ Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
 Sessões: se a Central responder que a sessão não vale mais (conta desativada, assinatura suspensa), o
 próximo pedido dá `401` e o app volta para a tela de login. Com a Central fora do ar, a sessão continua
 valendo por `TOLERANCIA_HORAS` desde a última validação; depois disso responde `503` (o app mostra o erro
-e não apaga o login).
+e não apaga o login). Se a assinatura traz `pagoAte` (compra direta), a sessão nunca é mantida depois dessa
+data: o limite é `min(pagoAte, última validação + tolerância)` e, passado `pagoAte`, responde `401` (volta ao
+login). Com `pagoAte` nulo (cobrança no provedor) vale só a tolerância.
 
 ## Produção (servidor da Central)
 

@@ -14,7 +14,7 @@ const MENSAGENS = {
     "Sua assinatura exige verificação em duas etapas. Configure-a no portal do assinante antes de entrar.",
   CONTA_DESATIVADA: "Sua conta foi desativada pelo responsável pela assinatura.",
   CONTA_BLOQUEADA: "Conta bloqueada por tentativas erradas. Tente de novo em alguns minutos.",
-  ASSINATURA_INATIVA: "A assinatura do H3 Suporte não está ativa. Fale com o responsável pela assinatura.",
+  ASSINATURA_INATIVA: "A assinatura do H3 Suporte não está ativa. Regularize o pagamento ou fale com o responsável pela assinatura.",
   LIMITE_DISPOSITIVOS:
     "O limite de computadores do plano foi atingido. Peça ao responsável para liberar uma vaga no portal do assinante.",
   MUITAS_TENTATIVAS: "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
@@ -156,6 +156,8 @@ export function criarApp({ config, banco, central, versao = async () => null, re
     } catch {
       // Central fora, credencial do serviço recusada ou resposta inesperada: não derruba ninguém.
     }
+    const pagoAte = Date.parse(sessao.assinatura?.pagoAte ?? "");
+    if (agora >= pagoAte) return null;
     if (agora - sessao.validadaEm < config.toleranciaMs) return sessao;
     throw new ErroHttp(503, MENSAGENS.CENTRAL_FORA);
   }

@@ -231,6 +231,37 @@ test("Central fora: segue dentro da tolerância offline e recusa com 503 depois 
   assert.equal(login.status, 503);
 });
 
+test("Central fora com pagoAte futuro mantém a sessão só até pagoAte", async () => {
+  estado.assinatura.pagoAte = new Date(agora + 3600_000).toISOString();
+  const token = (await loginAna()).json.access_token;
+  estado.fora = true;
+  agora += config.revalidarMs;
+  assert.equal((await chamar("POST", "/api/currentUser", {}, token)).status, 200, "antes de pagoAte");
+  agora += 3600_000;
+  assert.equal((await chamar("POST", "/api/currentUser", {}, token)).status, 401, "depois de pagoAte, mesmo dentro da tolerância");
+});
+
+test("Central fora com pagoAte já vencido corta a sessão", async () => {
+  const token = (await loginAna()).json.access_token;
+  estado.assinatura.pagoAte = new Date(agora - 1000).toISOString();
+  estado.fora = false;
+  agora += config.revalidarMs;
+  assert.equal((await chamar("POST", "/api/currentUser", {}, token)).status, 200, "Central responde e vale");
+  estado.fora = true;
+  agora += config.revalidarMs;
+  assert.equal((await chamar("POST", "/api/currentUser", {}, token)).status, 401);
+});
+
+test("Central fora com pagoAte nulo (provedor) segue a tolerância de 72 h", async () => {
+  estado.assinatura.pagoAte = null;
+  const token = (await loginAna()).json.access_token;
+  estado.fora = true;
+  agora += config.revalidarMs;
+  assert.equal((await chamar("POST", "/api/currentUser", {}, token)).status, 200);
+  agora += config.toleranciaMs;
+  assert.equal((await chamar("POST", "/api/currentUser", {}, token)).status, 503);
+});
+
 test("grupo mostra a equipe e os computadores em que cada conta entrou", async () => {
   const ana = (await loginAna()).json.access_token;
   await chamar("POST", "/api/sysinfo", { id: "123456789", hostname: "NOTE-ANA", os: "Windows 11" });

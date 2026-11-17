@@ -265,6 +265,11 @@ Corpo do `200`:
 
 O serviço chama no máximo a cada poucos minutos por sessão. Limite: 600/min por credencial.
 
+`assinatura.pagoAte` (ISO) é até quando o acesso está pago; `null` quando quem cobra é o provedor. Com a Central fora
+do ar (rede, timeout, 5xx; nunca confundir com `valida:false`), o servidor-api mantém a sessão por
+`min(pagoAte, última validação + tolerância de 72 h)`: nunca depois de `pagoAte` (responde `401`) e, com `pagoAte`
+nulo, só pela tolerância (depois dela, `503`). O `pagoAte` fica guardado com a assinatura da sessão no banco local.
+
 ### `POST /api-servico/contas/sair`
 
 `{ "sessao": "cs_…" }` → `204`, idempotente. Revoga a sessão. Não remove o dispositivo.
