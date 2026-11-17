@@ -2,11 +2,12 @@
 //!
 //! O servidor-api do H3 Suporte devolve no login e no `currentUser` o campo `funcoes`, guardado pelo app em
 //! `user_info`. Regras:
-//! * sem login (`user_info` vazio): as funções abaixo ficam bloqueadas, porque são do plano;
+//! * sem login (`user_info` vazio): nenhum acesso remoto abre, nem o controle remoto comum;
 //! * logado e `funcoes` ausente ou `null`: o produto não separa por função, tudo liberado;
 //! * logado e `funcoes` lista: só os códigos da lista.
 //!
-//! O controle remoto comum não depende do plano.
+//! O controle remoto comum exige só o login (assinatura ativa); não depende de função do plano.
+//! Quem recebe o acesso não precisa de conta: a regra vale para quem inicia a conexão.
 
 use hbb_common::{config::LocalConfig, rendezvous_proto::ConnType};
 
@@ -25,6 +26,8 @@ pub fn funcao_da_conexao(conn_type: ConnType) -> Option<&'static str> {
         _ => None,
     }
 }
+
+const SEM_LOGIN: &str = "Entre com sua conta H3 Suporte para fazer acessos remotos.";
 
 fn nome(funcao: &str) -> &str {
     match funcao {
@@ -53,9 +56,18 @@ fn liberada_em(user_info: &str, funcao: &str) -> bool {
 
 /// Motivo para recusar a conexão, ou None se o plano libera.
 pub fn bloqueio(conn_type: ConnType) -> Option<String> {
-    let funcao = funcao_da_conexao(conn_type)?;
     let user_info = LocalConfig::get_option("user_info");
-    if liberada_em(&user_info, funcao) {
+    bloqueio_em(&user_info, conn_type)
+}
+
+fn bloqueio_em(user_info: &str, conn_type: ConnType) -> Option<String> {
+    let Some(funcao) = funcao_da_conexao(conn_type) else {
+        return user_info
+            .trim()
+            .is_empty()
+            .then(|| SEM_LOGIN.to_owned());
+    };
+    if liberada_em(user_info, funcao) {
         return None;
     }
     Some(if user_info.trim().is_empty() {
@@ -87,6 +99,13 @@ mod tests {
         assert!(liberada_em(info, TERMINAL));
         assert!(!liberada_em(info, TRANSFERENCIA_ARQUIVOS));
         assert!(!liberada_em(r#"{"funcoes":[]}"#, CAMERA));
+    }
+
+    #[test]
+    fn controle_remoto_comum_exige_login() {
+        assert_eq!(bloqueio_em("", ConnType::DEFAULT_CONN).as_deref(), Some(SEM_LOGIN));
+        assert_eq!(bloqueio_em(r#"{"name":"a@b.c","funcoes":[]}"#, ConnType::DEFAULT_CONN), None);
+        assert!(bloqueio_em(r#"{"name":"a@b.c","funcoes":[]}"#, ConnType::TERMINAL).is_some());
     }
 
     #[test]

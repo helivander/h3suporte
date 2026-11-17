@@ -336,10 +336,13 @@ A Central devolve `assinatura.funcoes` no login e na validação. O servidor-api
 
 Regras (`src/plano.rs` no núcleo e `bloqueioDoPlano` em `flutter/lib/common.dart`, mesma lógica):
 
-- sem login: as quatro bloqueadas, com o aviso para entrar com a conta;
+- sem login: **nenhum acesso remoto abre**, nem o controle remoto comum ("Entre com sua conta H3 Suporte para fazer
+  acessos remotos."). Vale para quem inicia a conexão; o computador atendido não precisa de conta (17/11/2026);
 - logado com `funcoes` ausente ou `null` (produto sem catálogo ou servidor antigo): tudo liberado;
 - logado com lista: só os códigos da lista.
 
-O controle remoto comum não depende do plano. A interface avisa e não abre a janela; o núcleo recusa a sessão também,
+O controle remoto comum exige só o login, não uma função do plano. Assinatura que deixa de valer derruba o login
+(`401` na revalidação), e com isso o acesso remoto. Limite conhecido: com a Central fora do ar além da tolerância o
+servidor-api responde `503`, o app mantém o login guardado e o controle remoto comum segue abrindo. A interface avisa e não abre a janela; o núcleo recusa a sessão também,
 para outros caminhos de conexão. Copiar e colar arquivos pela área de transferência dentro do controle remoto ainda
 não é bloqueado pelo plano.

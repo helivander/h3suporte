@@ -2599,8 +2599,8 @@ connectMainDesktop(String id,
 /// If [isViewCamera], starts a session only for view camera.
 /// If [isTcpTunneling], starts a session only for tcp tunneling.
 /// If [isRDP], starts a session only for rdp.
-/// Motivo para não abrir uma conexão que depende do plano da assinatura
-/// (mesmas regras de `src/plano.rs`), ou null se o plano libera.
+/// Motivo para não abrir uma conexão: sem login nenhuma abre; logado, as
+/// funções do plano (mesmas regras de `src/plano.rs`). Null se libera.
 String? bloqueioDoPlano(
     {bool isFileTransfer = false,
     bool isViewCamera = false,
@@ -2621,7 +2621,9 @@ String? bloqueioDoPlano(
     funcao = 'tunel';
     nome = 'Túnel (TCP/RDP)';
   } else {
-    return null;
+    return bind.mainGetLocalOption(key: 'user_info').trim().isEmpty
+        ? 'Entre com sua conta H3 Suporte para fazer acessos remotos.'
+        : null;
   }
   final bruto = bind.mainGetLocalOption(key: 'user_info');
   if (bruto.trim().isEmpty) {

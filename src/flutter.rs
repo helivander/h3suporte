@@ -1333,7 +1333,7 @@ pub fn session_add(
     } else {
         ConnType::DEFAULT_CONN
     };
-    // Funções que dependem do plano da assinatura (transferência, terminal, túnel, câmera).
+    // Acesso remoto exige login; transferência, terminal, túnel e câmera dependem também do plano.
     if let Some(motivo) = crate::plano::bloqueio(conn_type) {
         bail!(motivo);
     }
