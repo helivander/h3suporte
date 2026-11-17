@@ -353,17 +353,12 @@ Os dois limites vêm da assinatura que a Central devolve no `entrar` e no `valid
 
 | Limite | Campo em `assinatura` | Quem aplica | Situação |
 | --- | --- | --- | --- |
-| Computadores em que a conta pode logar | `limiteDispositivos` | Central, no `entrar` (`409 LIMITE_DISPOSITIVOS`) | No ar. Hoje a Central calcula como `Plano.limiteContas`, ou o limite de instalações do produto |
-| Acessos remotos ao mesmo tempo | `limiteAcessos` (inteiro; ausente ou `null` = sem limite) | servidor-api do h3suporte | Pronto aqui; **a Central ainda não manda o campo** |
+| Computadores em que a conta pode logar | `limiteDispositivos` | Central, no `entrar` (`409 LIMITE_DISPOSITIVOS`) | No ar. Vem de `Plano.limiteDispositivos`; vazio = `Plano.limiteContas` ou o limite de instalações do produto |
+| Acessos remotos ao mesmo tempo | `limiteAcessos` (inteiro; ausente ou `null` = sem limite) | servidor-api do h3suporte | Pronto nos dois lados; vem de `Plano.limiteAcessos` |
 
-### O que falta na Central
-
-1. `Plano.limiteAcessos Int?` (acessos remotos simultâneos por assinatura), editável em Admin → Planos, devolvido como
-   `assinatura.limiteAcessos` no `entrar` e no `validar`.
-2. Se o número de computadores tiver de ser independente do número de contas: `Plano.limiteDispositivos Int?`, usado
-   em `limiteComputadores` antes de `limiteContas`. O h3suporte não muda: continua lendo `assinatura.limiteDispositivos`.
-
-Enquanto a Central não manda `limiteAcessos`, o servidor-api conta os acessos mas não recusa nenhum.
+Os dois campos do plano foram criados na Central em 17/11/2026 (migração `20261117120000_limites_plano`) e são
+editados em Admin → Produtos → Planos. Falta publicar a Central e o servidor-api e definir os números em cada plano.
+Plano sem `limiteAcessos` não recusa nenhum acesso.
 
 ### Como o acesso simultâneo é contado
 
