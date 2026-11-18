@@ -229,6 +229,13 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     return settingTabs;
   }
 
+  Widget _estreita(Widget w) => bind.isIncomingOnly()
+      ? w
+      : Align(
+          alignment: Alignment.topLeft,
+          child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820), child: w));
+
   List<Widget> _children() {
     final children = List<Widget>.empty(growable: true);
     for (final tab in DesktopSettingPage.tabKeys) {
@@ -237,25 +244,25 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
           children.add(const _General());
           break;
         case SettingsTabKey.safety:
-          children.add(const _Safety());
+          children.add(_estreita(const _Safety()));
           break;
         case SettingsTabKey.network:
-          children.add(const _Network());
+          children.add(_estreita(const _Network()));
           break;
         case SettingsTabKey.display:
           children.add(const _Display());
           break;
         case SettingsTabKey.account:
-          children.add(const _Account());
+          children.add(_estreita(const _Account()));
           break;
         case SettingsTabKey.printer:
-          children.add(const _Printer());
+          children.add(_estreita(const _Printer()));
           break;
         case SettingsTabKey.ia:
-          children.add(const IaConfig());
+          children.add(_estreita(const IaConfig()));
           break;
         case SettingsTabKey.about:
-          children.add(const _About());
+          children.add(_estreita(const _About()));
           break;
       }
     }
@@ -336,7 +343,7 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
               child: Align(
                 alignment: h3 ? Alignment.topLeft : Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: h3 ? 820 : double.infinity),
+                  constraints: BoxConstraints(maxWidth: h3 ? 1280 : double.infinity),
                   child: pagina,
                 ),
               ),
@@ -498,9 +505,7 @@ class _GeneralState extends State<_General> {
   @override
   Widget build(BuildContext context) {
     final scrollController = ScrollController();
-    return ListView(
-      controller: scrollController,
-      children: [
+    return _duasColunas(scrollController, [
         if (!isWeb) service(),
         theme(),
         _Card(title: 'Language', children: [language()]),
@@ -510,8 +515,7 @@ class _GeneralState extends State<_General> {
         if (!isWeb) WaylandCard(),
         other(),
         if (!bind.isIncomingOnly()) keyboardShortcuts(),
-      ],
-    ).marginOnly(bottom: _kListViewBottomMargin);
+    ]).marginOnly(bottom: _kListViewBottomMargin);
   }
 
   Widget keyboardShortcuts() {
@@ -2114,7 +2118,7 @@ class _DisplayState extends State<_Display> {
   @override
   Widget build(BuildContext context) {
     final scrollController = ScrollController();
-    return ListView(controller: scrollController, children: [
+    return _duasColunas(scrollController, [
       viewStyle(context),
       scrollStyle(context),
       imageQuality(context),
@@ -2787,6 +2791,26 @@ class _AboutState extends State<_About> {
 
 //#region components
 
+/// Em janelas largas distribui os cartões em duas colunas; nas estreitas (ou no modo só receber) mantém a lista.
+Widget _duasColunas(ScrollController c, List<Widget> itens) {
+  if (bind.isIncomingOnly()) return ListView(controller: c, children: itens);
+  return LayoutBuilder(builder: (context, caixa) {
+    if (caixa.maxWidth < 900) return ListView(controller: c, children: itens);
+    final esq = <Widget>[];
+    final dir = <Widget>[];
+    for (var i = 0; i < itens.length; i++) {
+      (i.isEven ? esq : dir).add(itens[i]);
+    }
+    return SingleChildScrollView(
+      controller: c,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(children: esq)),
+        Expanded(child: Column(children: dir)),
+      ]).paddingOnly(right: 15),
+    );
+  });
+}
+
 IconData _iconeCard(String titulo) {
   switch (titulo) {
     case 'Permissions':
@@ -2824,7 +2848,7 @@ Widget _Card(
     children: [
       Flexible(
         child: SizedBox(
-          width: _kCardFixedWidth,
+          width: incoming ? _kCardFixedWidth : double.infinity,
           child: Container(
             decoration: incoming
                 ? null
@@ -3247,7 +3271,7 @@ Widget _lock(
     return Row(children: [
       Flexible(
         child: SizedBox(
-          width: _kCardFixedWidth,
+          width: double.infinity,
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
