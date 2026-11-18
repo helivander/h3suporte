@@ -412,6 +412,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       {String? titulo,
       String? subtitulo,
       Widget? acao,
+      IconData? icone,
       required Widget filho,
       bool expandir = false,
       EdgeInsets padding = const EdgeInsets.all(18)}) {
@@ -431,6 +432,24 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         children: [
           if (titulo != null)
           Row(children: [
+            if (icone != null) ...[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        H3Cores.destaque.withOpacity(0.28),
+                        H3Cores.destaque.withOpacity(0.08)
+                      ]),
+                ),
+                child: Icon(icone, size: 20, color: H3Cores.destaque),
+              ),
+              const SizedBox(width: 12),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,13 +485,65 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     );
     final esteComputador = _cartao(
       titulo: 'Este computador',
+      icone: Icons.computer_outlined,
       subtitulo: 'Passe o ID e a senha para quem vai acessar.',
       filho: widget.deviceBoard,
     );
+    final cabecalho = Obx(() {
+      final nome = gFFI.userModel.isLogin
+          ? gFFI.userModel.displayNameOrUserName
+          : '';
+      final n = _sessoesSaida.length +
+          gFFI.serverModel.clients.where((c) => !c.disconnected).length;
+      return Row(children: [
+        Expanded(
+          child: _titulo(
+              nome.isEmpty ? 'Visão geral' : 'Olá, $nome',
+              'Controle outros computadores e veja o que está acontecendo agora.'),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: (n > 0 ? H3Cores.ok : H3Cores.apagado).withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: n > 0 ? H3Cores.ok : H3Cores.apagado)),
+            const SizedBox(width: 8),
+            Text(
+                n == 0
+                    ? 'Nenhuma sessão agora'
+                    : '$n ${n == 1 ? 'sessão' : 'sessões'} agora',
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: n > 0 ? H3Cores.ok : H3Cores.apagado)),
+          ]),
+        ),
+      ]);
+    });
     return LayoutBuilder(builder: (context, c) {
       final largo = c.maxWidth >= 1000;
       return Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(children: [
+          cabecalho,
+          const SizedBox(height: 18),
+          Expanded(child: _corpoVisao(largo, conexoes, esteComputador)),
+        ]),
+      );
+    });
+  }
+
+  Widget _corpoVisao(bool largo, Widget conexoes, Widget esteComputador) {
+    return Builder(builder: (context) {
+      return Padding(
+        padding: EdgeInsets.zero,
         child: largo
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -546,6 +617,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         final ativo = linhas.isNotEmpty;
         return _cartao(
           titulo: 'Sessão em andamento',
+          icone: Icons.sensors,
           subtitulo: ativo
               ? '${linhas.length} ${linhas.length == 1 ? 'acesso ativo' : 'acessos ativos'}'
               : 'Nenhum acesso remoto ativo',
@@ -562,7 +634,27 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           ),
           filho: ativo
               ? Column(mainAxisSize: MainAxisSize.min, children: linhas)
-              : const SizedBox.shrink(),
+              : Container(
+                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: H3Cores.fundo,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: H3Cores.linha),
+                  ),
+                  child: Row(children: [
+                    Icon(Icons.wifi_tethering_off,
+                        size: 22, color: H3Cores.apagado),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                          'Quando alguém acessar este computador, ou você acessar outro, a sessão aparece aqui.',
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              height: 1.4,
+                              color: H3Cores.apagado)),
+                    ),
+                  ]),
+                ),
         );
       });
     });
