@@ -292,12 +292,16 @@ class _PeersViewState extends State<_PeersView>
               // and the peers change event will trigger _buildPeersView().
               return !isPortrait
                   ? Obx(() => peerCardUiType.value == PeerUiType.list
-                      ? Container(height: 45, child: visibilityChild)
+                      ? Container(
+                          height: H3Estilo.ativo(context) ? 62 : 45,
+                          child: visibilityChild)
                       : peerCardUiType.value == PeerUiType.grid
                           ? SizedBox(
                               width: 220, height: 140, child: visibilityChild)
                           : SizedBox(
-                              width: 220, height: 42, child: visibilityChild))
+                              width: H3Estilo.ativo(context) ? 250 : 220,
+                              height: H3Estilo.ativo(context) ? 62 : 42,
+                              child: visibilityChild))
                   : Container(child: visibilityChild);
             }
 

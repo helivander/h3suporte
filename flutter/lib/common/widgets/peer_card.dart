@@ -1,6 +1,8 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/consts.dart';
@@ -49,7 +51,7 @@ class _PeerCardState extends State<_PeerCard>
     with AutomaticKeepAliveClientMixin {
   var _menuPos = RelativeRect.fill;
   final double _cardRadius = 16;
-  final double _tileRadius = 5;
+  double get _tileRadius => H3Estilo.ativo(context) ? 12 : 5;
   final double _borderWidth = 2;
 
   @override
@@ -98,7 +100,9 @@ class _PeerCardState extends State<_PeerCard>
     final peer = super.widget.peer;
     var deco = Rx<BoxDecoration?>(
       BoxDecoration(
-        border: Border.all(color: Colors.transparent, width: _borderWidth),
+        border: Border.all(
+            color: H3Estilo.ativo(context) ? H3Cores.linha : Colors.transparent,
+            width: _borderWidth),
         borderRadius: BorderRadius.circular(
           peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
         ),
@@ -117,7 +121,9 @@ class _PeerCardState extends State<_PeerCard>
       },
       onExit: (evt) {
         deco.value = BoxDecoration(
-          border: Border.all(color: Colors.transparent, width: _borderWidth),
+          border: Border.all(
+            color: H3Estilo.ativo(context) ? H3Cores.linha : Colors.transparent,
+            width: _borderWidth),
           borderRadius: BorderRadius.circular(
             peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
           ),
@@ -135,6 +141,7 @@ class _PeerCardState extends State<_PeerCard>
   }
 
   makeChild(bool isPortrait, Peer peer) {
+    if (H3Estilo.ativo(context)) return _makeChildH3(isPortrait, peer);
     final name = hideUsernameOnCard == true
         ? peer.hostname
         : '${peer.username}${peer.username.isNotEmpty && peer.hostname.isNotEmpty ? '@' : ''}${peer.hostname}';
@@ -247,6 +254,84 @@ class _PeerCardState extends State<_PeerCard>
     );
   }
 
+  Widget _makeChildH3(bool isPortrait, Peer peer) {
+    final name = hideUsernameOnCard == true
+        ? peer.hostname
+        : '${peer.username}${peer.username.isNotEmpty && peer.hostname.isNotEmpty ? '@' : ''}${peer.hostname}';
+    final titulo = peer.alias.isEmpty ? formatID(peer.id) : peer.alias;
+    final cor = peer.online ? H3Cores.ok : H3Cores.apagado;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: H3Cores.painel2,
+        borderRadius: BorderRadius.circular(_tileRadius),
+        border: Border.all(color: H3Cores.linha),
+      ),
+      child: Row(children: [
+        Stack(clipBehavior: Clip.none, children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: H3Cores.destaque.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: getPlatformImage(peer.platform, size: 26),
+          ),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 11,
+              height: 11,
+              decoration: BoxDecoration(
+                color: cor,
+                shape: BoxShape.circle,
+                border: Border.all(color: H3Cores.painel2, width: 2),
+              ),
+            ),
+          ),
+          if (_shouldBuildPasswordIcon(peer))
+            Positioned(
+              top: -3,
+              left: -3,
+              child: Icon(Icons.key, size: 11, color: H3Cores.aviso),
+            ),
+        ]),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(titulo,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: H3Cores.texto)),
+              const SizedBox(height: 2),
+              Tooltip(
+                message: name,
+                waitDuration: const Duration(seconds: 1),
+                child: Text(
+                    name.isEmpty ? (peer.online ? 'Online' : 'Offline') : name,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+              ),
+              if (_showNote(peer))
+                Text(peer.note,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: H3Cores.apagado)),
+            ],
+          ),
+        ),
+        checkBoxOrActionMoreLandscape(peer, isTile: true),
+      ]),
+    );
+  }
+
   Widget _buildPeerTile(
       BuildContext context, Peer peer, Rx<BoxDecoration?>? deco) {
     hideUsernameOnCard ??=
@@ -288,6 +373,7 @@ class _PeerCardState extends State<_PeerCard>
     final name = hideUsernameOnCard == true
         ? peer.hostname
         : '${peer.username}${peer.username.isNotEmpty && peer.hostname.isNotEmpty ? '@' : ''}${peer.hostname}';
+    final h3 = H3Estilo.ativo(context);
     final child = Card(
       color: Colors.transparent,
       elevation: 0,
@@ -306,7 +392,9 @@ class _PeerCardState extends State<_PeerCard>
               children: [
                 Expanded(
                   child: Container(
-                    color: str2color('${peer.id}${peer.platform}', 0x7f),
+                    color: h3
+                        ? H3Cores.painel2
+                        : str2color('${peer.id}${peer.platform}', 0x7f),
                     child: Row(
                       children: [
                         Expanded(
@@ -314,9 +402,16 @@ class _PeerCardState extends State<_PeerCard>
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(6),
-                                child:
-                                    getPlatformImage(peer.platform, size: 60),
+                                margin: EdgeInsets.only(top: h3 ? 10 : 0),
+                                padding: EdgeInsets.all(h3 ? 12 : 6),
+                                decoration: h3
+                                    ? BoxDecoration(
+                                        color:
+                                            H3Cores.destaque.withOpacity(0.12),
+                                        shape: BoxShape.circle)
+                                    : null,
+                                child: getPlatformImage(peer.platform,
+                                    size: h3 ? 40 : 60),
                               ),
                               Row(
                                 children: [
@@ -326,8 +421,10 @@ class _PeerCardState extends State<_PeerCard>
                                       waitDuration: const Duration(seconds: 1),
                                       child: Text(
                                         name,
-                                        style: const TextStyle(
-                                            color: Colors.white70,
+                                        style: TextStyle(
+                                            color: h3
+                                                ? H3Cores.apagado
+                                                : Colors.white70,
                                             fontSize: 12),
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
@@ -362,7 +459,9 @@ class _PeerCardState extends State<_PeerCard>
                   ),
                 ),
                 Container(
-                  color: Theme.of(context).colorScheme.background,
+                  color: h3
+                      ? H3Cores.painel
+                      : Theme.of(context).colorScheme.background,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
