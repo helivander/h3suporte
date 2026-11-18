@@ -635,23 +635,56 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
 
   // ---------- Relatórios ----------
 
-  Widget _relatorios() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _titulo(String t, String sub) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _indicadores(),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              SizedBox(width: 380, child: _seguranca()),
-            ],
-          ),
+          Text(t,
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: H3Cores.texto)),
+          const SizedBox(height: 4),
+          Text(sub, style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
         ],
-      ),
+      );
+
+  /// Distribui [itens] em colunas iguais e linhas de mesma altura.
+  Widget _grade(List<Widget> itens, {double minimo = 230}) {
+    return LayoutBuilder(builder: (context, c) {
+      const gap = 16.0;
+      final cols = ((c.maxWidth + gap) / (minimo + gap)).floor().clamp(1, 4);
+      final linhas = <Widget>[];
+      for (var i = 0; i < itens.length; i += cols) {
+        final fatia = itens.skip(i).take(cols).toList();
+        linhas.add(Padding(
+          padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+          child: IntrinsicHeight(
+            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              for (var j = 0; j < cols; j++) ...[
+                if (j > 0) const SizedBox(width: gap),
+                Expanded(
+                    child: j < fatia.length ? fatia[j] : const SizedBox.shrink()),
+              ],
+            ]),
+          ),
+        ));
+      }
+      return Column(children: linhas);
+    });
+  }
+
+  Widget _relatorios() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _titulo('Relatórios', 'Resumo das suas sessões, dispositivos e da segurança deste computador.'),
+        const SizedBox(height: 18),
+        _indicadores(),
+        const SizedBox(height: 26),
+        _titulo('Segurança e acesso', 'Como este computador aceita conexões. Toque para ajustar.'),
+        const SizedBox(height: 14),
+        _seguranca(),
+      ],
     );
   }
 
@@ -670,81 +703,79 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         final entrada =
             gFFI.serverModel.clients.where((c) => !c.disconnected).length;
         final saida = _sessoesSaida.length;
-        return LayoutBuilder(builder: (context, caixa) {
-        final largura = ((caixa.maxWidth - 48) / 4).clamp(200.0, 400.0);
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _indicador(largura, Icons.layers_outlined, H3Cores.info, 'Sessões ativas',
-                '${saida + entrada}', '$saida saindo · $entrada entrando'),
-            _indicador(
-                largura,
-                Icons.desktop_windows_outlined,
-                H3Cores.destaque,
-                'Dispositivos',
-                '${recentes.length}',
-                '$online online · recentes'),
-            _indicador(largura, Icons.star_outline, H3Cores.aviso, 'Favoritos',
-                '${gFFI.favoritePeersModel.peers.length}', 'marcados por você'),
-            _indicador(largura, Icons.lan_outlined, H3Cores.ok, 'Na rede local',
-                '${gFFI.lanPeersModel.peers.length}', 'encontrados na rede'),
-          ],
-        );
-        });
+        return _grade([
+          _indicador(Icons.layers_outlined, H3Cores.info, 'Sessões ativas',
+              '${saida + entrada}', '$saida saindo · $entrada entrando'),
+          _indicador(Icons.desktop_windows_outlined, H3Cores.destaque,
+              'Dispositivos', '${recentes.length}', '$online online · recentes',
+              progresso: recentes.isEmpty ? 0 : online / recentes.length),
+          _indicador(Icons.star_outline, H3Cores.aviso, 'Favoritos',
+              '${gFFI.favoritePeersModel.peers.length}', 'marcados por você'),
+          _indicador(Icons.lan_outlined, H3Cores.ok, 'Na rede local',
+              '${gFFI.lanPeersModel.peers.length}', 'encontrados na rede'),
+        ], minimo: 210);
       }),
     );
   }
 
-  Widget _indicador(double largura, IconData icone, Color cor, String rotulo,
-      String valor, String nota) {
+  Widget _indicador(IconData icone, Color cor, String rotulo, String valor,
+      String nota,
+      {double? progresso}) {
     return Container(
-      width: largura,
-      height: 108,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [H3Cores.painel2, H3Cores.painel]),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: H3Cores.linha),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: cor.withOpacity(0.14),
               borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [cor.withOpacity(0.28), cor.withOpacity(0.08)]),
             ),
-            child: Icon(icone, color: cor, size: 22),
+            child: Icon(icone, color: cor, size: 21),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(rotulo,
-                    style: TextStyle(
-                        color: H3Cores.texto, fontWeight: FontWeight.w500)),
-                Text(valor,
-                    style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                        color: cor == H3Cores.destaque
-                            ? H3Cores.destaque
-                            : H3Cores.texto)),
-                Text(nota,
-                    style:
-                        TextStyle(fontSize: 12, color: H3Cores.apagado)),
-              ],
-            ),
+            child: Text(rotulo,
+                style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: H3Cores.apagado)),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        Text(valor,
+            style: TextStyle(
+                fontSize: 34,
+                height: 1,
+                fontWeight: FontWeight.w700,
+                color: H3Cores.texto)),
+        const SizedBox(height: 8),
+        Text(nota, style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+        const Spacer(),
+        if (progresso != null) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+                minHeight: 5,
+                value: progresso,
+                backgroundColor: H3Cores.linha,
+                valueColor: AlwaysStoppedAnimation(cor)),
           ),
         ],
-      ),
+      ]),
     );
   }
 
@@ -762,51 +793,58 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               : 'Senha ou clique';
       final doisFatores = bind.mainHasValid2FaSync();
       final gravar = mainGetBoolOptionSync(kOptionAllowAutoRecordIncoming);
-      return _cartao(
-        titulo: 'Segurança e acesso',
-        subtitulo: 'Como este computador aceita conexões.',
-        filho: Column(mainAxisSize: MainAxisSize.min, children: [
-          _linhaSeguranca(Icons.lock_outline, 'Autenticação em 2 etapas',
-              doisFatores ? 'Ativada' : 'Desativada', doisFatores),
-          _linhaSeguranca(Icons.key_outlined, 'Senha aceita', senha, true),
-          _linhaSeguranca(Icons.how_to_reg_outlined, 'Aprovar conexões',
-              aprovacao, model.approveMode != ''),
-          _linhaSeguranca(Icons.videocam_outlined, 'Gravar sessões de entrada',
-              gravar ? 'Ativada' : 'Desativada', gravar),
-        ]),
-      );
+      return _grade([
+        _tileSeguranca(Icons.lock_outline, 'Autenticação em 2 etapas',
+            doisFatores ? 'Ativada' : 'Desativada', doisFatores),
+        _tileSeguranca(Icons.key_outlined, 'Senha aceita', senha, true),
+        _tileSeguranca(Icons.how_to_reg_outlined, 'Aprovar conexões', aprovacao,
+            model.approveMode != ''),
+        _tileSeguranca(Icons.videocam_outlined, 'Gravar sessões de entrada',
+            gravar ? 'Ativada' : 'Desativada', gravar),
+      ], minimo: 210);
     });
   }
 
-  Widget _linhaSeguranca(
+  Widget _tileSeguranca(
       IconData icone, String titulo, String valor, bool ligado) {
+    final cor = ligado ? H3Cores.ok : H3Cores.apagado;
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(18),
       onTap: () => DesktopSettingPage.switch2page(SettingsTabKey.safety),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: H3Cores.linha))),
-        child: Row(children: [
-          Icon(icone, size: 20, color: H3Cores.apagado),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(titulo,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: H3Cores.texto)),
-                Text(valor,
-                    style: TextStyle(
-                        fontSize: 11.5,
-                        color: ligado ? H3Cores.destaque : H3Cores.apagado)),
-              ],
+          color: H3Cores.painel2,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: H3Cores.linha),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(icone, size: 22, color: H3Cores.apagado),
+            const Spacer(),
+            Icon(Icons.chevron_right, size: 20, color: H3Cores.apagado),
+          ]),
+          const SizedBox(height: 14),
+          Text(titulo,
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
+                  color: H3Cores.texto)),
+          const Spacer(),
+          const SizedBox(height: 10),
+          Row(children: [
+            Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(valor,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600, color: cor)),
             ),
-          ),
-          Icon(Icons.chevron_right, size: 20, color: H3Cores.apagado),
+          ]),
         ]),
       ),
     );
