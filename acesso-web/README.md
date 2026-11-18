@@ -23,10 +23,10 @@ Contra o servidor de produção `hbbsserver.h3info.com`, por WebSocket (`ws://�
 
 ## O que falta para funcionar em produção
 
-- **`wss://`**: uma página `https://` não abre `ws://`. O proxy do servidor de conexão (nginx, CT 118) precisa expor
-  `/ws/id` e `/ws/relay` para `10.0.4.6:21118` e `:21119` (é o que o cliente oficial usa para domínios); o trecho do
-  nginx está em `docs/acesso-remoto.md` do centralkeys. Com o proxy no ar, as portas 21118 e 21119 abertas no UniFi para
-  os testes deveriam ser fechadas.
+- **`wss://`**: uma página `https://` não abre `ws://`. Resolvido no centralkeys: o Caddy da Central expõe
+  `/ws/id` e `/ws/relay` no domínio dela (que já passa pela Cloudflare) e leva ao hbbs (`10.0.4.6:21118`) e ao hbbr
+  (`:21119`); veja `docs/acesso-remoto.md` de lá. Com isso, as portas 21118 e 21119 abertas no UniFi só para os testes
+  podem ser fechadas. O host `hbbsserver.h3info.com` é só DNS (sem Cloudflare nem certificado do nome) e não serve.
 - Validar com um dispositivo real e com a senha de um computador de verdade (os testes automáticos e o dispositivo falso
   cobrem o protocolo, mas só o aplicativo real prova o comportamento de teclado e de tela do Windows/macOS/Linux).
 
