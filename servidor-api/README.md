@@ -45,6 +45,10 @@ Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
 | `GET /api/downloads`                                    | Instaladores da última versão estável (`versao`, `tag`, `pagina`, `arquivos[]` com `nome`, `plataforma`, `tipo`, `tamanho`, `url`), sem o build `-ia`; cache de 10 min; `404` sem versão |
 | `GET /saude`                                            | `{"ok":true}`                                                                                   |
 
+Sessão do portal da Central: um token `cw_…` (aba "Acesso remoto" do portal) não passa pelo `/api/login` daqui. Na
+primeira vez que aparece, o servidor pergunta à Central em `validar`; valendo, fica guardado como as outras e segue
+as mesmas regras de revalidação. Recusa fica em memória por 5 min (não pergunta de novo a cada pedido).
+
 Sessões: se a Central responder que a sessão não vale mais (conta desativada, assinatura suspensa), o
 próximo pedido dá `401` e o app volta para a tela de login. Com a Central fora do ar, a sessão continua
 valendo por `TOLERANCIA_HORAS` desde a última validação; depois disso responde `503` (o app mostra o erro
