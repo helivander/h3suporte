@@ -186,6 +186,10 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           Expanded(
             child: Obx(() {
               final t = {
+                SettingsTabKey.general: [
+                  'Geral',
+                  'Idioma, tema, serviço e preferências do aplicativo.'
+                ],
                 SettingsTabKey.safety: [
                   'Segurança',
                   'Controle quem pode acessar este computador e como.'
@@ -193,6 +197,26 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                 SettingsTabKey.network: [
                   'Rede',
                   'Servidor, proxy e opções de conexão.'
+                ],
+                SettingsTabKey.display: [
+                  'Exibição',
+                  'Qualidade de imagem, codec e comportamento das sessões.'
+                ],
+                SettingsTabKey.account: [
+                  'Conta',
+                  'Seus dados, plano e uso em tempo real.'
+                ],
+                SettingsTabKey.printer: [
+                  'Impressora',
+                  'Impressão a partir do computador remoto.'
+                ],
+                SettingsTabKey.ia: [
+                  'IA',
+                  'Provedor, modelo e comportamento do assistente.'
+                ],
+                SettingsTabKey.about: [
+                  'Sobre',
+                  'Informações da versão instalada neste computador.'
                 ],
               }[h3ConfigAbaAtual.value];
               if (t == null) return const SizedBox.shrink();

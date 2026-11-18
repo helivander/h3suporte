@@ -2864,15 +2864,6 @@ class _AboutState extends State<_About> {
         controller: c,
         padding: const EdgeInsets.fromLTRB(15, 6, 15, 20),
         children: [
-          Text('Sobre',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  color: H3Cores.texto)),
-          const SizedBox(height: 4),
-          Text('Informações da versão instalada neste computador.',
-              style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
-          const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -3287,6 +3278,53 @@ Widget _OptionCheckBox(
     enabled = false;
   }
 
+  if (!bind.isIncomingOnly()) {
+    final rotulo = Text(
+      translate(label),
+      style: TextStyle(
+          fontSize: 14,
+          color: enabled && !isOptFixed ? H3Cores.texto : H3Cores.apagado),
+    );
+    return GestureDetector(
+      onTap: enabled && !isOptFixed ? () => onChanged(!ref.value) : null,
+      child: Obx(
+        () => Container(
+          margin: const EdgeInsets.symmetric(vertical: 3),
+          padding: const EdgeInsets.fromLTRB(14, 4, 8, 4),
+          decoration: BoxDecoration(
+            color: H3Cores.fundo,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: H3Cores.linha),
+          ),
+          child: Row(children: [
+            Offstage(
+              offstage: !ref.value || checkedIcon == null,
+              child: checkedIcon?.marginOnly(right: 8),
+            ),
+            if (trailing == null)
+              Expanded(child: rotulo)
+            else ...[
+              Flexible(child: rotulo),
+              trailing,
+              const Spacer(),
+            ],
+            Transform.scale(
+              scale: 0.82,
+              child: Switch(
+                value: ref.value,
+                activeColor: Colors.white,
+                activeTrackColor: H3Cores.destaque,
+                inactiveTrackColor: H3Cores.linha2,
+                inactiveThumbColor: Colors.white,
+                onChanged: enabled && !isOptFixed ? onChanged : null,
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   return GestureDetector(
     child: Obx(
       () => Row(
@@ -3518,9 +3556,21 @@ class _WaylandCardState extends State<WaylandCard> {
   }
 }
 
+ButtonStyle? _estiloBotaoH3() => bind.isIncomingOnly()
+    ? null
+    : ElevatedButton.styleFrom(
+        backgroundColor: H3Cores.destaque,
+        foregroundColor: H3Cores.destaqueTinta,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700),
+      );
+
 // ignore: non_constant_identifier_names
 Widget _Button(String label, Function() onPressed,
     {bool enabled = true, String? tip, ButtonStyle? style}) {
+  style ??= _estiloBotaoH3();
   var button = ElevatedButton(
     onPressed: enabled ? onPressed : null,
     child: Text(
@@ -3544,6 +3594,7 @@ Widget _SubButton(String label, Function() onPressed, [bool enabled = true]) {
   return Row(
     children: [
       ElevatedButton(
+        style: _estiloBotaoH3(),
         onPressed: enabled ? onPressed : null,
         child: Text(
           translate(label),

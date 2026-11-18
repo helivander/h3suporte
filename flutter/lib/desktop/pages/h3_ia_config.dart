@@ -331,14 +331,6 @@ class _IaConfigState extends State<IaConfig> {
             : _auth.isSignedIn;
     final cor = pronto ? H3Cores.ok : H3Cores.aviso;
     return ListView(padding: const EdgeInsets.fromLTRB(15, 6, 15, 20), children: [
-      Text('IA',
-          style: TextStyle(
-              fontSize: 22, fontWeight: FontWeight.w600, color: H3Cores.texto)),
-      const SizedBox(height: 4),
-      Text(
-          'Configure aqui uma vez. Ao conectar a um computador, o chat da IA já abre pronto para uso.',
-          style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
-      const SizedBox(height: 18),
       Container(
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.only(bottom: 16),
