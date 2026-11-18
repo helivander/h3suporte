@@ -109,4 +109,5 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     // H3 Suporte: rebuild when the client direction changes (incoming-only client).
     println!("cargo:rerun-if-env-changed=CONN_TYPE");
+    println!("cargo:rerun-if-env-changed=H3_IA");
 }

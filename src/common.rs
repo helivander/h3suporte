@@ -1181,6 +1181,9 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 // Because the url is always `H3_UPDATE_CHECK_URL`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
+    if option_env!("H3_IA") == Some("true") {
+        return Ok(());
+    }
     let (request, _) =
         hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
     let url = H3_UPDATE_CHECK_URL.to_owned();

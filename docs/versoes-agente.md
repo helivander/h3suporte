@@ -10,7 +10,7 @@ O H3 Suporte tem **duas versões do app de acesso (Windows)**. A diferença é s
 | Painel do assistente (`AiChatPanel`) | não é montado na sessão | montado |
 | Quem baixa | qualquer cliente com assinatura | **somente administrador da Central** |
 | Onde fica o instalador | release público do GitHub + lista assinada do atualizador | **só artefato privado do workflow** (`h3suporte-ia-windows-x86_64`, 30 dias) |
-| Atualização automática | sim, pela lista assinada | não (veja "Limites") |
+| Atualização automática | sim, pela lista assinada | **não**: o build `-ia` nunca procura atualização |
 
 A versão **-cliente** (só recebe conexão) continua como está e nunca tem IA.
 
@@ -21,7 +21,8 @@ A versão **-cliente** (só recebe conexão) continua como está e nunca tem IA.
 - `flutter/lib/desktop/widgets/remote_toolbar.dart` só cria o botão do assistente com `kH3IaBuild`, e
   `flutter/lib/common/widgets/overlay.dart` só liga o painel com `kH3IaBuild`.
 - `build.py`: com a variável de ambiente `H3_IA=true`, o `flutter build windows` (e o de macOS) recebe
-  `--dart-define=H3_IA=true`.
+  `--dart-define=H3_IA=true`; o mesmo `H3_IA=true` chega ao `cargo` (`option_env!("H3_IA")`, `build.rs` refaz a compilação
+  quando ele muda).
 - `.github/workflows/flutter-build.yml`: a matriz do Windows ganhou a entrada `name-suffix: "-ia"` com `ia: "true"`.
   Esse build **não** entra no passo "Publish Release" nem nos artefatos que alimentam a lista assinada
   (`rustdesk-update.json`); ele é enviado só como artefato `h3suporte-ia-windows-x86_64`.
@@ -45,10 +46,11 @@ O código da Central (portal e painel do administrador) fica fora deste reposit�
 
 ## Limites conhecidos
 
-- **Atualização:** o atualizador só conhece a versão sem IA. Um computador com a versão com IA que atualizar sozinho
-  passaria para a versão sem IA. Hoje o administrador reinstala o `-ia` a cada versão. Impedir a atualização
-  automática no `-ia` exige o app saber que é `-ia` também no lado Rust (hoje o marcador só existe no Dart).
+- **Atualização:** o `-ia` não se atualiza (no Rust, `do_check_software_update` em `src/common.rs` sai na hora quando o
+  build tem `H3_IA=true`, o que cobre o aviso, a atualização automática do Windows e a do serviço do Mac). A cada
+  versão nova o administrador reinstala o `-ia` pelo artefato do workflow.
 - Quem já tem o instalador `-ia` pode repassá-lo: a restrição vale para a distribuição, não para o arquivo.
 - Só Windows x64 gera a versão com IA. O macOS aceita o marcador (`H3_IA=true` no `build.py`) mas o CI ainda não tem
   a entrada `-ia` para ele.
-- Não testei o build `-ia` no CI nem uma sessão real; só a análise do Dart, a sintaxe do YAML e do `build.py`.
+- Não testei o build `-ia` no CI nem uma sessão real; só a análise do Dart, a sintaxe do YAML e do `build.py`, e a
+  compilação do Rust (`cargo check`) com e sem `H3_IA`.
