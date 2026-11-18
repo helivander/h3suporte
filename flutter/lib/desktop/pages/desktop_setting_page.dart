@@ -406,39 +406,48 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
 
   Widget _itemH3(_TabInfo tab, bool selected) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: _H3Hover(
         onTap: () {
           final index = DesktopSettingPage.tabKeys.indexOf(tab.key);
           if (index == -1) return;
           if (selectedTab.value != tab.key) controller.jumpToPage(index);
           selectedTab.value = tab.key;
         },
-        child: Container(
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+        builder: (hover) => AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 46,
+          padding: const EdgeInsets.only(right: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            gradient: selected
-                ? LinearGradient(colors: [
-                    H3Cores.destaque.withOpacity(0.22),
-                    H3Cores.destaque.withOpacity(0.06),
-                  ])
-                : null,
+            borderRadius: BorderRadius.circular(12),
+            color: selected
+                ? H3Cores.destaque.withOpacity(0.16)
+                : (hover ? H3Cores.destaque.withOpacity(0.07) : null),
           ),
           child: Row(children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: 4,
+              height: selected ? 24 : 0,
+              margin: const EdgeInsets.only(left: 2, right: 10),
+              decoration: BoxDecoration(
+                color: H3Cores.destaque,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             Icon(selected ? tab.selected : tab.unselected,
-                size: 20,
-                color: selected ? H3Cores.destaque : H3Cores.apagado),
+                size: 22,
+                color: selected || hover ? H3Cores.destaque : H3Cores.apagado),
             const SizedBox(width: 12),
             Expanded(
               child: Text(translate(tab.label),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: selected ? H3Cores.texto : H3Cores.apagado)),
+                      fontSize: 14.5,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected || hover
+                          ? H3Cores.texto
+                          : H3Cores.apagado)),
             ),
           ]),
         ),
@@ -3199,6 +3208,116 @@ Widget _duasColunas(ScrollController c, List<Widget> itens) {
   });
 }
 
+/// Área clicável com cursor de mão e estado de hover para o visual H3.
+class _H3Hover extends StatefulWidget {
+  final Widget Function(bool hover) builder;
+  final VoidCallback? onTap;
+  const _H3Hover({Key? key, required this.builder, this.onTap})
+      : super(key: key);
+
+  @override
+  State<_H3Hover> createState() => _H3HoverState();
+}
+
+class _H3HoverState extends State<_H3Hover> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: widget.onTap != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: widget.builder(_hover && widget.onTap != null),
+      ),
+    );
+  }
+}
+
+/// Cartão de Configurações que recolhe ao clicar no título.
+class _CartaoH3 extends StatefulWidget {
+  final String title;
+  final List<Widget> children;
+  final List<Widget>? titleSuffix;
+  const _CartaoH3(
+      {Key? key,
+      required this.title,
+      required this.children,
+      this.titleSuffix})
+      : super(key: key);
+
+  @override
+  State<_CartaoH3> createState() => _CartaoH3State();
+}
+
+class _CartaoH3State extends State<_CartaoH3> {
+  bool _aberto = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _H3Hover(
+          onTap: () => setState(() => _aberto = !_aberto),
+          builder: (hover) => Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 36,
+                height: 36,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  color: H3Cores.destaque.withOpacity(hover ? 0.26 : 0.14),
+                ),
+                child: Icon(_iconeCard(widget.title),
+                    size: 19, color: H3Cores.destaque),
+              ),
+              Expanded(
+                  child: Text(
+                translate(widget.title),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: hover ? H3Cores.destaque : H3Cores.texto),
+              )),
+              ...?widget.titleSuffix,
+              AnimatedRotation(
+                turns: _aberto ? 0 : -0.25,
+                duration: const Duration(milliseconds: 180),
+                child: Icon(Icons.expand_more,
+                    size: 22,
+                    color: hover ? H3Cores.destaque : H3Cores.apagado),
+              ),
+              const SizedBox(width: 6),
+            ],
+          ).marginOnly(left: _kContentHMargin, top: 14, bottom: 10),
+        ),
+        ClipRect(
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _aberto
+                ? Column(children: [
+                    Divider(height: 1, color: H3Cores.linha)
+                        .marginOnly(bottom: 6),
+                    ...widget.children.map(
+                        (e) => e.marginOnly(top: 4, right: _kContentHMargin)),
+                  ])
+                : const SizedBox(width: double.infinity),
+          ),
+        ),
+      ],
+    ).marginOnly(bottom: 12);
+  }
+}
+
 IconData _iconeCard(String titulo) {
   switch (titulo) {
     case 'Permissions':
@@ -3272,42 +3391,8 @@ Widget _Card(
                       ],
                     ).marginOnly(bottom: 10),
                   )
-                : Column(
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            margin: const EdgeInsets.only(right: 12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    H3Cores.destaque.withOpacity(0.28),
-                                    H3Cores.destaque.withOpacity(0.08)
-                                  ]),
-                            ),
-                            child: Icon(_iconeCard(title),
-                                size: 18, color: H3Cores.destaque),
-                          ),
-                          Expanded(
-                              child: Text(
-                            translate(title),
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w700),
-                          )),
-                          ...?title_suffix
-                        ],
-                      ).marginOnly(left: _kContentHMargin, top: 14, bottom: 10),
-                      Divider(height: 1, color: H3Cores.linha)
-                          .marginOnly(bottom: 6),
-                      ...children
-                          .map((e) => e.marginOnly(top: 4, right: _kContentHMargin)),
-                    ],
-                  ).marginOnly(bottom: 12),
+                : _CartaoH3(
+                    title: title, titleSuffix: title_suffix, children: children),
           ).marginOnly(left: _kCardLeftMargin, top: 15),
         ),
       ),
@@ -3368,16 +3453,20 @@ Widget _OptionCheckBox(
           fontSize: 14,
           color: enabled && !isOptFixed ? H3Cores.texto : H3Cores.apagado),
     );
-    return GestureDetector(
+    return _H3Hover(
       onTap: enabled && !isOptFixed ? () => onChanged(!ref.value) : null,
-      child: Obx(
-        () => Container(
+      builder: (hover) => Obx(
+        () => AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
           margin: const EdgeInsets.symmetric(vertical: 3),
           padding: const EdgeInsets.fromLTRB(14, 4, 8, 4),
           decoration: BoxDecoration(
-            color: H3Cores.fundo,
+            color: hover ? H3Cores.painel2 : H3Cores.fundo,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: H3Cores.linha),
+            border: Border.all(
+                color: ref.value && enabled
+                    ? H3Cores.destaque.withOpacity(hover ? 0.7 : 0.4)
+                    : (hover ? H3Cores.linha2 : H3Cores.linha)),
           ),
           child: Row(children: [
             Offstage(
@@ -3465,11 +3554,12 @@ Widget _Radio<T>(BuildContext context,
   if (!bind.isIncomingOnly()) {
     final on = value == groupValue;
     final ativo = onChange2 != null;
-    return GestureDetector(
-      onTap: () => onChange2?.call(value),
-      child: Opacity(
+    return _H3Hover(
+      onTap: ativo ? () => onChange2?.call(value) : null,
+      builder: (hover) => Opacity(
         opacity: ativo ? 1 : 0.55,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
           margin: const EdgeInsets.symmetric(vertical: 3),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           decoration: BoxDecoration(
@@ -3479,10 +3569,12 @@ Widget _Radio<T>(BuildContext context,
                     H3Cores.destaque.withOpacity(0.05)
                   ])
                 : null,
-            color: on ? null : H3Cores.fundo,
+            color: on ? null : (hover ? H3Cores.painel2 : H3Cores.fundo),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: on ? H3Cores.destaque.withOpacity(0.7) : H3Cores.linha,
+                color: on
+                    ? H3Cores.destaque.withOpacity(0.7)
+                    : (hover ? H3Cores.linha2 : H3Cores.linha),
                 width: on ? 1.4 : 1),
           ),
           child: Row(children: [
