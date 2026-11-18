@@ -14,7 +14,7 @@ use hbb_common::{
 };
 
 const RENOVACAO: Duration = Duration::from_secs(60);
-const ESPERA: Duration = Duration::from_secs(8);
+const ESPERA: Duration = Duration::from_secs(3);
 
 /// Vaga de um acesso aberto; ao sair de escopo, devolve a vaga ao servidor.
 pub struct Acesso {

@@ -203,7 +203,7 @@ export function criarApp({ config, banco, central, versao = async () => null, re
   }
 
   /** Sessão válida ou `ErroHttp` 401/503. Revalida na Central a cada `revalidarMs`. */
-  async function autenticar(req) {
+  async function autenticar(req, { segundoPlano = false } = {}) {
     const token = tokenDe(req);
     if (!token) throw new ErroHttp(401, "Faça login.");
     const tokenHash = hash(token);
@@ -216,7 +216,12 @@ export function criarApp({ config, banco, central, versao = async () => null, re
         pendente = revalidar(token, tokenHash, sessao).finally(() => validando.delete(tokenHash));
         validando.set(tokenHash, pendente);
       }
-      atual = await pendente;
+      // Rota no caminho da conexão: não espera a Central se a sessão ainda está paga.
+      if (segundoPlano && relogio() < Date.parse(sessao.assinatura?.pagoAte ?? "")) {
+        pendente.catch(() => {});
+      } else {
+        atual = await pendente;
+      }
     }
     if (!atual) throw new ErroHttp(401, "Sessão encerrada. Faça login de novo.");
     return { token, tokenHash, ...atual };
@@ -307,9 +312,9 @@ export function criarApp({ config, banco, central, versao = async () => null, re
 
   async function abrirAcesso(req, res) {
     const corpo = await lerJson(req);
-    const sessao = await autenticar(req);
+    const sessao = await autenticar(req, { segundoPlano: true });
     const id = texto(corpo.id, 64);
-    const peer = texto(corpo.peer, 64);
+    const peer =texto(corpo.peer, 64);
     if (!id || !peer) return erro(res, 400, "Acesso sem identificação. Atualize o H3 Suporte.");
     const agora = relogio();
     const abertos = acessosDa(sessao.assinatura.id, agora);

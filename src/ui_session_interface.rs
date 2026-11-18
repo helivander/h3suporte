@@ -1979,13 +1979,21 @@ pub async fn io_loop<T: InvokeUiSession>(handler: Session<T>, round: u32) {
     *handler.sender.write().unwrap() = Some(sender.clone());
     let token = LocalConfig::get_option("access_token");
     let key = crate::get_key(false).await;
-    let _acesso = match crate::acessos::abrir(&handler.get_id(), &token).await {
-        Ok(acesso) => acesso,
-        Err(motivo) => {
-            handler.on_error(&motivo);
-            return;
-        }
-    };
+    {
+        let (handler, sender, token) = (handler.clone(), sender.clone(), token.clone());
+        tokio::spawn(async move {
+            match crate::acessos::abrir(&handler.get_id(), &token).await {
+                Ok(acesso) => {
+                    let _acesso = acesso;
+                    std::future::pending::<()>().await;
+                }
+                Err(motivo) => {
+                    handler.on_error(&motivo);
+                    sender.send(Data::Close).ok();
+                }
+            }
+        });
+    }
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     if handler.is_port_forward() {
         handler.lc.write().unwrap().port_forward_mux = crate::port_forward::mux_enabled();
