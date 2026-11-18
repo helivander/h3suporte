@@ -649,32 +649,37 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         final entrada =
             gFFI.serverModel.clients.where((c) => !c.disconnected).length;
         final saida = _sessoesSaida.length;
+        return LayoutBuilder(builder: (context, caixa) {
+        final largura = ((caixa.maxWidth - 48) / 4).clamp(200.0, 400.0);
         return Wrap(
           spacing: 16,
           runSpacing: 16,
           children: [
-            _indicador(Icons.layers_outlined, H3Cores.info, 'Sessões ativas',
+            _indicador(largura, Icons.layers_outlined, H3Cores.info, 'Sessões ativas',
                 '${saida + entrada}', '$saida saindo · $entrada entrando'),
             _indicador(
+                largura,
                 Icons.desktop_windows_outlined,
                 H3Cores.destaque,
-                'Dispositivos recentes',
+                'Dispositivos',
                 '${recentes.length}',
-                '$online online agora'),
-            _indicador(Icons.star_outline, H3Cores.aviso, 'Favoritos',
+                '$online online · recentes'),
+            _indicador(largura, Icons.star_outline, H3Cores.aviso, 'Favoritos',
                 '${gFFI.favoritePeersModel.peers.length}', 'marcados por você'),
-            _indicador(Icons.lan_outlined, H3Cores.ok, 'Na rede local',
+            _indicador(largura, Icons.lan_outlined, H3Cores.ok, 'Na rede local',
                 '${gFFI.lanPeersModel.peers.length}', 'encontrados na rede'),
           ],
         );
+        });
       }),
     );
   }
 
-  Widget _indicador(
-      IconData icone, Color cor, String rotulo, String valor, String nota) {
+  Widget _indicador(double largura, IconData icone, Color cor, String rotulo,
+      String valor, String nota) {
     return Container(
-      width: 220,
+      width: largura,
+      height: 108,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
