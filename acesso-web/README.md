@@ -1,9 +1,13 @@
-# Acesso remoto pelo navegador (prova de conceito)
+# Acesso remoto pelo navegador
 
-Objetivo: o assinante, logado no portal da Central, abrir o acesso remoto a um dos seus dispositivos **sem instalar
-nada**. Hoje só existe um cliente de teste em Node (`poc/`), que valida o protocolo; ainda não há navegador.
+Objetivo: o assinante, logado no portal da Central, controlar um dos seus dispositivos **sem instalar nada**.
 
-## O que já foi provado (17/11/2026)
+**Estado (18/11/2026):** o cliente de produção já existe no portal da Central (repositório `centralkeys`,
+`apps/web/lib/remoto/` e `apps/web/components/central/VisorRemoto.tsx`; documentação em `docs/acesso-remoto.md` de lá):
+vídeo VP9 por WebCodecs, mouse, teclado, Ctrl+Alt+Del, envio de texto, troca de tela e qualidade. O que sobrou nesta
+pasta são as provas de conceito em Node e o dispositivo falso para testes.
+
+## O que a prova de conceito já validou (17/11/2026)
 
 Contra o servidor de produção `hbbsserver.h3info.com`, por WebSocket (`ws://…:21118` e `ws://…:21119`):
 
@@ -17,23 +21,25 @@ Contra o servidor de produção `hbbsserver.h3info.com`, por WebSocket (`ws://�
    (nome, plataforma, telas).
 5. **Vídeo**: chegaram quadros de vídeo, além de cursor e áudio.
 
-## O que falta
+## O que falta para funcionar em produção
 
-- Decodificar o vídeo (WebCodecs no navegador) e mostrar na tela; enviar mouse e teclado.
-- **`wss://`**: uma página `https://` não abre `ws://`. Precisa de TLS: o nginx (CT 118) expor `/ws/id` e `/ws/relay`
-  para `10.0.4.6:21118` e `:21119` (é o que o cliente oficial usa para domínios). As portas 21118 e 21119 já foram
-  abertas no UniFi para este teste; ao migrar para `wss://` elas deveriam ser fechadas.
-- Passar o login da Central (o dispositivo exige conta H3 Suporte para acesso remoto) e usar a senha guardada em
-  "Meus dispositivos", sem o usuário digitar.
-- O servidor-api/portal da Central: botão "Acessar pelo navegador" e a página do cliente.
+- **`wss://`**: uma página `https://` não abre `ws://`. O proxy do servidor de conexão (nginx, CT 118) precisa expor
+  `/ws/id` e `/ws/relay` para `10.0.4.6:21118` e `:21119` (é o que o cliente oficial usa para domínios); o trecho do
+  nginx está em `docs/acesso-remoto.md` do centralkeys. Com o proxy no ar, as portas 21118 e 21119 abertas no UniFi para
+  os testes deveriam ser fechadas.
+- Validar com um dispositivo real e com a senha de um computador de verdade (os testes automáticos e o dispositivo falso
+  cobrem o protocolo, mas só o aplicativo real prova o comportamento de teclado e de tela do Windows/macOS/Linux).
 
-## Como rodar o teste
+## Como rodar
 
 ```bash
 cd acesso-web/poc && npm install
 node 01-rendezvous.mjs <id>                 # o dispositivo está online?
 SENHA='…' node 02-sessao.mjs <id>           # sessão completa; a senha vem só do ambiente
+node 03-dispositivo-falso.mjs               # servidor de conexão + dispositivo falsos (ws://localhost:21120)
 ```
 
-A senha de **uso único** do app muda depois do primeiro login: para repetir o teste, use uma senha permanente de
-teste. Nunca grave a senha em arquivo.
+`03-dispositivo-falso.mjs` serve para testar o portal da Central sem um computador de verdade: imprime a chave
+pública e o ID/senha de teste, gera o vídeo VP9 (abra `http://localhost:21120/gerar` uma vez) e escreve no console o
+que chega de mouse e teclado. A senha de **uso único** do app muda depois do primeiro login: para repetir o teste real
+use uma senha permanente de teste. Nunca grave a senha em arquivo.
