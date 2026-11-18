@@ -357,21 +357,65 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
         ),
         const SizedBox(width: 12),
         if (!logado)
-          ElevatedButton(
-              onPressed: () => loginDialog(), child: const Text('Entrar'))
+          _botaoH3(Icons.login, 'Entrar', () => loginDialog())
         else
-          ElevatedButton(
-            onPressed: _registrando ? null : _registrar,
-            style: ElevatedButton.styleFrom(
-                backgroundColor: H3Cores.destaque,
-                foregroundColor: H3Cores.destaqueTinta),
-            child: Text(_registrando
-                ? 'Registrando…'
-                : registrado
-                    ? 'Gerar nova senha'
-                    : 'Registrar na conta'),
-          ),
+          _botaoH3(
+              registrado ? Icons.refresh : Icons.cloud_upload_outlined,
+              _registrando
+                  ? 'Registrando…'
+                  : registrado
+                      ? 'Gerar nova senha'
+                      : 'Registrar na conta',
+              _registrando ? null : _registrar,
+              primario: !registrado,
+              carregando: _registrando),
       ]),
+    );
+  }
+
+  Widget _botaoH3(IconData icone, String rotulo, VoidCallback? onTap,
+      {bool primario = true, bool carregando = false}) {
+    final fg = primario ? H3Cores.destaqueTinta : H3Cores.texto;
+    return Opacity(
+      opacity: onTap == null && !carregando ? 0.5 : 1,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: primario
+                ? LinearGradient(colors: [
+                    H3Cores.destaque,
+                    H3Cores.destaque.withOpacity(0.78)
+                  ])
+                : null,
+            color: primario ? null : H3Cores.painel2,
+            border: primario ? null : Border.all(color: H3Cores.linha2),
+            boxShadow: primario
+                ? [
+                    BoxShadow(
+                        color: H3Cores.destaque.withOpacity(0.28),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4))
+                  ]
+                : null,
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            carregando
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: fg))
+                : Icon(icone, size: 18, color: fg),
+            const SizedBox(width: 10),
+            Text(rotulo,
+                style: TextStyle(
+                    fontSize: 13.5, fontWeight: FontWeight.w700, color: fg)),
+          ]),
+        ),
+      ),
     );
   }
 

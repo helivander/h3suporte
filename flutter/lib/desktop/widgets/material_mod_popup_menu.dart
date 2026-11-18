@@ -598,9 +598,9 @@ class _PopupMenu<T> extends StatelessWidget {
 
     for (int i = 0; i < route.items.length; i += 1) {
       final double start =
-          route.animado ? (0.12 + i * 0.05).clamp(0.0, 0.7) : (i + 1) * unit;
+          route.animado ? (0.04 + i * 0.03).clamp(0.0, 0.5) : (i + 1) * unit;
       final double end = route.animado
-          ? (start + 0.4).clamp(0.0, 1.0)
+          ? (start + 0.3).clamp(0.0, 1.0)
           : (start + 1.5 * unit).clamp(0.0, 1.0);
       final CurvedAnimation opacity = CurvedAnimation(
         parent: route.animation!,
@@ -962,7 +962,7 @@ class _PopupMenuRoute<T> extends PopupRoute<T> {
 
   @override
   Duration get transitionDuration =>
-      animado ? const Duration(milliseconds: 240) : _kMenuDuration;
+      animado ? const Duration(milliseconds: 140) : _kMenuDuration;
 
   @override
   bool get barrierDismissible => true;
