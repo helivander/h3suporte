@@ -59,6 +59,7 @@ const central = createServer(async (req, res) => {
     return responder(200, { sessao: { token }, conta: publica(conta), assinatura: estado.assinatura });
   }
   if (rota === "validar") {
+    estado.validacoes = (estado.validacoes ?? 0) + 1;
     const conta = sessaoDe(d.sessao);
     if (!conta) return responder(200, { valida: false, motivo: "SESSAO_INVALIDA" });
     if (estado.assinatura.estado !== "ATIVA") return responder(200, { valida: false, motivo: "ASSINATURA_INATIVA" });
@@ -410,4 +411,25 @@ test("meus dispositivos: sem a chave de cifra o recurso responde indisponível",
   const r = await fetch(url + "/api/dispositivos-conta", { headers: { authorization: `Bearer ${login.access_token}` } });
   assert.equal(r.status, 503);
   semChave.close();
+});
+
+test("sessão cw_ do portal da Central: vale depois de a Central confirmar; recusada não volta a perguntar", async () => {
+  estado.validacoes = 0;
+  const web = `cw_${"a".repeat(43)}`;
+  estado.sessoes.set(web, "c1");
+  const lista = await chamar("GET", "/api/dispositivos-conta", undefined, web);
+  assert.equal(lista.status, 200, "a Central confirmou a sessão do portal");
+  assert.equal(estado.validacoes, 1);
+  assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, web)).status, 200);
+  assert.equal(estado.validacoes, 1, "já guardada: não pergunta de novo antes da revalidação");
+
+  const falsa = `cw_${"b".repeat(43)}`;
+  assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, falsa)).status, 401);
+  assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, falsa)).status, 401);
+  assert.equal(estado.validacoes, 2, "recusa fica em memória");
+
+  const outra = `cs_${"c".repeat(43)}`;
+  estado.sessoes.set(outra, "c1");
+  assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, outra)).status, 401, "cs_ só vale pelo /api/login");
+  assert.equal(estado.validacoes, 2);
 });

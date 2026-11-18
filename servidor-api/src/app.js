@@ -11,6 +11,8 @@ const ACESSO_VALIDADE_MS = 150_000;
 const MAX_DISPOSITIVOS_CONTA = 200;
 // O app manda heartbeat a cada poucos segundos, mas o servidor só grava o "visto" a cada VISTO_INTERVALO_MS.
 const ONLINE_MS = 3 * 60_000;
+/** Token da sessão que a Central abre para a aba "Acesso remoto" do portal. */
+const SESSAO_WEB = /^cw_[A-Za-z0-9_-]{20,128}$/;
 
 const MENSAGENS = {
   CREDENCIAIS_INVALIDAS: "E-mail ou senha incorretos.",
@@ -167,6 +169,7 @@ export function criarApp({ config, banco, central, versao = async () => null, do
   const equipes = new Map();
   const vistos = new Map();
   const acessos = new Map();
+  const recusadasWeb = new Map();
 
   const ipDe = (req) => {
     if (config.confiarProxy) {
@@ -202,12 +205,36 @@ export function criarApp({ config, banco, central, versao = async () => null, do
     throw new ErroHttp(503, MENSAGENS.CENTRAL_FORA);
   }
 
+  /**
+   * Sessão `cw_…` da aba "Acesso remoto" do portal da Central: nasce na Central (não passa pelo /api/login daqui).
+   * Na primeira vez a Central confirma e ela fica guardada como as outras; recusa fica em memória por 5 min.
+   */
+  async function adotarSessaoWeb(token, tokenHash) {
+    if (!SESSAO_WEB.test(token)) return null;
+    const agora = relogio();
+    if ((recusadasWeb.get(tokenHash) ?? 0) > agora) return null;
+    if (recusadasWeb.size > 10_000) recusadasWeb.clear();
+    let r;
+    try {
+      r = await central.validar(token);
+    } catch (e) {
+      if (e instanceof ErroCentral && e.fora) throw new ErroHttp(503, MENSAGENS.CENTRAL_FORA);
+      return null;
+    }
+    if (r?.valida !== true || !r.conta || !r.assinatura) {
+      recusadasWeb.set(tokenHash, agora + 5 * 60_000);
+      return null;
+    }
+    banco.salvarSessao(tokenHash, r, agora);
+    return { conta: r.conta, assinatura: r.assinatura, validadaEm: agora };
+  }
+
   /** Sessão válida ou `ErroHttp` 401/503. Revalida na Central a cada `revalidarMs`. */
   async function autenticar(req, { segundoPlano = false } = {}) {
     const token = tokenDe(req);
     if (!token) throw new ErroHttp(401, "Faça login.");
     const tokenHash = hash(token);
-    const sessao = banco.lerSessao(tokenHash);
+    const sessao = banco.lerSessao(tokenHash) ?? (await adotarSessaoWeb(token, tokenHash));
     if (!sessao) throw new ErroHttp(401, "Sessão expirada. Faça login de novo.");
     let atual = sessao;
     if (relogio() - sessao.validadaEm >= config.revalidarMs) {
