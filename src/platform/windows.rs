@@ -1625,12 +1625,20 @@ fn get_after_install(
     ", create_service=get_create_service(&exe))
 }
 
+fn clear_account_login() {
+    use hbb_common::config::LocalConfig;
+    for k in ["access_token", "user_info"] {
+        LocalConfig::set_option(k.to_owned(), String::new());
+    }
+}
+
 pub fn install_me(options: &str, path: String, silent: bool, debug: bool) -> ResultType<()> {
     // MSI and EXE installations use different registry layouts, so MSI-to-EXE upgrades are not supported.
     let (installed_subkey, _, _, _) = get_install_info();
     if get_windows_installer_state(&installed_subkey)? == Some(true) {
         bail!("Cannot install the EXE package over an existing MSI installation");
     }
+    clear_account_login();
     let uninstall_str = get_uninstall(false, false)?;
     let mut path = path.trim_end_matches('\\').to_owned();
     let (subkey, _path, start_menu, exe) = get_default_install_info();
