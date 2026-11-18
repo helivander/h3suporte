@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>H3 Suporte Assistente de IA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Protótipo do painel do Assistente de IA na sessão remota (docs/ai-assistant.md), no tema escuro verde-água do app */
+:root{
+  color-scheme:dark;
+  --bg:#070d10; --panel:#0e171b; --panel2:#132026; --line:#1d2d33; --line2:#26393f;
+  --fg:#e6f1f2; --muted:#8aa1a6; --dim:#7f969b;
+  --accent:#1fd1c1; --accent-ink:#04201d; --accent-soft:rgba(31,209,193,.12);
+  --ok:#3ddc84; --warn:#f0b544; --bad:#ff5d6c;
+  --f-display:"Space Grotesk",Inter,system-ui,sans-serif;
+  --f-body:Inter,system-ui,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left)) 32px;display:grid;gap:16px}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.bar .dev{display:flex;align-items:center;gap:10px}
+.bar b{font-family:var(--f-display);font-size:16px}
+.bar small{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+.pill.ok{background:rgba(61,220,132,.12);color:var(--ok)}
+.pill.ai{background:var(--accent-soft);color:var(--accent)}
+.pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ai:before{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.pill.ai:before{animation:none}}
+.btn{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);display:inline-flex;align-items:center;gap:8px;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{border-color:rgba(255,93,108,.5);color:var(--bad)}
+.btn.sm{height:30px;padding:0 12px;border-radius:8px;font-size:12.5px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
+.card h2{font-family:var(--f-display);font-size:17px;font-weight:600;margin:0}
+.sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+/* sessão remota */
+.screen{border-radius:12px;border:1px solid var(--line2);aspect-ratio:16/9;position:relative;overflow:hidden;background:radial-gradient(ellipse at 70% 60%,#2b6cff 0%,#0f2b8a 35%,#05102e 70%)}
+.screen:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 65% 55%,rgba(130,190,255,.5),transparent 60%)}
+.win{position:absolute;left:12%;top:12%;width:50%;background:#f3f5f8;border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.45);color:#1b2330;overflow:hidden}
+.win header{background:#e3e8ef;padding:7px 10px;font-size:12px;font-weight:600;display:flex;justify-content:space-between}
+.win .body{padding:14px;display:grid;gap:9px;font-size:12px}
+.win .row{display:flex;align-items:center;gap:8px}
+.win .row i{width:12px;height:12px;border-radius:3px;border:1.5px solid #6b7686;flex:none}
+.win .row i.on{background:#1f78d1;border-color:#1f78d1}
+.win .okbtn{justify-self:end;background:#1f78d1;color:#fff;border-radius:4px;padding:5px 16px;font-weight:600;position:relative}
+.cursor{position:absolute;left:55%;top:57%;width:20px;height:20px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.ring{position:absolute;left:calc(55% - 14px);top:calc(57% - 14px);width:28px;height:28px;border-radius:50%;border:2px solid var(--accent);box-shadow:0 0 0 6px rgba(31,209,193,.18)}
+.task{position:absolute;left:0;right:0;bottom:0;height:24px;background:rgba(10,14,30,.78);display:flex;justify-content:center;align-items:center;gap:8px}
+.task i{width:10px;height:10px;border-radius:2px;background:#9bc0ff;opacity:.8}
+.ctl{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(7,13,16,.88);border:1px solid var(--accent);border-radius:999px;padding:5px 14px;font-size:12px;font-weight:600;backdrop-filter:blur(6px)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.stats small{display:block;color:var(--muted);font-size:12px}
+.stats b{font-variant-numeric:tabular-nums;font-weight:600}
+/* painel de chat */
+.chat{padding:0;display:flex;flex-direction:column;height:640px;overflow:hidden}
+.chat>header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.chat>header .ico{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.chat>header b{font-family:var(--f-display);font-size:15px;display:block}
+.chat>header small{color:var(--muted);font-size:12px}
+.icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--panel);display:grid;place-items:center;color:var(--muted)}
+.icon-btn:hover{color:var(--accent);border-color:var(--accent)}
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.me{align-self:flex-end;max-width:86%;background:var(--accent);color:var(--accent-ink);padding:10px 13px;border-radius:14px 14px 4px 14px;font-weight:500}
+.ai{max-width:92%;background:var(--bg);border:1px solid var(--line2);padding:10px 13px;border-radius:14px 14px 14px 4px;line-height:1.45}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.act{font-family:var(--f-mono);font-size:12px;padding:3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);color:var(--muted)}
+.act b{color:var(--accent);font-weight:600}
+.shot{width:100%;aspect-ratio:16/9;border-radius:8px;margin-top:8px;border:1px solid var(--line2);background:radial-gradient(ellipse at 70% 60%,#2b6cff,#0f2b8a 40%,#05102e 75%);position:relative}
+.shot span{position:absolute;left:6px;bottom:6px;font:600 12px var(--f-mono);background:rgba(0,0,0,.6);padding:2px 6px;border-radius:4px}
+.confirm{border:1px solid rgba(240,181,68,.55);background:rgba(240,181,68,.08);border-radius:14px;padding:12px 13px;display:grid;gap:10px}
+.confirm h3{margin:0;font-size:13px;color:var(--warn);display:flex;align-items:center;gap:8px}
+.confirm ol{margin:0;padding-left:18px;color:var(--fg);font-size:12.5px;line-height:1.6}
+.confirm .btns{display:flex;gap:8px}
+.progress{padding:10px 16px;border-top:1px solid var(--line);display:grid;gap:6px}
+.progress .t{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
+.track{height:6px;border-radius:4px;background:var(--line)}
+.track i{display:block;height:100%;width:14%;border-radius:4px;background:var(--accent)}
+.compose{display:flex;gap:8px;padding:12px 16px 16px}
+.compose input{flex:1;min-width:0;height:42px;border-radius:12px;border:1px solid var(--line2);background:var(--bg);padding:0 14px;outline:none}
+.compose input::placeholder{color:var(--dim)}
+.compose input:focus{border-color:var(--accent)}
+/* configuração */
+.cfg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 28px;margin-top:16px}
+.f{display:grid;gap:6px;min-width:0}
+.f label,.f .l{font-size:12px;color:var(--muted);font-weight:500}
+.f input[type=text],.f input[type=password],.f select{height:42px;border-radius:10px;border:1px solid var(--line2);background:var(--bg);padding:0 12px;outline:none;width:100%}
+.f input:focus,.f select:focus{border-color:var(--accent)}
+.f .mono{font-family:var(--f-mono);font-size:13px}
+.f .hint{font-size:12px;color:var(--dim)}
+.seg{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:3px}
+.seg button{flex:1;border:0;background:none;padding:8px 10px;border-radius:7px;color:var(--muted);font-weight:500}
+.seg button[aria-pressed=true]{background:var(--panel2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line2)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:10px 12px}
+.sw b{display:block;font-weight:600;font-size:13px}
+.sw small{color:var(--muted);font-size:12px}
+.tg{width:42px;height:24px;border-radius:999px;border:0;background:var(--line2);position:relative;flex:none;transition:background .15s}
+.tg:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+.tg[aria-checked=true]{background:var(--accent)}
+.tg[aria-checked=true]:after{transform:translateX(18px)}
+.key{display:flex;gap:6px}
+.notice{margin-top:16px;display:flex;gap:12px;border:1px solid rgba(240,181,68,.45);background:rgba(240,181,68,.07);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5}
+.notice svg{flex:none;color:var(--warn);margin-top:2px}
+.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+@media (max-width:1000px){.main{grid-template-columns:minmax(0,1fr)}.chat{height:560px}}
+@media (max-width:640px){.cfg{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bar">
+    <div class="dev">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <div><b>Recepção-01</b> <small>482 905 117</small></div>
+    </div>
+    <span class="pill ok">Sessão ativa</span>
+    <span class="pill ai">IA no controle</span>
+    <span class="sp"></span>
+    <button class="btn">Monitor 1</button>
+    <button class="btn danger">Encerrar sessão</button>
+  </div>
+
+  <div class="main">
+    <section class="card" aria-label="Sessão remota">
+      <div class="screen">
+        <div class="ctl"><span class="pill ai" style="padding:0">Assistente executando</span><span style="color:var(--muted);font-weight:500">passo 7 de 50</span></div>
+        <div class="win">
+          <header><span>Configurações de impressão</span><span>✕</span></header>
+          <div class="body">
+            <div class="row"><i class="on"></i>Compartilhar esta impressora na rede</div>
+            <div class="row"><i></i>Renderizar trabalhos no computador cliente</div>
+            <div class="row"><i></i>Listar no diretório</div>
+            <div class="okbtn">OK</div>
+          </div>
+        </div>
+        <span class="ring"></span>
+        <svg class="cursor" viewBox="0 0 24 24" fill="#fff" stroke="#000" stroke-width="1.2"><path d="M4 2l16 9-7 2-3 7z"/></svg>
+        <div class="task"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="stats">
+        <div><small>Resolução remota</small><b>1920 × 1080</b></div>
+        <div><small>Captura enviada à IA</small><b>1280 px (JPEG)</b></div>
+        <div><small>Latência</small><b>38 ms</b></div>
+        <div><small>Dados enviados à IA</small><b>2,4 MB / 24 MB</b></div>
+      </div>
+    </section>
+
+    <aside class="card chat" aria-label="Assistente de IA">
+      <header>
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01M2 14h2M20 14h2"/></svg></div>
+        <div style="flex:1;min-width:0"><b>Assistente de IA</b><small>Claude · claude-opus-5-5</small></div>
+        <button class="icon-btn" title="Limpar conversa" aria-label="Limpar conversa"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+        <button class="icon-btn" title="Configuração" aria-label="Configuração" onclick="document.getElementById('cfg').scrollIntoView({behavior:'smooth'})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      </header>
+
+      <div class="msgs">
+        <div class="me">Ative o compartilhamento da impressora HP da recepção e imprima uma página de teste.</div>
+        <div class="ai">Vou abrir as propriedades da impressora. Primeiro, uma captura da tela.
+          <div class="shot"><span>captura 1280 × 720</span></div>
+          <div class="acts"><span class="act"><b>screenshot</b></span><span class="act"><b>left_click</b> 612, 388</span><span class="act"><b>key</b> Enter</span></div>
+        </div>
+        <div class="ai">A janela de impressão abriu. Marquei a opção de compartilhar.
+          <div class="acts"><span class="act"><b>left_click</b> 702, 331</span><span class="act"><b>wait</b> 1 s</span></div>
+        </div>
+        <div class="confirm" role="group" aria-label="Confirmação de ações">
+          <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Aguardando sua aprovação</h3>
+          <ol><li>Clicar em <b>OK</b> (1004, 612)</li><li>Digitar o nome de compartilhamento <b>HP-Recepcao</b></li></ol>
+          <div class="btns"><button class="btn primary sm">Aprovar</button><button class="btn sm">Recusar</button></div>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div class="t"><span>Passo 7 de 50</span><span>Confirmar cada ação: ligado</span></div>
+        <div class="track"><i></i></div>
+      </div>
+      <div class="compose">
+        <input type="text" placeholder="Descreva a tarefa ou responda ao assistente" aria-label="Mensagem para o assistente">
+        <button class="btn danger" aria-label="Parar o assistente"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>Parar</button>
+      </div>
+    </aside>
+  </div>
+
+  <section class="card" id="cfg" aria-label="Configuração do assistente">
+    <h2>Configuração do assistente</h2>
+    <div class="sub">Gravada nas opções locais deste app. Vale para todas as sessões do técnico.</div>
+
+    <div class="cfg">
+      <div class="f">
+        <span class="l">Provedor</span>
+        <div class="seg" role="group" aria-label="Provedor">
+          <button aria-pressed="true">Claude (chave da API)</button>
+          <button aria-pressed="false">ChatGPT (entrar com sua conta)</button>
+        </div>
+        <span class="hint">Com o ChatGPT o uso sai do plano Plus ou Pro do técnico.</span>
+      </div>
+
+      <div class="f">
+        <label for="modelo">Modelo</label>
+        <select id="modelo" class="mono">
+          <option>claude-opus-5-5</option>
+          <option>claude-sonnet-5-5</option>
+          <option>claude-haiku-5-5</option>
+        </select>
+        <span class="hint">Padrão <code>claude-opus-5-5</code> · opção <code>ai-agent-model</code></span>
+      </div>
+
+      <div class="f">
+        <label for="chave">Chave da API</label>
+        <div class="key">
+          <input id="chave" type="password" class="mono" value="sk-ant-api03-exemplo" autocomplete="off">
+          <button class="icon-btn" style="width:42px;height:42px" title="Mostrar ou ocultar" aria-label="Mostrar ou ocultar a chave" onclick="var c=document.getElementById('chave');c.type=c.type==='password'?'text':'password'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <span class="hint">Fica em texto simples nas opções locais até a fase 2 (proxy com login).</span>
+      </div>
+
+      <div class="f">
+        <label for="url">Endereço da API</label>
+        <input id="url" type="text" class="mono" value="https://api.anthropic.com">
+        <span class="hint">Aponte para um proxy próprio quando houver. Opção <code>ai-agent-base-url</code>.</span>
+      </div>
+
+      <div class="f">
+        <span class="l">Execução</span>
+        <div class="sw"><div><b>Confirmar cada ação</b><small>Você aprova cada lote antes de executar</small></div><button class="tg" role="switch" aria-checked="true" aria-label="Confirmar cada ação"></button></div>
+      </div>
+
+      <div class="f">
+        <span class="l">Limites</span>
+        <div class="sw"><div><b>Máximo de 50 passos por execução</b><small>Capturas acima de 24 MB pedem para limpar a conversa</small></div><span class="pill ok" style="font-size:12px">padrão</span></div>
+      </div>
+    </div>
+
+    <div class="notice" role="note">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <div><b>Consentimento do cliente.</b> As capturas da tela do cliente são enviadas ao provedor de IA. Peça a autorização dele antes de usar o assistente. O assistente é instruído a não digitar senhas e a pedir confirmação antes de ações destrutivas, mas isso é uma instrução ao modelo, não uma garantia técnica.</div>
+    </div>
+
+    <div class="foot"><button class="btn">Cancelar</button><button class="btn primary">Salvar</button></div>
+  </section>
+
+</div>
+<script>
+document.querySelectorAll('.tg').forEach(function(b){b.addEventListener('click',function(){b.setAttribute('aria-checked',b.getAttribute('aria-checked')==='true'?'false':'true')})});
+document.querySelectorAll('.seg').forEach(function(s){s.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;s.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===t?'true':'false')})})});
+</script>
+</body>
+</html>
