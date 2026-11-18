@@ -148,26 +148,54 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
         child: Row(children: [
-          ElevatedButton.icon(
-            onPressed: () => h3ConfigAberta.value = null,
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: const Text('Voltar ao sistema'),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: H3Cores.destaque,
-                foregroundColor: H3Cores.destaqueTinta,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10))),
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => h3ConfigAberta.value = null,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(8, 8, 18, 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [
+                  H3Cores.destaque.withOpacity(0.20),
+                  H3Cores.destaque.withOpacity(0.06)
+                ]),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: H3Cores.destaque.withOpacity(0.55)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: H3Cores.destaque),
+                  child: Icon(Icons.arrow_back_rounded,
+                      size: 18, color: H3Cores.destaqueTinta),
+                ),
+                const SizedBox(width: 12),
+                Text('Voltar ao sistema',
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: H3Cores.texto)),
+              ]),
+            ),
           ),
           const Spacer(),
-          IconButton(
-            tooltip: 'Fechar',
-            onPressed: () => h3ConfigAberta.value = null,
-            icon: Icon(Icons.close, color: H3Cores.texto),
-            style: IconButton.styleFrom(
-                backgroundColor: H3Cores.painel2,
-                side: BorderSide(color: H3Cores.linha2)),
+          Tooltip(
+            message: 'Fechar',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => h3ConfigAberta.value = null,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: H3Cores.painel2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: H3Cores.linha2),
+                ),
+                child: Icon(Icons.close_rounded, size: 20, color: H3Cores.texto),
+              ),
+            ),
           ),
         ]),
       ),
