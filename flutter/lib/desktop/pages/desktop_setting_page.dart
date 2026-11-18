@@ -27,10 +27,11 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
+import 'h3_home_layout.dart';
 
-const double _kTabWidth = 200;
+const double _kTabWidth = 220;
 const double _kTabHeight = 42;
-const double _kCardFixedWidth = 540;
+const double _kCardFixedWidth = 680;
 const double _kCardLeftMargin = 15;
 const double _kContentHMargin = 15;
 const double _kContentHSubMargin = _kContentHMargin + 33;
@@ -276,12 +277,19 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    if (bind.isIncomingOnly()) return _corpo(context);
+    return Theme(
+        data: H3Cores.tema(), child: Builder(builder: (ctx) => _corpo(ctx)));
+  }
+
+  Widget _corpo(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       body: _buildBlock(
         children: <Widget>[
-          SizedBox(
+          Container(
             width: _kTabWidth,
+            color: bind.isIncomingOnly() ? null : H3Cores.painel,
             child: Column(
               children: [
                 _header(context),
@@ -289,14 +297,22 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
               ],
             ),
           ),
-          const VerticalDivider(width: 1),
+          VerticalDivider(
+              width: 1, color: bind.isIncomingOnly() ? null : H3Cores.linha),
           Expanded(
             child: Container(
               color: Theme.of(context).scaffoldBackgroundColor,
-              child: PageView(
-                controller: controller,
-                physics: NeverScrollableScrollPhysics(),
-                children: _children(),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: bind.isIncomingOnly() ? double.infinity : 740),
+                  child: PageView(
+                    controller: controller,
+                    physics: NeverScrollableScrollPhysics(),
+                    children: _children(),
+                  ),
+                ),
               ),
             ),
           )
@@ -309,10 +325,11 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     final settingsText = Text(
       translate('Settings'),
       textAlign: TextAlign.left,
-      style: const TextStyle(
-        color: _accentColor,
-        fontSize: _kTitleFontSize,
-        fontWeight: FontWeight.w400,
+      style: TextStyle(
+        color: bind.isIncomingOnly() ? _accentColor : H3Cores.texto,
+        fontSize: bind.isIncomingOnly() ? _kTitleFontSize : 18,
+        fontWeight:
+            bind.isIncomingOnly() ? FontWeight.w400 : FontWeight.w600,
       ),
     );
     return Row(
@@ -352,9 +369,52 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     );
   }
 
+  Widget _itemH3(_TabInfo tab, bool selected) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () {
+          final index = DesktopSettingPage.tabKeys.indexOf(tab.key);
+          if (index == -1) return;
+          if (selectedTab.value != tab.key) controller.jumpToPage(index);
+          selectedTab.value = tab.key;
+        },
+        child: Container(
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: selected
+                ? LinearGradient(colors: [
+                    H3Cores.destaque.withOpacity(0.22),
+                    H3Cores.destaque.withOpacity(0.06),
+                  ])
+                : null,
+          ),
+          child: Row(children: [
+            Icon(selected ? tab.selected : tab.unselected,
+                size: 20,
+                color: selected ? H3Cores.destaque : H3Cores.apagado),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(translate(tab.label),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: selected ? H3Cores.texto : H3Cores.apagado)),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Widget _listItem({required _TabInfo tab}) {
     return Obx(() {
       bool selected = tab.key == selectedTab.value;
+      if (!bind.isIncomingOnly()) return _itemH3(tab, selected);
       return SizedBox(
         width: _kTabWidth,
         height: _kTabHeight,
@@ -2633,7 +2693,12 @@ class _AboutState extends State<_About> {
                     style: linkStyle,
                   ).marginSymmetric(vertical: 4.0)),
               Container(
-                decoration: const BoxDecoration(color: Color(0xFF2c8cff)),
+                decoration: bind.isIncomingOnly()
+                    ? const BoxDecoration(color: Color(0xFF2c8cff))
+                    : BoxDecoration(
+                        color: H3Cores.painel,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: H3Cores.linha2)),
                 padding:
                     const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
                 child: SelectionArea(
@@ -2647,12 +2712,13 @@ class _AboutState extends State<_About> {
                             'Copyright © ${DateTime.now().toString().substring(0, 4)} H3 Informatica.\n$license',
                             style: const TextStyle(color: Colors.white),
                           ),
-                          Text(
-                            translate('Slogan_tip'),
-                            style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white),
-                          )
+                          if (bind.isIncomingOnly())
+                            Text(
+                              translate('Slogan_tip'),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white),
+                            )
                         ],
                       ),
                     ),
@@ -2682,6 +2748,13 @@ Widget _Card(
         child: SizedBox(
           width: _kCardFixedWidth,
           child: Card(
+            color: bind.isIncomingOnly() ? null : H3Cores.painel2,
+            elevation: bind.isIncomingOnly() ? null : 0,
+            shape: bind.isIncomingOnly()
+                ? null
+                : RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: const BorderSide(color: H3Cores.linha)),
             child: Column(
               children: [
                 Row(
@@ -2690,8 +2763,11 @@ Widget _Card(
                         child: Text(
                       translate(title),
                       textAlign: TextAlign.start,
-                      style: const TextStyle(
-                        fontSize: _kTitleFontSize,
+                      style: TextStyle(
+                        fontSize: bind.isIncomingOnly() ? _kTitleFontSize : 16,
+                        fontWeight: bind.isIncomingOnly()
+                            ? null
+                            : FontWeight.w600,
                       ),
                     )),
                     ...?title_suffix

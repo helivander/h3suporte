@@ -191,7 +191,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           if (!isOutgoingOnly) buildPasswordBoard(context),
         ],
       ),
-      helpCards: Obx(() => buildHelpCards(stateGlobal.updateUrl.value)),
+      helpCards: () => buildHelpCards(stateGlobal.updateUrl.value),
     );
   }
 
@@ -617,8 +617,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           margin: EdgeInsets.fromLTRB(
               0, marginTop, 0, bind.isIncomingOnly() ? marginTop : 0),
           child: Container(
-              decoration: BoxDecoration(
-                  gradient: LinearGradient(
+              decoration: !bind.isIncomingOnly()
+                  ? BoxDecoration(
+                      color: H3Cores.painel2,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: H3Cores.linha2))
+                  : BoxDecoration(
+                      gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: [

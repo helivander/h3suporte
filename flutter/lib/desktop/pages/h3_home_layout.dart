@@ -31,6 +31,29 @@ class H3Cores {
   static const ok = Color(0xFF3DDC84);
   static const aviso = Color(0xFFF0B544);
   static const info = Color(0xFF4F8CFF);
+
+  /// Tema escuro verde-água, também usado nas Configurações.
+  static ThemeData tema() {
+    final base = MyTheme.darkTheme;
+    return base.copyWith(
+      scaffoldBackgroundColor: painel,
+      cardColor: painel2,
+      hoverColor: painel2,
+      dividerColor: linha,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+        backgroundColor: destaque,
+        foregroundColor: destaqueTinta,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      )),
+      colorScheme: base.colorScheme.copyWith(
+        primary: destaque,
+        secondary: destaque,
+        background: fundo,
+      ),
+    );
+  }
 }
 
 /// Tela inicial do app de acesso (não usada no build `-cliente`, que é
@@ -39,8 +62,8 @@ class H3HomeLayout extends StatefulWidget {
   /// ID, senha e aviso de senha predefinida deste computador.
   final Widget deviceBoard;
 
-  /// Avisos de instalação, atualização e permissões.
-  final Widget helpCards;
+  /// Avisos de instalação, atualização e permissões (vazio quando não há nada pendente).
+  final Widget Function() helpCards;
 
   const H3HomeLayout(
       {Key? key, required this.deviceBoard, required this.helpCards})
@@ -88,19 +111,9 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     }
   }
 
-  ThemeData _tema() {
-    final base = MyTheme.darkTheme;
-    return base.copyWith(
-      scaffoldBackgroundColor: H3Cores.painel,
-      cardColor: H3Cores.painel2,
-      hoverColor: H3Cores.painel2,
-      dividerColor: H3Cores.linha,
-      colorScheme: base.colorScheme.copyWith(
-        primary: H3Cores.destaque,
-        secondary: H3Cores.destaque,
-      ),
-    );
-  }
+  bool _ehAviso(Widget w) => w is Stack || w is Column;
+
+  ThemeData _tema() => H3Cores.tema();
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +138,9 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                               ? const H3MeusDispositivosPage()
                               : const SizedBox.shrink(),
                           _relatorios(),
+                          _aba.value == 3
+                              ? _permissoes()
+                              : const SizedBox.shrink(),
                         ],
                       )),
                 ),
@@ -138,10 +154,17 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
 
   Widget _menu(bool compacto) {
     Widget item(IconData icone, String rotulo, VoidCallback onTap,
-        {int? aba}) {
+        {int? aba, bool selo = false}) {
       return Obx(() {
         final selecionada = _aba.value;
         final ativo = aba != null && selecionada == aba;
+        final pendente = selo && _ehAviso(widget.helpCards());
+        final ponto = Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+              shape: BoxShape.circle, color: H3Cores.aviso),
+        );
         final botao = InkWell(
             borderRadius: BorderRadius.circular(10),
             onTap: onTap,
@@ -162,9 +185,13 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                     ? MainAxisAlignment.center
                     : MainAxisAlignment.start,
                 children: [
-                  Icon(icone,
-                      size: 20,
-                      color: ativo ? H3Cores.destaque : H3Cores.apagado),
+                  Stack(clipBehavior: Clip.none, children: [
+                    Icon(icone,
+                        size: 20,
+                        color: ativo ? H3Cores.destaque : H3Cores.apagado),
+                    if (pendente && compacto)
+                      Positioned(right: -2, top: -2, child: ponto),
+                  ]),
                   if (!compacto) ...[
                     const SizedBox(width: 12),
                     Expanded(
@@ -176,6 +203,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                               color:
                                   ativo ? H3Cores.texto : H3Cores.apagado)),
                     ),
+                    if (pendente) ponto,
                   ],
                 ],
               ),
@@ -195,6 +223,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _marca(compacto),
           item(Icons.home_outlined, 'Visão geral', () => _aba.value = 0,
               aba: 0),
           const SizedBox(height: 2),
@@ -205,6 +234,12 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           item(Icons.insights_outlined, 'Relatórios', () => _aba.value = 2,
               aba: 2),
           const SizedBox(height: 2),
+          item(Icons.verified_user_outlined, 'Permissões',
+              () => _aba.value = 3,
+              aba: 3, selo: true),
+          const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Divider(height: 1, color: H3Cores.linha)),
           item(Icons.shield_outlined, 'Segurança',
               () => DesktopSettingPage.switch2page(SettingsTabKey.safety)),
           const SizedBox(height: 2),
@@ -212,6 +247,27 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               () => DesktopTabPage.onAddSetting()),
           const Spacer(),
           _conta(compacto),
+        ],
+      ),
+    );
+  }
+
+  Widget _marca(bool compacto) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(compacto ? 0 : 6, 2, 0, 18),
+      child: Row(
+        mainAxisAlignment:
+            compacto ? MainAxisAlignment.center : MainAxisAlignment.start,
+        children: [
+          loadIcon(30),
+          if (!compacto) ...[
+            const SizedBox(width: 10),
+            const Text('H3 Suporte',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: H3Cores.texto)),
+          ],
         ],
       ),
     );
@@ -279,7 +335,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
   }
 
   Widget _cartao(
-      {required String titulo,
+      {String? titulo,
       String? subtitulo,
       Widget? acao,
       required Widget filho,
@@ -299,6 +355,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: expandir ? MainAxisSize.max : MainAxisSize.min,
         children: [
+          if (titulo != null)
           Row(children: [
             Expanded(
               child: Column(
@@ -306,7 +363,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                 children: [
                   Text(titulo,
                       style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: H3Cores.texto)),
                   if (subtitulo != null)
@@ -318,7 +375,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
             ),
             if (acao != null) acao,
           ]),
-          const SizedBox(height: 12),
+          if (titulo != null) const SizedBox(height: 12),
           expandir ? Expanded(child: filho) : filho,
         ],
       ),
@@ -329,49 +386,54 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
 
   Widget _visaoGeral() {
     final conexoes = _cartao(
-      titulo: 'Últimas conexões',
-      subtitulo: 'Conecte a um ID ou acesse os dispositivos que você mais usa.',
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
       expandir: true,
       filho: ConnectionPage(),
     );
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          widget.helpCards,
-          Expanded(
-            child: LayoutBuilder(builder: (context, c) {
-              if (c.maxWidth >= 860) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: conexoes),
-                    const SizedBox(width: 16),
-                    SizedBox(
-                      width: 340,
-                      child: SingleChildScrollView(child: _sessaoAtual()),
-                    ),
-                  ],
-                );
-              }
-              return Column(
+    final esteComputador = _cartao(
+      titulo: 'Este computador',
+      subtitulo: 'Passe o ID e a senha para quem vai acessar.',
+      filho: widget.deviceBoard,
+    );
+    return LayoutBuilder(builder: (context, c) {
+      final largo = c.maxWidth >= 1000;
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: largo
+            ? Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: c.maxHeight * 0.4),
-                    child: SingleChildScrollView(child: _sessaoAtual()),
-                  ),
-                  const SizedBox(height: 16),
                   Expanded(child: conexoes),
+                  const SizedBox(width: 20),
+                  SizedBox(
+                    width: 360,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          esteComputador,
+                          const SizedBox(height: 16),
+                          _sessaoAtual(),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
-              );
-            }),
-          ),
-        ],
-      ),
-    );
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    esteComputador,
+                    const SizedBox(height: 16),
+                    _sessaoAtual(),
+                    const SizedBox(height: 16),
+                    SizedBox(height: 560, child: conexoes),
+                  ],
+                ),
+              ),
+      );
+    });
   }
 
   Peer? _peer(String id) {
@@ -426,27 +488,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           ),
           filho: ativo
               ? Column(mainAxisSize: MainAxisSize.min, children: linhas)
-              : Container(
-                  padding: const EdgeInsets.symmetric(vertical: 28),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: H3Cores.linha2),
-                    color: H3Cores.fundo,
-                  ),
-                  child: const Column(children: [
-                    Icon(Icons.desktop_windows_outlined,
-                        size: 36, color: H3Cores.apagado),
-                    SizedBox(height: 10),
-                    Text('Nenhuma sessão em andamento',
-                        style: TextStyle(
-                            color: H3Cores.texto,
-                            fontWeight: FontWeight.w600)),
-                    SizedBox(height: 4),
-                    Text('Escolha um dispositivo em Últimas conexões.',
-                        style:
-                            TextStyle(color: H3Cores.apagado, fontSize: 12)),
-                  ]),
-                ),
+              : const SizedBox.shrink(),
         );
       });
     });
@@ -513,6 +555,56 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     );
   }
 
+  // ---------- Permissões ----------
+
+  Widget _permissoes() {
+    return Obx(() {
+      final aviso = widget.helpCards();
+      final pendente = _ehAviso(aviso);
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text('Permissões',
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: H3Cores.texto)),
+          const SizedBox(height: 4),
+          const Text(
+              'O que o H3 Suporte precisa para funcionar neste computador.',
+              style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+          const SizedBox(height: 16),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: pendente
+                ? aviso
+                : _cartao(
+                    filho: const Row(children: [
+                      Icon(Icons.check_circle_outline,
+                          size: 28, color: H3Cores.ok),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Tudo certo',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: H3Cores.texto)),
+                            Text('Nenhuma permissão ou aviso pendente.',
+                                style: TextStyle(
+                                    fontSize: 12.5, color: H3Cores.apagado)),
+                          ],
+                        ),
+                      ),
+                    ]),
+                  ),
+          ),
+        ],
+      );
+    });
+  }
+
   // ---------- Relatórios ----------
 
   Widget _relatorios() {
@@ -527,15 +619,6 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
             spacing: 16,
             runSpacing: 16,
             children: [
-              SizedBox(
-                width: 380,
-                child: _cartao(
-                  titulo: 'Este dispositivo',
-                  subtitulo:
-                      'Passe o ID e a senha para quem vai acessar este computador.',
-                  filho: widget.deviceBoard,
-                ),
-              ),
               SizedBox(width: 380, child: _seguranca()),
             ],
           ),

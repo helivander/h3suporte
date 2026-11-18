@@ -10,14 +10,15 @@ Widget getConnectionPageTitle(BuildContext context, bool isWeb) {
       Expanded(
           child: Row(
         children: [
-          AutoSizeText(
+          Flexible(
+              child: AutoSizeText(
             translate('Control Remote Desktop'),
             maxLines: 1,
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
                 ?.merge(TextStyle(height: 1)),
-          ).marginOnly(right: 4),
+          ).marginOnly(right: 4)),
           Tooltip(
             waitDuration: Duration(milliseconds: 300),
             message: translate(isWeb ? "web_id_input_tip" : "id_input_tip"),
