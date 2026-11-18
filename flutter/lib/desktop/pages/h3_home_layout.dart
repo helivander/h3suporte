@@ -500,14 +500,22 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                   const SizedBox(width: 20),
                   SizedBox(
                     width: 360,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          esteComputador,
-                          const SizedBox(height: 16),
-                          _sessaoAtual(),
-                        ],
+                    child: LayoutBuilder(
+                      builder: (context, caixa) => SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints:
+                              BoxConstraints(minHeight: caixa.maxHeight),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                esteComputador,
+                                const SizedBox(height: 16),
+                                Expanded(child: _sessaoAtual()),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

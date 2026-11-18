@@ -298,8 +298,17 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
     return Obx(() {
       final logado = _logado;
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         children: [
+          Text('Meus dispositivos',
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: H3Cores.texto)),
+          const SizedBox(height: 4),
+          Text('Computadores registrados na sua conta, prontos para conectar com um clique.',
+              style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+          const SizedBox(height: 18),
           _cartaoEste(logado),
           const SizedBox(height: 16),
           _cartaoLista(logado),
@@ -430,79 +439,177 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
       corpo = _vazio(
           'Nenhum dispositivo registrado ainda. Abra o H3 Suporte no computador que quer acessar, entre na mesma conta e escolha Registrar na conta.');
     } else {
-      corpo = Column(children: [
-        for (final d in _lista)
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: H3Cores.fundo,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: H3Cores.linha2),
-            ),
-            child: Row(children: [
-              Icon(_icone(d.so), color: H3Cores.apagado),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      corpo = LayoutBuilder(builder: (context, c) {
+        const gap = 16.0;
+        final cols = ((c.maxWidth + gap) / (300 + gap)).floor().clamp(1, 4);
+        final linhas = <Widget>[];
+        for (var i = 0; i < _lista.length; i += cols) {
+          final fatia = _lista.skip(i).take(cols).toList();
+          linhas.add(Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+            child: IntrinsicHeight(
+              child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                        '${d.nome.isEmpty ? d.idFormatado : d.nome}${d.id == meu ? ' (este computador)' : ''}',
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: H3Cores.texto)),
-                    Text(d.idFormatado,
-                        style: TextStyle(
-                            fontSize: 11.5,
-                            color: H3Cores.apagado,
-                            fontFamily: 'monospace')),
-                  ],
-                ),
-              ),
-              _pilula(d.online),
-              const SizedBox(width: 12),
-              OutlinedButton(
-                onPressed: () => _conectar(d),
-                style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: H3Cores.destaque.withOpacity(0.5)),
-                    foregroundColor: H3Cores.destaque),
-                child: const Text('Conectar'),
-              ),
-              IconButton(
-                tooltip: 'Transferir arquivos',
-                onPressed: () => _conectar(d, arquivos: true),
-                icon: Icon(Icons.folder_outlined,
-                    size: 20, color: H3Cores.apagado),
-              ),
-              IconButton(
-                tooltip: 'Remover da conta',
-                onPressed: () => _remover(d),
-                icon: Icon(Icons.delete_outline,
-                    size: 20, color: H3Cores.apagado),
-              ),
-            ]),
-          ),
-      ]);
+                    for (var j = 0; j < cols; j++) ...[
+                      if (j > 0) const SizedBox(width: gap),
+                      Expanded(
+                          child: j < fatia.length
+                              ? _cartaoDispositivo(fatia[j], meu)
+                              : const SizedBox.shrink()),
+                    ],
+                  ]),
+            ),
+          ));
+        }
+        return Column(children: linhas);
+      });
     }
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: _caixa,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Dispositivos da conta',
+    final online = _lista.where((d) => d.online).length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Row(children: [
+        Expanded(
+          child: Text('Dispositivos da conta',
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: H3Cores.texto)),
-          Text('Conecte com um clique: a senha vem da sua conta.',
-              style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
-          const SizedBox(height: 14),
-          corpo,
+        ),
+        if (logado && _lista.isNotEmpty) ...[
+          _chip('${_lista.length} registrados', H3Cores.apagado),
+          const SizedBox(width: 8),
+          _chip('$online online', H3Cores.ok),
         ],
+      ]),
+      const SizedBox(height: 14),
+      corpo,
+    ]);
+  }
+
+  Widget _chip(String t, Color cor) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+            color: cor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20)),
+        child: Text(t,
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, color: cor)),
+      );
+
+  Widget _cartaoDispositivo(dynamic d, String? meu) {
+    final eu = d.id == meu;
+    Widget quadro(IconData i, String dica, VoidCallback f) => Tooltip(
+          message: dica,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: f,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: H3Cores.painel2,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: H3Cores.linha2),
+              ),
+              child: Icon(i, size: 19, color: H3Cores.apagado),
+            ),
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [H3Cores.painel2, H3Cores.painel]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: H3Cores.linha),
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    H3Cores.destaque.withOpacity(0.28),
+                    H3Cores.destaque.withOpacity(0.08)
+                  ]),
+            ),
+            child: Icon(_icone(d.so), color: H3Cores.destaque, size: 24),
+          ),
+          const Spacer(),
+          _pilula(d.online),
+        ]),
+        const SizedBox(height: 14),
+        Text(d.nome.isEmpty ? d.idFormatado : d.nome,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                color: H3Cores.texto)),
+        const SizedBox(height: 3),
+        Row(children: [
+          Text(d.idFormatado,
+              style: TextStyle(
+                  fontSize: 12.5,
+                  color: H3Cores.apagado,
+                  fontFamily: 'monospace')),
+          if (eu) ...[
+            const SizedBox(width: 8),
+            Text('· este computador',
+                style: TextStyle(fontSize: 12, color: H3Cores.destaque)),
+          ],
+        ]),
+        const Spacer(),
+        const SizedBox(height: 16),
+        Divider(height: 1, color: H3Cores.linha),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => _conectar(d),
+              child: Container(
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(colors: [
+                    H3Cores.destaque,
+                    H3Cores.destaque.withOpacity(0.78)
+                  ]),
+                  boxShadow: [
+                    BoxShadow(
+                        color: H3Cores.destaque.withOpacity(0.22),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3))
+                  ],
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.bolt, size: 18, color: H3Cores.destaqueTinta),
+                  const SizedBox(width: 6),
+                  Text('Conectar',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          color: H3Cores.destaqueTinta)),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          quadro(Icons.folder_outlined, 'Transferir arquivos',
+              () => _conectar(d, arquivos: true)),
+          const SizedBox(width: 8),
+          quadro(Icons.delete_outline, 'Remover da conta', () => _remover(d)),
+        ]),
+      ]),
     );
   }
 
