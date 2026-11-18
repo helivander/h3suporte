@@ -2684,6 +2684,197 @@ class _About extends StatefulWidget {
 }
 
 class _AboutState extends State<_About> {
+  Widget _infoTile(IconData icone, String rotulo, String valor,
+      {bool mono = false}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: H3Cores.painel2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: H3Cores.linha),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  H3Cores.destaque.withOpacity(0.28),
+                  H3Cores.destaque.withOpacity(0.08)
+                ]),
+          ),
+          child: Icon(icone, size: 18, color: H3Cores.destaque),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(rotulo,
+                style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+            const SizedBox(height: 3),
+            SelectionArea(
+              child: Text(valor,
+                  style: TextStyle(
+                      fontSize: mono ? 11.5 : 14,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: mono ? 'monospace' : null,
+                      color: H3Cores.texto)),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _linkBotao(IconData icone, String rotulo, String url) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => launchUrlString(url),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: H3Cores.painel2,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: H3Cores.linha2),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icone, size: 18, color: H3Cores.destaque),
+          const SizedBox(width: 10),
+          Text(rotulo,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: H3Cores.texto)),
+          const SizedBox(width: 8),
+          Icon(Icons.open_in_new, size: 14, color: H3Cores.apagado),
+        ]),
+      ),
+    );
+  }
+
+  Widget _sobreH3(ScrollController c, String version, String buildDate,
+      String fingerprint, String myId, String license) {
+    final ano = DateTime.now().toString().substring(0, 4);
+    return ListView(
+        controller: c,
+        padding: const EdgeInsets.fromLTRB(15, 6, 15, 20),
+        children: [
+          Text('Sobre',
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: H3Cores.texto)),
+          const SizedBox(height: 4),
+          Text('Informações da versão instalada neste computador.',
+              style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    H3Cores.destaque.withOpacity(0.16),
+                    H3Cores.painel
+                  ]),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: H3Cores.linha2),
+            ),
+            child: Row(children: [
+              loadIcon(72),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('H3 Suporte',
+                          style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: H3Cores.texto)),
+                      const SizedBox(height: 6),
+                      Text('Acesso remoto seguro, da H3 Informática.',
+                          style:
+                              TextStyle(fontSize: 13, color: H3Cores.apagado)),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                            color: H3Cores.destaque.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Text('Versão $version',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: H3Cores.destaque)),
+                      ),
+                    ]),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(builder: (context, caixa) {
+            const gap = 14.0;
+            final cols = caixa.maxWidth >= 640 ? 2 : 1;
+            final itens = <Widget>[
+              _infoTile(Icons.tag, translate('Version'), version),
+              _infoTile(Icons.event_outlined, translate('Build Date'), buildDate),
+              _infoTile(Icons.fingerprint, translate('ID'), myId),
+              if (!isWeb)
+                _infoTile(Icons.verified_outlined, translate('Fingerprint'),
+                    fingerprint,
+                    mono: true),
+            ];
+            final linhas = <Widget>[];
+            for (var i = 0; i < itens.length; i += cols) {
+              final fatia = itens.skip(i).take(cols).toList();
+              linhas.add(Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+                child: IntrinsicHeight(
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var j = 0; j < cols; j++) ...[
+                          if (j > 0) const SizedBox(width: gap),
+                          Expanded(
+                              child: j < fatia.length
+                                  ? fatia[j]
+                                  : const SizedBox.shrink()),
+                        ],
+                      ]),
+                ),
+              ));
+            }
+            return Column(children: linhas);
+          }),
+          const SizedBox(height: 16),
+          Wrap(spacing: 12, runSpacing: 12, children: [
+            _linkBotao(Icons.language, translate('Website'), 'https://h3info.com'),
+            _linkBotao(Icons.code, 'Licença AGPL-3.0 e código-fonte',
+                'https://github.com/helivander/h3suporte'),
+          ]),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: H3Cores.painel,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: H3Cores.linha),
+            ),
+            child: SelectionArea(
+              child: Text('Copyright © $ano H3 Informatica.\n$license',
+                  style: TextStyle(
+                      fontSize: 12, height: 1.5, color: H3Cores.apagado)),
+            ),
+          ),
+        ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return futureBuilder(future: () async {
@@ -2707,6 +2898,10 @@ class _AboutState extends State<_About> {
       final myId = data['myId'].toString();
       const linkStyle = TextStyle(decoration: TextDecoration.underline);
       final scrollController = ScrollController();
+      if (!bind.isIncomingOnly()) {
+        return _sobreH3(scrollController, version, buildDate, fingerprint,
+            myId, license);
+      }
       return SingleChildScrollView(
         controller: scrollController,
         child: _Card(title: 'Sobre o H3 Suporte', children: [
