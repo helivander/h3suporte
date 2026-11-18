@@ -236,7 +236,7 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
       : Align(
           alignment: Alignment.topLeft,
           child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 820), child: w));
+              constraints: const BoxConstraints(maxWidth: double.infinity), child: w));
 
   List<Widget> _children() {
     final children = List<Widget>.empty(growable: true);
@@ -345,7 +345,7 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
               child: Align(
                 alignment: h3 ? Alignment.topLeft : Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: h3 ? 1280 : double.infinity),
+                  constraints: BoxConstraints(maxWidth: double.infinity),
                   child: pagina,
                 ),
               ),
@@ -2997,7 +2997,7 @@ class _AboutState extends State<_About> {
           const SizedBox(height: 16),
           LayoutBuilder(builder: (context, caixa) {
             const gap = 14.0;
-            final cols = caixa.maxWidth >= 640 ? 2 : 1;
+            final cols = caixa.maxWidth >= 1000 ? 4 : (caixa.maxWidth >= 640 ? 2 : 1);
             final itens = <Widget>[
               _infoTile(Icons.tag, translate('Version'), version, copiar: true),
               _infoTile(Icons.event_outlined, translate('Build Date'), buildDate),
@@ -3168,15 +3168,14 @@ class _AboutState extends State<_About> {
 Widget _colunasSimples(List<Widget> itens) {
   if (bind.isIncomingOnly()) return Column(children: itens);
   return LayoutBuilder(builder: (context, caixa) {
-    if (caixa.maxWidth < 900) return Column(children: itens);
-    final esq = <Widget>[];
-    final dir = <Widget>[];
+    final n = caixa.maxWidth >= 1500 ? 3 : (caixa.maxWidth >= 900 ? 2 : 1);
+    if (n == 1) return Column(children: itens);
+    final cols = List.generate(n, (_) => <Widget>[]);
     for (var i = 0; i < itens.length; i++) {
-      (i.isEven ? esq : dir).add(itens[i]);
+      cols[i % n].add(itens[i]);
     }
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Expanded(child: Column(children: esq)),
-      Expanded(child: Column(children: dir)),
+      for (final c in cols) Expanded(child: Column(children: c)),
     ]).paddingOnly(right: 15);
   });
 }
@@ -3185,17 +3184,16 @@ Widget _colunasSimples(List<Widget> itens) {
 Widget _duasColunas(ScrollController c, List<Widget> itens) {
   if (bind.isIncomingOnly()) return ListView(controller: c, children: itens);
   return LayoutBuilder(builder: (context, caixa) {
-    if (caixa.maxWidth < 900) return ListView(controller: c, children: itens);
-    final esq = <Widget>[];
-    final dir = <Widget>[];
+    final n = caixa.maxWidth >= 1500 ? 3 : (caixa.maxWidth >= 900 ? 2 : 1);
+    if (n == 1) return ListView(controller: c, children: itens);
+    final cols = List.generate(n, (_) => <Widget>[]);
     for (var i = 0; i < itens.length; i++) {
-      (i.isEven ? esq : dir).add(itens[i]);
+      cols[i % n].add(itens[i]);
     }
     return SingleChildScrollView(
       controller: c,
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Column(children: esq)),
-        Expanded(child: Column(children: dir)),
+        for (final col in cols) Expanded(child: Column(children: col)),
       ]).paddingOnly(right: 15),
     );
   });
