@@ -28,6 +28,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 import 'h3_conta_painel.dart';
+import 'h3_ia_config.dart';
 import 'h3_home_layout.dart';
 
 const double _kTabWidth = 220;
@@ -60,6 +61,7 @@ enum SettingsTabKey {
   display,
   account,
   printer,
+  ia,
   about,
 }
 
@@ -82,6 +84,7 @@ class DesktopSettingPage extends StatefulWidget {
         !bind.isDisableSettings() &&
         bind.mainGetBuildinOption(key: kOptionHideRemotePrinterSetting) != 'Y')
       SettingsTabKey.printer,
+    if (kH3IaBuild) SettingsTabKey.ia,
     SettingsTabKey.about,
   ];
 
@@ -213,6 +216,10 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
           settingTabs
               .add(_TabInfo(tab, 'Printer', Icons.print_outlined, Icons.print));
           break;
+        case SettingsTabKey.ia:
+          settingTabs.add(_TabInfo(
+              tab, 'IA', Icons.smart_toy_outlined, Icons.smart_toy));
+          break;
         case SettingsTabKey.about:
           settingTabs
               .add(_TabInfo(tab, 'About', Icons.info_outline, Icons.info));
@@ -243,6 +250,9 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
           break;
         case SettingsTabKey.printer:
           children.add(const _Printer());
+          break;
+        case SettingsTabKey.ia:
+          children.add(const IaConfig());
           break;
         case SettingsTabKey.about:
           children.add(const _About());

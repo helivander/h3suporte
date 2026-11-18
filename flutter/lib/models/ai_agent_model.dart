@@ -25,6 +25,8 @@ const kAiOptionModel = 'ai-agent-model';
 const kAiOptionBaseUrl = 'ai-agent-base-url';
 const kAiDefaultModel = 'claude-opus-5-5';
 const kAiDefaultBaseUrl = 'https://api.anthropic.com';
+const kAiOptionAutoOpen = 'ai-agent-auto-open';
+const kAiOptionConfirmEach = 'ai-agent-confirm-each';
 const kAiOptionProvider = 'ai-agent-provider';
 const kAiOptionChatGptModel = 'ai-agent-chatgpt-model';
 const kAiProviderClaude = 'claude';
@@ -64,7 +66,8 @@ class AiAgentModel {
 
   final entries = <AiChatEntry>[].obs;
   final status = AiAgentStatus.idle.obs;
-  final confirmEach = true.obs;
+  late final confirmEach =
+      (bind.mainGetLocalOption(key: kAiOptionConfirmEach) != 'N').obs;
   final pendingActions = <String>[].obs;
 
   final List<Map<String, dynamic>> _messages = [];
@@ -125,11 +128,23 @@ class AiAgentModel {
 
   // ---- panel ----
 
+  bool _autoOpened = false;
+
+  bool get _configured => provider == kAiProviderChatGpt
+      ? chatGpt.isSignedIn
+      : apiKey.isNotEmpty;
+
   void setOverlayState(BlockableOverlayState state) {
     final wasOpen = _panelEntry != null;
     _removePanel();
     _overlayState = state;
-    if (wasOpen) {
+    if (!wasOpen &&
+        !_autoOpened &&
+        bind.mainGetLocalOption(key: kAiOptionAutoOpen) != 'N' &&
+        _configured) {
+      _autoOpened = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => showPanel());
+    } else if (wasOpen) {
       WidgetsBinding.instance.addPostFrameCallback((_) => showPanel());
     }
   }
