@@ -330,40 +330,71 @@ class _IaConfigState extends State<IaConfig> {
             ? _chaveGemini.text.trim().isNotEmpty
             : _auth.isSignedIn;
     final cor = pronto ? H3Cores.ok : H3Cores.aviso;
-    return ListView(padding: const EdgeInsets.fromLTRB(15, 6, 15, 20), children: [
-      Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: cor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cor.withOpacity(0.45)),
-        ),
-        child: Row(children: [
-          Icon(pronto ? Icons.smart_toy : Icons.smart_toy_outlined,
-              size: 26, color: cor),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(pronto ? 'Assistente pronto' : 'Configuração pendente',
-                  style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: H3Cores.texto)),
-              Text(
-                  pronto
-                      ? 'O chat abrirá automaticamente nas sessões remotas.'
-                      : claude
-                          ? 'Informe a chave da API do Claude para ativar o assistente.'
-                          : gemini
-                              ? 'Informe a chave da API do Gemini para ativar o assistente.'
-                              : 'Entre com a sua conta do ChatGPT para ativar o assistente.',
-                  style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
-            ]),
-          ),
-        ]),
+    final nomeProv = claude ? 'Claude' : (gemini ? 'Gemini' : 'ChatGPT');
+    final modeloAtual = _ctrlModelo(_provedor).text;
+    Widget chip(String t) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+              color: H3Cores.fundo.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: H3Cores.linha2)),
+          child: Text(t,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: H3Cores.texto)),
+        );
+    final status = Container(
+      padding: const EdgeInsets.all(22),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [cor.withOpacity(0.18), H3Cores.painel]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cor.withOpacity(0.5)),
       ),
-      _secao(
+      child: Row(children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: cor.withOpacity(0.18),
+          ),
+          child: Icon(pronto ? Icons.smart_toy : Icons.smart_toy_outlined,
+              size: 30, color: cor),
+        ),
+        const SizedBox(width: 18),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(pronto ? 'Assistente pronto' : 'Configuração pendente',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: H3Cores.texto)),
+            const SizedBox(height: 3),
+            Text(
+                pronto
+                    ? 'O chat abrirá automaticamente nas sessões remotas.'
+                    : claude
+                        ? 'Informe a chave da API do Claude para ativar o assistente.'
+                        : gemini
+                            ? 'Informe a chave da API do Gemini para ativar o assistente.'
+                            : 'Entre com a sua conta do ChatGPT para ativar o assistente.',
+                style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+            const SizedBox(height: 12),
+            Wrap(spacing: 8, runSpacing: 6, children: [
+              chip('Provedor: $nomeProv'),
+              if (modeloAtual.isNotEmpty) chip('Modelo: $modeloAtual'),
+              chip(_confirmar ? 'Confirma cada ação' : 'Ações automáticas'),
+            ]),
+          ]),
+        ),
+      ]),
+    );
+    final provedor = _secao(
           'Provedor',
           'Escolha qual serviço de IA vai controlar o computador remoto.',
           LayoutBuilder(builder: (context, c) {
@@ -389,8 +420,8 @@ class _IaConfigState extends State<IaConfig> {
                 cartoes[i],
               ]
             ]);
-          })),
-      _secao(
+          }));
+    final conexao = _secao(
           'Conexão',
           claude
               ? 'Dados de acesso à API do Claude.'
@@ -487,8 +518,8 @@ class _IaConfigState extends State<IaConfig> {
                         style: TextStyle(fontSize: 12, color: H3Cores.aviso))),
               _seletorModelo(kAiProviderChatGpt),
             ],
-          ])),
-      _secao(
+          ]));
+    final comport = _secao(
           'Comportamento',
           'Como o assistente age durante a sessão remota.',
           Column(children: [
@@ -504,8 +535,8 @@ class _IaConfigState extends State<IaConfig> {
                 'A IA espera sua aprovação antes de mexer no computador remoto.',
                 _confirmar,
                 (v) => _confirmar = v),
-          ])),
-      Container(
+          ]));
+    final privacidade = Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -521,8 +552,8 @@ class _IaConfigState extends State<IaConfig> {
                     fontSize: 12, height: 1.4, color: H3Cores.texto)),
           ),
         ]),
-      ),
-      Row(children: [
+      );
+    final salvar = Row(children: [
         if (_salvo)
           Row(children: [
             Icon(Icons.check_circle, size: 16, color: H3Cores.ok),
@@ -555,7 +586,22 @@ class _IaConfigState extends State<IaConfig> {
                     color: H3Cores.destaqueTinta)),
           ),
         ),
-      ]),
-    ]);
+      ]);
+    return LayoutBuilder(builder: (context, caixa) {
+      final largo = caixa.maxWidth >= 1000;
+      final esquerda = [status, provedor, conexao];
+      final direita = [comport, privacidade, salvar];
+      return ListView(
+          padding: const EdgeInsets.fromLTRB(15, 6, 15, 20),
+          children: [
+            if (largo)
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Column(children: esquerda)),
+                const SizedBox(width: 16),
+                Expanded(child: Column(children: direita)),
+              ])
+            else ...[...esquerda, ...direita],
+          ]);
+    });
   }
 }
