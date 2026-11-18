@@ -851,5 +851,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("ai-agent-chatgpt-unavailable-tip", ""),
         ("Create account", ""),
         ("Forgot password?", ""),
+        ("username-login-disabled-oidc-unavailable", "İstifadəçi adı və parol ilə giriş deaktiv edilib və heç bir OIDC giriş üsulu mövcud deyil."),
     ].iter().cloned().collect();
 }

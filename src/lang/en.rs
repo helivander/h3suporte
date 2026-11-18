@@ -301,5 +301,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("ai-agent-chatgpt-limit-tip", "Your ChatGPT plan usage limit was reached. Check it in ChatGPT > Settings > Usage."),
         ("ai-agent-chatgpt-not-eligible-tip", "Your ChatGPT account or plan does not allow usage by other apps."),
         ("ai-agent-chatgpt-unavailable-tip", "ChatGPT is unavailable right now. Try again in a few minutes."),
+        ("username-login-disabled-oidc-unavailable", "Username and password login is disabled, and no OIDC login methods are available."),
     ].iter().cloned().collect();
 }
