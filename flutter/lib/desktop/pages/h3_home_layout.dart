@@ -11,6 +11,7 @@ import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
 import 'package:flutter_hbb/desktop/pages/h3_meus_dispositivos.dart';
+import 'package:flutter_hbb/desktop/pages/h3_permissoes.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
@@ -630,53 +631,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
 
   // ---------- Permissões ----------
 
-  Widget _permissoes() {
-    return Obx(() {
-      final aviso = widget.helpCards();
-      final pendente = _ehAviso(aviso);
-      return ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text('Permissões',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  color: H3Cores.texto)),
-          const SizedBox(height: 4),
-          Text(
-              'O que o H3 Suporte precisa para funcionar neste computador.',
-              style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
-          const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: pendente
-                ? aviso
-                : _cartao(
-                    filho: Row(children: [
-                      Icon(Icons.check_circle_outline,
-                          size: 28, color: H3Cores.ok),
-                      SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Tudo certo',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: H3Cores.texto)),
-                            Text('Nenhuma permissão ou aviso pendente.',
-                                style: TextStyle(
-                                    fontSize: 12.5, color: H3Cores.apagado)),
-                          ],
-                        ),
-                      ),
-                    ]),
-                  ),
-          ),
-        ],
-      );
-    });
-  }
+  Widget _permissoes() => const H3Permissoes();
 
   // ---------- Relatórios ----------
 
