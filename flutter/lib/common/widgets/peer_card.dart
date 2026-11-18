@@ -52,6 +52,8 @@ class _PeerCardState extends State<_PeerCard>
   var _menuPos = RelativeRect.fill;
   final double _cardRadius = 16;
   double get _tileRadius => H3Estilo.ativo(context) ? 12 : 5;
+  bool get _grupoH3 => H3Estilo.ativo(context) && widget.tab == PeerTabIndex.group;
+  bool get _grade => peerCardUiType.value == PeerUiType.grid && !_grupoH3;
   final double _borderWidth = 2;
 
   @override
@@ -104,7 +106,7 @@ class _PeerCardState extends State<_PeerCard>
             color: H3Estilo.ativo(context) ? H3Cores.linha : Colors.transparent,
             width: _borderWidth),
         borderRadius: BorderRadius.circular(
-          peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
+          _grade ? _cardRadius : _tileRadius,
         ),
       ),
     );
@@ -115,7 +117,7 @@ class _PeerCardState extends State<_PeerCard>
               color: Theme.of(context).colorScheme.primary,
               width: _borderWidth),
           borderRadius: BorderRadius.circular(
-            peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
+            _grade ? _cardRadius : _tileRadius,
           ),
         );
       },
@@ -125,12 +127,12 @@ class _PeerCardState extends State<_PeerCard>
             color: H3Estilo.ativo(context) ? H3Cores.linha : Colors.transparent,
             width: _borderWidth),
           borderRadius: BorderRadius.circular(
-            peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
+            _grade ? _cardRadius : _tileRadius,
           ),
         );
       },
       child: gestureDetector(
-          child: Obx(() => peerCardUiType.value == PeerUiType.grid
+          child: Obx(() => _grade
               ? _buildPeerCard(context, peer, deco)
               : _buildPeerTile(context, peer, deco))),
     );
@@ -258,7 +260,12 @@ class _PeerCardState extends State<_PeerCard>
     final name = hideUsernameOnCard == true
         ? peer.hostname
         : '${peer.username}${peer.username.isNotEmpty && peer.hostname.isNotEmpty ? '@' : ''}${peer.hostname}';
-    final titulo = peer.alias.isEmpty ? formatID(peer.id) : peer.alias;
+    final grupo = _grupoH3;
+    final titulo = grupo
+        ? (peer.alias.isNotEmpty
+            ? peer.alias
+            : (peer.hostname.isNotEmpty ? peer.hostname : formatID(peer.id)))
+        : (peer.alias.isEmpty ? formatID(peer.id) : peer.alias);
     final cor = peer.online ? H3Cores.ok : H3Cores.apagado;
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
@@ -316,7 +323,9 @@ class _PeerCardState extends State<_PeerCard>
                 message: name,
                 waitDuration: const Duration(seconds: 1),
                 child: Text(
-                    name.isEmpty ? (peer.online ? 'Online' : 'Offline') : name,
+                    grupo
+                        ? 'ID ${formatID(peer.id)}'
+                        : (name.isEmpty ? (peer.online ? 'Online' : 'Offline') : name),
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
               ),
@@ -327,6 +336,23 @@ class _PeerCardState extends State<_PeerCard>
             ],
           ),
         ),
+        if (grupo)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: ElevatedButton.icon(
+              onPressed: () => widget.connect(context, peer.id),
+              icon: const Icon(Icons.bolt, size: 16),
+              label: Text(translate('Connect')),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: H3Cores.destaque,
+                  foregroundColor: H3Cores.destaqueTinta,
+                  elevation: 0,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10))),
+            ),
+          ),
         checkBoxOrActionMoreLandscape(peer, isTile: true),
       ]),
     );

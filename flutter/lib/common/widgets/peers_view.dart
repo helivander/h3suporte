@@ -278,6 +278,10 @@ class _PeersViewState extends State<_PeersView>
             var peers = snapshot.data!;
             if (peers.length > 1000) peers = peers.sublist(0, 1000);
             gFFI.peerTabModel.setCurrentTabCachedPeers(peers);
+            final lista = () =>
+                peerCardUiType.value == PeerUiType.list ||
+                (H3Estilo.ativo(context) &&
+                    widget.peerTabIndex == PeerTabIndex.group);
             buildOnePeer(Peer peer, bool isPortrait) {
               final visibilityChild = VisibilityDetector(
                 key: ValueKey(_cardId(peer.id)),
@@ -291,7 +295,7 @@ class _PeersViewState extends State<_PeersView>
               // Because the currentTab change event will trigger the peers change event,
               // and the peers change event will trigger _buildPeersView().
               return !isPortrait
-                  ? Obx(() => peerCardUiType.value == PeerUiType.list
+                  ? Obx(() => lista()
                       ? Container(
                           height: H3Estilo.ativo(context) ? 62 : 45,
                           child: visibilityChild)
@@ -316,7 +320,7 @@ class _PeersViewState extends State<_PeersView>
                           top: index == 0 ? 0 : space / 2, bottom: space / 2);
                     },
                   )
-                : peerCardUiType.value == PeerUiType.list
+                : lista()
                     ? ListView.builder(
                         controller: _scrollController,
                         itemCount: peers.length,
