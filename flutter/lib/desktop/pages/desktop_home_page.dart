@@ -204,7 +204,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                     buildPresetPasswordWarning(),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
-                      child: Center(child: loadLogo()),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          loadIcon(30),
+                          const SizedBox(width: 10),
+                          Text('H3 Suporte',
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  color: H3Cores.texto)),
+                        ],
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
