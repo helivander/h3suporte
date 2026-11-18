@@ -17,24 +17,28 @@ import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
-/// Paleta da tela inicial do app de acesso (escuro, verde-água).
+/// Paleta da tela inicial e das Configurações (verde-água), nos temas escuro e claro.
 class H3Cores {
-  static const fundo = Color(0xFF070D10);
-  static const painel = Color(0xFF0E171B);
-  static const painel2 = Color(0xFF132026);
-  static const linha = Color(0xFF1D2D33);
-  static const linha2 = Color(0xFF26393F);
-  static const texto = Color(0xFFE6F1F2);
-  static const apagado = Color(0xFF8AA1A6);
-  static const destaque = Color(0xFF1FD1C1);
-  static const destaqueTinta = Color(0xFF04201D);
-  static const ok = Color(0xFF3DDC84);
-  static const aviso = Color(0xFFF0B544);
-  static const info = Color(0xFF4F8CFF);
+  static bool escuro = true;
+  static Color _c(int e, int c) => Color(escuro ? e : c);
 
-  /// Tema escuro verde-água, também usado nas Configurações.
-  static ThemeData tema() {
-    final base = MyTheme.darkTheme;
+  static Color get fundo => _c(0xFF070D10, 0xFFE9EFF1);
+  static Color get painel => _c(0xFF0E171B, 0xFFFFFFFF);
+  static Color get painel2 => _c(0xFF132026, 0xFFF4F8F9);
+  static Color get linha => _c(0xFF1D2D33, 0xFFDCE5E8);
+  static Color get linha2 => _c(0xFF26393F, 0xFFC9D6DA);
+  static Color get texto => _c(0xFFE6F1F2, 0xFF13262B);
+  static Color get apagado => _c(0xFF8AA1A6, 0xFF587177);
+  static Color get destaque => _c(0xFF1FD1C1, 0xFF0B9A8F);
+  static Color get destaqueTinta => _c(0xFF04201D, 0xFFFFFFFF);
+  static Color get ok => _c(0xFF3DDC84, 0xFF1C9A58);
+  static Color get aviso => _c(0xFFF0B544, 0xFFB5730F);
+  static Color get info => _c(0xFF4F8CFF, 0xFF2D6BDB);
+
+  /// Tema verde-água; [brilho] vem do tema escolhido nas Configurações (Claro/Escuro/Sistema).
+  static ThemeData tema(Brightness brilho) {
+    escuro = brilho == Brightness.dark;
+    final base = escuro ? MyTheme.darkTheme : MyTheme.lightTheme;
     return base.copyWith(
       scaffoldBackgroundColor: painel,
       cardColor: painel2,
@@ -113,12 +117,15 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
 
   bool _ehAviso(Widget w) => w is Stack || w is Column;
 
-  ThemeData _tema() => H3Cores.tema();
+  ThemeData _tema(BuildContext context) =>
+      H3Cores.tema(Theme.of(context).brightness);
 
   @override
   Widget build(BuildContext context) {
+    final tema = _tema(context);
     return Theme(
-      data: _tema(),
+      key: ValueKey(H3Cores.escuro),
+      data: tema,
       child: ChangeNotifierProvider.value(
         value: gFFI.serverModel,
         child: Container(
@@ -162,7 +169,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         final ponto = Container(
           width: 8,
           height: 8,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
               shape: BoxShape.circle, color: H3Cores.aviso),
         );
         final botao = InkWell(
@@ -216,7 +223,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     return Container(
       width: compacto ? 68 : 220,
       padding: const EdgeInsets.fromLTRB(10, 18, 10, 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: H3Cores.painel,
         border: Border(right: BorderSide(color: H3Cores.linha)),
       ),
@@ -237,7 +244,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           item(Icons.verified_user_outlined, 'Permissões',
               () => _aba.value = 3,
               aba: 3, selo: true),
-          const Padding(
+          Padding(
               padding: EdgeInsets.symmetric(vertical: 10),
               child: Divider(height: 1, color: H3Cores.linha)),
           item(Icons.shield_outlined, 'Segurança',
@@ -262,7 +269,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           loadIcon(30),
           if (!compacto) ...[
             const SizedBox(width: 10),
-            const Text('H3 Suporte',
+            Text('H3 Suporte',
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -282,10 +289,10 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         backgroundColor: logado ? H3Cores.destaque : H3Cores.linha2,
         child: logado
             ? Text(nome.isEmpty ? '?' : nome.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                     color: H3Cores.destaqueTinta,
                     fontWeight: FontWeight.bold))
-            : const Icon(Icons.person_outline,
+            : Icon(Icons.person_outline,
                 size: 18, color: H3Cores.apagado),
       );
       final entrar = () async {
@@ -317,7 +324,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Conta H3 Suporte',
+                  Text('Conta H3 Suporte',
                       style: TextStyle(fontSize: 11, color: H3Cores.apagado)),
                   Text(logado ? nome : 'Entrar',
                       overflow: TextOverflow.ellipsis,
@@ -344,7 +351,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [H3Cores.painel2, H3Cores.painel]),
@@ -362,13 +369,13 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(titulo,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: H3Cores.texto)),
                   if (subtitulo != null)
                     Text(subtitulo,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12.5, color: H3Cores.apagado)),
                 ],
               ),
@@ -457,7 +464,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               detalhe: 'Você está acessando · $id',
               acao: TextButton(
                 onPressed: () => connect(context, id),
-                child: const Text('Abrir',
+                child: Text('Abrir',
                     style: TextStyle(color: H3Cores.destaque)),
               ),
             ),
@@ -541,12 +548,12 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
             children: [
               Text(titulo,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w600, color: H3Cores.texto)),
               Text(detalhe,
                   overflow: TextOverflow.ellipsis,
                   style:
-                      const TextStyle(fontSize: 11.5, color: H3Cores.apagado)),
+                      TextStyle(fontSize: 11.5, color: H3Cores.apagado)),
             ],
           ),
         ),
@@ -564,13 +571,13 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       return ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text('Permissões',
+          Text('Permissões',
               style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
                   color: H3Cores.texto)),
           const SizedBox(height: 4),
-          const Text(
+          Text(
               'O que o H3 Suporte precisa para funcionar neste computador.',
               style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
           const SizedBox(height: 16),
@@ -579,7 +586,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
             child: pendente
                 ? aviso
                 : _cartao(
-                    filho: const Row(children: [
+                    filho: Row(children: [
                       Icon(Icons.check_circle_outline,
                           size: 28, color: H3Cores.ok),
                       SizedBox(width: 14),
@@ -670,7 +677,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       width: 220,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [H3Cores.painel2, H3Cores.painel]),
@@ -695,7 +702,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(rotulo,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: H3Cores.texto, fontWeight: FontWeight.w500)),
                 Text(valor,
                     style: TextStyle(
@@ -706,7 +713,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                             : H3Cores.texto)),
                 Text(nota,
                     style:
-                        const TextStyle(fontSize: 12, color: H3Cores.apagado)),
+                        TextStyle(fontSize: 12, color: H3Cores.apagado)),
               ],
             ),
           ),
@@ -752,7 +759,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       onTap: () => DesktopSettingPage.switch2page(SettingsTabKey.safety),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 11),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: H3Cores.linha))),
         child: Row(children: [
           Icon(icone, size: 20, color: H3Cores.apagado),
@@ -762,7 +769,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(titulo,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                         color: H3Cores.texto)),
@@ -773,7 +780,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, size: 20, color: H3Cores.apagado),
+          Icon(Icons.chevron_right, size: 20, color: H3Cores.apagado),
         ]),
       ),
     );

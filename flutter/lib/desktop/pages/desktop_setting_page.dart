@@ -278,8 +278,11 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   Widget build(BuildContext context) {
     super.build(context);
     if (bind.isIncomingOnly()) return _corpo(context);
+    final tema = H3Cores.tema(Theme.of(context).brightness);
     return Theme(
-        data: H3Cores.tema(), child: Builder(builder: (ctx) => _corpo(ctx)));
+        key: ValueKey(H3Cores.escuro),
+        data: tema,
+        child: Builder(builder: (ctx) => _corpo(ctx)));
   }
 
   Widget _corpo(BuildContext context) {
@@ -2754,7 +2757,7 @@ Widget _Card(
                 ? null
                 : RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: const BorderSide(color: H3Cores.linha)),
+                    side: BorderSide(color: H3Cores.linha)),
             child: Column(
               children: [
                 Row(

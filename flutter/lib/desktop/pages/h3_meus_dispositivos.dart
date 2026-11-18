@@ -223,7 +223,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
               child: const Text('Cancelar')),
           TextButton(
               onPressed: () => Navigator.pop(c, true),
-              child: const Text('Registrar',
+              child: Text('Registrar',
                   style: TextStyle(color: H3Cores.destaque))),
         ],
       ),
@@ -309,7 +309,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
   }
 
   BoxDecoration get _caixa => BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [H3Cores.painel2, H3Cores.painel]),
@@ -330,7 +330,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
             color: H3Cores.destaque.withOpacity(0.14),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.cloud_done_outlined,
+          child: Icon(Icons.cloud_done_outlined,
               color: H3Cores.destaque, size: 22),
         ),
         const SizedBox(width: 14),
@@ -338,7 +338,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Este computador',
+              Text('Este computador',
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -350,7 +350,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
                         ? 'Registrado na sua conta. Qualquer app logado nela consegue acessá-lo.'
                         : 'Não registrado. Registre para acessá-lo de outro app, sem digitar a senha.',
                 style:
-                    const TextStyle(fontSize: 12.5, color: H3Cores.apagado),
+                    TextStyle(fontSize: 12.5, color: H3Cores.apagado),
               ),
             ],
           ),
@@ -406,11 +406,11 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
                     Text(
                         '${d.nome.isEmpty ? d.idFormatado : d.nome}${d.id == meu ? ' (este computador)' : ''}',
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: H3Cores.texto)),
                     Text(d.idFormatado,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 11.5,
                             color: H3Cores.apagado,
                             fontFamily: 'monospace')),
@@ -429,13 +429,13 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
               IconButton(
                 tooltip: 'Transferir arquivos',
                 onPressed: () => _conectar(d, arquivos: true),
-                icon: const Icon(Icons.folder_outlined,
+                icon: Icon(Icons.folder_outlined,
                     size: 20, color: H3Cores.apagado),
               ),
               IconButton(
                 tooltip: 'Remover da conta',
                 onPressed: () => _remover(d),
-                icon: const Icon(Icons.delete_outline,
+                icon: Icon(Icons.delete_outline,
                     size: 20, color: H3Cores.apagado),
               ),
             ]),
@@ -448,12 +448,12 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Dispositivos da conta',
+          Text('Dispositivos da conta',
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: H3Cores.texto)),
-          const Text('Conecte com um clique: a senha vem da sua conta.',
+          Text('Conecte com um clique: a senha vem da sua conta.',
               style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
           const SizedBox(height: 14),
           corpo,
@@ -471,7 +471,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
         ),
         child: Text(msg,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: H3Cores.apagado)),
+            style: TextStyle(color: H3Cores.apagado)),
       );
 
   Widget _pilula(bool online) => Container(
