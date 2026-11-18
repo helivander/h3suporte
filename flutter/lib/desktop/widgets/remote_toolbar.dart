@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart' show H3Cores;
 import 'package:flutter_hbb/common/widgets/audio_input.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/common/widgets/keyboard_shortcuts/display.dart';
@@ -162,7 +163,7 @@ Alignment _alignmentForEdge(_ToolbarEdge edge, double fraction) {
 // The drag handle hangs off the side of the toolbar facing away from the
 // docked edge, so the icons themselves sit flush against that edge.
 BorderRadius _collapseHandleBorderRadius(_ToolbarEdge edge) {
-  const r = Radius.circular(5);
+  const r = Radius.circular(14);
   switch (edge) {
     case _ToolbarEdge.top:
       return const BorderRadius.vertical(bottom: r);
@@ -325,33 +326,40 @@ class ToolbarState {
 }
 
 class _ToolbarTheme {
-  static const Color blueColor = MyTheme.button;
-  static const Color hoverBlueColor = MyTheme.accent;
-  static Color inactiveColor = Colors.grey[800]!;
-  static Color hoverInactiveColor = Colors.grey[850]!;
+  static Color get blueColor => H3Cores.escuro
+      ? const Color(0xFF14675F)
+      : const Color(0xFF0B9A8F);
+  static Color get hoverBlueColor => H3Cores.escuro
+      ? const Color(0xFF1FA89B)
+      : const Color(0xFF0A7F76);
+  static Color get inactiveColor => H3Cores.linha;
+  static Color get hoverInactiveColor => H3Cores.linha2;
 
-  static const Color redColor = Colors.redAccent;
-  static const Color hoverRedColor = Colors.red;
+  static Color get redColor => H3Cores.escuro
+      ? const Color(0xFFE0485A)
+      : const Color(0xFFC6283A);
+  static Color get hoverRedColor => H3Cores.escuro
+      ? const Color(0xFFFF5D6C)
+      : const Color(0xFFA81F30);
   // kMinInteractiveDimension
   static const double height = 20.0;
   static const double dividerHeight = 12.0;
 
-  static const double buttonSize = 32;
+  static const double buttonSize = 34;
   static const double buttonHMargin = 2;
   static const double buttonVMargin = 6;
-  static const double iconRadius = 8;
+  static const double iconRadius = 12;
   static const double elevation = 3;
 
   static double dividerSpaceToAction = isWindows ? 8 : 14;
 
-  static double menuBorderRadius = isWindows ? 5.0 : 7.0;
+  static double menuBorderRadius = 14.0;
   static EdgeInsets menuPadding = isWindows
       ? EdgeInsets.fromLTRB(4, 12, 4, 12)
       : EdgeInsets.fromLTRB(6, 14, 6, 14);
-  static const double menuButtonBorderRadius = 3.0;
+  static const double menuButtonBorderRadius = 8.0;
 
-  static Color borderColor(BuildContext context) =>
-      MyTheme.color(context).border3 ?? MyTheme.border;
+  static Color borderColor(BuildContext context) => H3Cores.linha2;
 
   static Color? dividerColor(BuildContext context) =>
       MyTheme.color(context).divider;
@@ -867,7 +875,8 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     }
     if (!isWeb) toolbarItems.add(_RecordMenu());
     toolbarItems.add(_CloseMenu(id: widget.id, ffi: widget.ffi));
-    final toolbarBorderRadius = BorderRadius.all(Radius.circular(4.0));
+    H3Cores.escuro = Theme.of(context).brightness == Brightness.dark;
+    final toolbarBorderRadius = BorderRadius.all(Radius.circular(18.0));
     // innerAxis: how the toolbar icons themselves flow.
     // outerAxis: how the toolbar block and the handle stack against each other
     // (perpendicular to the dock edge, so the handle hangs off the interior face).
@@ -880,11 +889,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       elevation: _ToolbarTheme.elevation,
       shadowColor: MyTheme.color(context).shadow,
       borderRadius: toolbarBorderRadius,
-      color: Theme.of(context)
-          .menuBarTheme
-          .style
-          ?.backgroundColor
-          ?.resolve(MaterialState.values.toSet()),
+      color: H3Cores.painel,
       child: SingleChildScrollView(
         scrollDirection: innerAxis,
         child: Theme(
@@ -940,9 +945,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
         padding: MaterialStatePropertyAll(EdgeInsets.zero),
         elevation: MaterialStatePropertyAll(0),
         shape: MaterialStatePropertyAll(BeveledRectangleBorder()),
-      ).copyWith(
-              backgroundColor:
-                  Theme.of(context).menuBarTheme.style?.backgroundColor)),
+      ).copyWith(backgroundColor: MaterialStatePropertyAll(H3Cores.painel))),
     );
   }
 }
@@ -3579,7 +3582,8 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
     const double iconSize = 20;
 
     buttonWrapper(VoidCallback? onPressed, Widget child,
-        {Color hoverColor = _ToolbarTheme.blueColor}) {
+        {Color? hoverColor}) {
+      hoverColor ??= _ToolbarTheme.blueColor;
       final bgColor = buttonStyle.backgroundColor?.resolve({});
       return TextButton(
         onPressed: onPressed,
@@ -3587,7 +3591,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
         style: buttonStyle.copyWith(
           backgroundColor: MaterialStateProperty.resolveWith((states) {
             if (states.contains(MaterialState.hovered)) {
-              return (bgColor ?? hoverColor).withOpacity(0.15);
+              return (bgColor ?? hoverColor)!.withOpacity(0.15);
             }
             return bgColor;
           }),
@@ -3671,11 +3675,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
       data: TextButtonThemeData(style: buttonStyle),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context)
-              .menuBarTheme
-              .style
-              ?.backgroundColor
-              ?.resolve(MaterialState.values.toSet()),
+          color: H3Cores.painel,
           border: Border.all(
             color: _ToolbarTheme.borderColor(context),
             width: 1,

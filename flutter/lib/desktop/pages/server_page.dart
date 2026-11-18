@@ -637,39 +637,88 @@ class _PrivilegeBoard extends StatefulWidget {
 
 class _PrivilegeBoardState extends State<_PrivilegeBoard> {
   late final client = widget.client;
+  static final _rotulos = <IconData, String>{
+    Icons.keyboard: 'Teclado',
+    Icons.assignment_rounded: 'Área',
+    Icons.volume_up_rounded: 'Áudio',
+    Icons.upload_file_rounded: 'Arquivos',
+    Icons.restart_alt_rounded: 'Reiniciar',
+    Icons.videocam_rounded: 'Gravar',
+    Icons.block: 'Bloquear',
+    Icons.visibility_off: 'Oculto',
+  };
+
   Widget buildPermissionIcon(bool enabled, IconData iconData,
       Function(bool)? onTap, String tooltipText,
       {required bool canModify}) {
+    final raio = BorderRadius.circular(14.0);
+    final corTexto = enabled ? H3Cores.destaque : H3Cores.apagado;
     return Tooltip(
       message: "$tooltipText: ${enabled ? "ON" : "OFF"}",
       waitDuration: Duration.zero,
-      child: Container(
-        decoration: BoxDecoration(
-          color: enabled
-              ? (canModify
-                  ? H3Cores.destaque
-                  : H3Cores.destaque.withOpacity(0.6))
-              : H3Cores.painel2,
-          borderRadius: BorderRadius.circular(12.0),
-          border: Border.all(
-              color: enabled ? H3Cores.destaque : H3Cores.linha2),
-        ),
-        padding: EdgeInsets.all(8.0),
-        child: InkWell(
-          onTap: canModify
-              ? () =>
-                  checkClickTime(widget.client.id, () => onTap?.call(!enabled))
-              : null,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Expanded(
-                child: Icon(
-                  iconData,
-                  color: enabled ? H3Cores.destaqueTinta : H3Cores.apagado,
-                ),
+      child: Opacity(
+        opacity: enabled && !canModify ? 0.7 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: enabled
+                    ? [
+                        H3Cores.destaque.withOpacity(0.22),
+                        H3Cores.destaque.withOpacity(0.08)
+                      ]
+                    : [H3Cores.painel2, H3Cores.painel],
               ),
-            ],
+              borderRadius: raio,
+              border: Border.all(
+                  color: enabled
+                      ? H3Cores.destaque.withOpacity(0.7)
+                      : H3Cores.linha2),
+            ),
+            child: InkWell(
+              borderRadius: raio,
+              onTap: canModify
+                  ? () => checkClickTime(
+                      widget.client.id, () => onTap?.call(!enabled))
+                  : null,
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(iconData, size: 22, color: corTexto),
+                        SizedBox(height: 4),
+                        Text(
+                          _rotulos[iconData] ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: corTexto),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: enabled ? H3Cores.ok : H3Cores.linha2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -685,7 +734,7 @@ class _PrivilegeBoardState extends State<_PrivilegeBoard> {
             'N';
     return Container(
       width: double.infinity,
-      height: 160.0,
+      height: 176.0,
       margin: EdgeInsets.all(5.0),
       padding: EdgeInsets.all(5.0),
       decoration: BoxDecoration(
@@ -1160,35 +1209,53 @@ class _CmControlPanel extends StatelessWidget {
       String? tooltip,
       GestureTapDownCallback? onTapDown}) {
     assert(!(onClick == null && onTapDown == null));
-    Widget textWidget;
-    if (icon != null) {
-      textWidget = Text(
-        translate(text),
-        style: TextStyle(
-            color: color == MyTheme.accent ? H3Cores.destaqueTinta : textColor,
-            fontWeight: FontWeight.w600),
-        textAlign: TextAlign.center,
-      );
-    } else {
-      textWidget = Expanded(
-        child: Text(
-          translate(text),
-          style: TextStyle(
-              color:
-                  color == MyTheme.accent ? H3Cores.destaqueTinta : textColor,
-              fontWeight: FontWeight.w600),
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-    final borderRadius = BorderRadius.circular(12.0);
     final primario = color == MyTheme.accent;
+    final perigo = color == Colors.red || color == Colors.redAccent;
+    final fantasma = color == Colors.transparent;
+    final vermelho = H3Cores.escuro ? Color(0xFFFF5D6C) : Color(0xFFC6283A);
+    final base = primario
+        ? H3Cores.destaque
+        : perigo
+            ? vermelho
+            : fantasma
+                ? H3Cores.apagado
+                : (color ?? H3Cores.info);
+    final corTexto = primario
+        ? H3Cores.destaqueTinta
+        : fantasma
+            ? H3Cores.texto
+            : base;
+    final iconeBotao = icon != null
+        ? IconTheme(
+            data: IconThemeData(color: corTexto, size: 16),
+            child: icon,
+          )
+        : (primario
+            ? Icon(Icons.check_rounded, size: 18, color: corTexto)
+            : fantasma
+                ? Icon(Icons.close_rounded, size: 18, color: corTexto)
+                : null);
+    final borderRadius = BorderRadius.circular(14.0);
     final btn = Container(
-      height: 34,
+      height: 42,
       decoration: BoxDecoration(
-          color: primario ? H3Cores.destaque : color,
-          borderRadius: borderRadius,
-          border: border),
+        gradient: primario
+            ? LinearGradient(colors: [
+                H3Cores.destaque,
+                Color.lerp(H3Cores.destaque, H3Cores.info, 0.25)!,
+              ])
+            : null,
+        color: primario
+            ? null
+            : fantasma
+                ? Colors.transparent
+                : base.withOpacity(0.14),
+        borderRadius: borderRadius,
+        border: primario
+            ? null
+            : Border.all(
+                color: fantasma ? H3Cores.linha2 : base.withOpacity(0.55)),
+      ),
       child: InkWell(
         borderRadius: borderRadius,
         onTap: () {
@@ -1204,8 +1271,19 @@ class _CmControlPanel extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Offstage(offstage: icon == null, child: icon).marginOnly(right: 5),
-            textWidget,
+            if (iconeBotao != null) iconeBotao.marginOnly(right: 6),
+            Flexible(
+              child: Text(
+                translate(text),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: corTexto,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
       ),
