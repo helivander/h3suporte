@@ -1005,6 +1005,28 @@ jobs:
               arch: aarch64,
               vcpkg-triplet: arm64-osx,
             }
+          # H3 Suporte: builds COM o assistente de IA, só para administrador do sistema (docs/versoes-agente.md).
+          # Ficam só como artefato do workflow: nunca entram no release público nem na lista de atualização.
+          - {
+              target: x86_64-apple-darwin,
+              os: macos-26-intel,
+              extra-build-args: "",
+              extra-cargo-features: "",
+              arch: x86_64,
+              vcpkg-triplet: x64-osx,
+              name-suffix: "-ia",
+              ia: "true",
+            }
+          - {
+              target: aarch64-apple-darwin,
+              os: macos-26,
+              extra-build-args: "--screencapturekit",
+              extra-cargo-features: ",screencapturekit",
+              arch: aarch64,
+              vcpkg-triplet: arm64-osx,
+              name-suffix: "-ia",
+              ia: "true",
+            }
     steps:
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
@@ -1120,7 +1142,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          prefix-key: ${{ matrix.job.os }}
+          prefix-key: ${{ matrix.job.os }}${{ matrix.job.name-suffix }}
 
       - name: Restore bridge files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -1131,7 +1153,7 @@ jobs:
 
       - name: Run the Dart tests
         # x86_64 tests the Flutter 3.24.5 sources most platforms ship, arm64 the patched 3.44 ones.
-        if: ${{ !inputs.upload-artifact }}
+        if: ${{ !inputs.upload-artifact && matrix.job.ia != 'true' }}
         working-directory: flutter
         run: flutter test --timeout 60s
 
@@ -1168,6 +1190,8 @@ jobs:
           rustc -V
 
       - name: Build rustdesk
+        env:
+          H3_IA: ${{ matrix.job.ia }}
         run: |
           if [ "${{ matrix.job.target }}" = "aarch64-apple-darwin" ]; then
             MIN_MACOS_VERSION="12.3"
@@ -1180,7 +1204,7 @@ jobs:
           ./build.py --flutter --hwcodec --unix-file-copy-paste ${{ matrix.job.extra-build-args }}
 
       - name: Test verified updates
-        if: env.PUBLISH_UPDATE_METADATA == 'true'
+        if: matrix.job.ia != 'true' && env.PUBLISH_UPDATE_METADATA == 'true'
         run: |
           python3 -m unittest res/update/test_macos_update_scripts.py
           cargo test --locked --release --lib platform::macos::update_tests --features "flutter,hwcodec,unix-file-copy-paste${{ matrix.job.extra-cargo-features }}"
@@ -1188,7 +1212,7 @@ jobs:
           cargo test --locked --release --lib update_metadata::tests --features "flutter,hwcodec,unix-file-copy-paste${{ matrix.job.extra-cargo-features }}"
 
       - name: Run the Rust tests
-        if: ${{ !inputs.upload-artifact && matrix.job.arch == 'aarch64' }}
+        if: ${{ !inputs.upload-artifact && matrix.job.arch == 'aarch64' && matrix.job.ia != 'true' }}
         run: |
           # The build's own features, so the tests see the code that ships. MACOSX_DEPLOYMENT_TARGET
           # comes from the build step's export.
@@ -1206,7 +1230,7 @@ jobs:
           create-dmg --volicon flutter/macos/Runner/AppIcon.icns --icon "H3Suporte.app" 200 190 --hide-extension "H3Suporte.app" --window-size 800 400 --app-drop-link 600 185 ${{ env.PKG_NAME }}-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/H3Suporte.app
 
       - name: Upload unsigned macOS app
-        if: env.UPLOAD_ARTIFACT == 'true'
+        if: matrix.job.ia != 'true' && env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: rustdesk-unsigned-macos-${{ matrix.job.arch }}
@@ -1251,14 +1275,15 @@ jobs:
         env:
           VERSION: ${{ env.VERSION }}
           ARCH: ${{ matrix.job.arch }}
+          SUFIXO: ${{ matrix.job.name-suffix }}
         run: |
           if [ -f "${{ env.PKG_NAME }}-${VERSION}.dmg" ]; then
-              mv "${{ env.PKG_NAME }}-${VERSION}.dmg" "${{ env.PKG_NAME }}-${VERSION}-${ARCH}.dmg"
+              mv "${{ env.PKG_NAME }}-${VERSION}.dmg" "${{ env.PKG_NAME }}-${VERSION}-${ARCH}${SUFIXO}.dmg"
           fi
-          test -f "${{ env.PKG_NAME }}-${VERSION}-${ARCH}.dmg"
+          test -f "${{ env.PKG_NAME }}-${VERSION}-${ARCH}${SUFIXO}.dmg"
 
       - name: Upload signed macOS DMG
-        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.MACOS_P12_BASE64 != null
+        if: matrix.job.ia != 'true' && env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.MACOS_P12_BASE64 != null
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-${{ matrix.job.arch }}-dmg
@@ -1279,7 +1304,7 @@ jobs:
           pkgbuild --analyze --root pkgroot pkg-components.plist
           /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" pkg-components.plist ||
             /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" pkg-components.plist
-          pkg="${{ env.PKG_NAME }}-${{ env.VERSION }}-macos-${nome}.pkg"
+          pkg="${{ env.PKG_NAME }}-${{ env.VERSION }}-macos-${nome}${{ matrix.job.name-suffix }}.pkg"
           assinar=()
           if [ -n "$MACOS_INSTALLER_P12_BASE64" ] && [ -n "$MACOS_P12_BASE64" ]; then
             security unlock-keychain -p "$P12_PASSWORD" rustdesk.keychain
@@ -1298,8 +1323,19 @@ jobs:
             fi
           fi
 
+      - name: Upload macOS build with AI (administrators only)
+        if: matrix.job.ia == 'true' && env.UPLOAD_ARTIFACT == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: h3suporte-ia-macos-${{ matrix.job.arch }}
+          path: |
+            ${{ env.PKG_NAME }}-${{ env.VERSION }}-${{ matrix.job.arch }}-ia.dmg
+            ${{ env.PKG_NAME }}-${{ env.VERSION }}-macos-*-ia.pkg
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Publish DMG package
-        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
+        if: matrix.job.ia != 'true' && env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           prerelease: true
