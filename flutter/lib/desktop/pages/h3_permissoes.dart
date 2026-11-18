@@ -169,76 +169,135 @@ class _H3PermissoesState extends State<H3Permissoes> {
         Text('Nenhuma permissão é necessária neste sistema.',
             style: TextStyle(color: H3Cores.apagado))
       else
-        Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: lista.map(_cartao).toList()),
+        LayoutBuilder(builder: (context, c) {
+          const gap = 16.0;
+          final cols = ((c.maxWidth + gap) / (270 + gap)).floor().clamp(1, 4);
+          final linhas = <Widget>[];
+          for (var i = 0; i < lista.length; i += cols) {
+            final fatia = lista.skip(i).take(cols).toList();
+            linhas.add(Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+              child: IntrinsicHeight(
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var j = 0; j < cols; j++) ...[
+                        if (j > 0) const SizedBox(width: gap),
+                        Expanded(
+                            child: j < fatia.length
+                                ? _cartao(fatia[j])
+                                : const SizedBox.shrink()),
+                      ],
+                    ]),
+              ),
+            ));
+          }
+          return Column(children: linhas);
+        }),
     ]);
   }
 
   Widget _cartao(_Perm p) {
     final cor = p.ok ? H3Cores.ok : H3Cores.aviso;
+    final temAcao = !p.ok && p.acao.isNotEmpty && p.onAcao != null;
     return Container(
-      width: 270,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [H3Cores.painel2, H3Cores.painel]),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.ok ? H3Cores.linha : cor.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: p.ok ? H3Cores.linha : cor.withOpacity(0.45)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-                color: cor.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [cor.withOpacity(0.28), cor.withOpacity(0.08)]),
+            ),
             child: Icon(p.icone, color: cor, size: 24),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-                color: cor.withOpacity(0.14),
+                color: cor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(20)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(p.ok ? Icons.check : Icons.priority_high, size: 13, color: cor),
-              const SizedBox(width: 4),
+              Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
+              const SizedBox(width: 6),
               Text(p.ok ? 'Concedida' : 'Pendente',
                   style: TextStyle(
                       fontSize: 11.5, fontWeight: FontWeight.w700, color: cor)),
             ]),
           ),
         ]),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Text(p.titulo,
             style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w700, color: H3Cores.texto)),
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                color: H3Cores.texto)),
         const SizedBox(height: 6),
         Text(p.descricao,
-            style: TextStyle(fontSize: 12.5, height: 1.4, color: H3Cores.apagado)),
-        if (!p.ok && p.acao.isNotEmpty && p.onAcao != null) ...[
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: p.onAcao,
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: H3Cores.destaque,
-                  foregroundColor: H3Cores.destaqueTinta,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10))),
-              child: Text(p.acao,
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
+            style: TextStyle(fontSize: 12.5, height: 1.45, color: H3Cores.apagado)),
+        const Spacer(),
+        const SizedBox(height: 18),
+        Divider(height: 1, color: H3Cores.linha),
+        const SizedBox(height: 14),
+        if (temAcao)
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: p.onAcao,
+            child: Container(
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(colors: [
+                  H3Cores.destaque,
+                  H3Cores.destaque.withOpacity(0.78)
+                ]),
+                boxShadow: [
+                  BoxShadow(
+                      color: H3Cores.destaque.withOpacity(0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4))
+                ],
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(p.acao,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                        color: H3Cores.destaqueTinta)),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded,
+                    size: 17, color: H3Cores.destaqueTinta),
+              ]),
             ),
+          )
+        else
+          SizedBox(
+            height: 42,
+            child: Row(children: [
+              Icon(p.ok ? Icons.check_circle_outline : Icons.info_outline,
+                  size: 18, color: p.ok ? H3Cores.ok : H3Cores.apagado),
+              const SizedBox(width: 8),
+              Text(p.ok ? 'Nenhuma ação necessária' : 'Ajuste nas configurações do sistema',
+                  style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
+            ]),
           ),
-        ],
       ]),
     );
   }
