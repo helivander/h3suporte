@@ -12,40 +12,17 @@ import 'package:url_launcher/url_launcher.dart';
 
 const _portal = 'https://keys.h3info.com/assinante';
 
-/// Configurações da conta: dados do cliente, plano e uso em tempo real, ao lado do card da conta na barra lateral.
-/// [saida] são as sessões de saída abertas neste computador (atualizadas pela tela inicial).
-Future<void> abrirPainelConta(BuildContext context,
-    {required RxList<String> saida, required bool compacto}) {
-  return showGeneralDialog<void>(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Fechar',
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 120),
-    pageBuilder: (_, __, ___) => Align(
-      alignment: Alignment.bottomLeft,
-      child: Padding(
-        padding: EdgeInsets.only(left: compacto ? 76 : 14, bottom: 14),
-        child: Theme(
-          data: H3Cores.tema(Theme.of(context).brightness),
-          child: _PainelConta(saida: saida),
-        ),
-      ),
-    ),
-    transitionBuilder: (_, a, __, filho) =>
-        FadeTransition(opacity: a, child: filho),
-  );
-}
-
-class _PainelConta extends StatefulWidget {
-  final RxList<String> saida;
-  const _PainelConta({required this.saida});
+/// Dados da conta, plano e uso em tempo real, exibidos em Configurações > Conta.
+class ContaConteudo extends StatefulWidget {
+  /// Abre a aba de configurações locais do computador.
+  final VoidCallback onConfigLocal;
+  const ContaConteudo({super.key, required this.onConfigLocal});
 
   @override
-  State<_PainelConta> createState() => _PainelContaState();
+  State<ContaConteudo> createState() => _ContaConteudoState();
 }
 
-class _PainelContaState extends State<_PainelConta> {
+class _ContaConteudoState extends State<ContaConteudo> {
   Map<String, dynamic>? _uso;
   bool _falhou = false;
   Timer? _timer;
@@ -103,39 +80,17 @@ class _PainelContaState extends State<_PainelConta> {
     final ativa = estado == 'ATIVA';
     final papel = info['papel'] == 'TITULAR' ? 'Titular' : 'Membro';
     final fim = a['fim_em'] ?? a['pago_ate'];
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        width: 340,
-        constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height - 28),
-        padding: const EdgeInsets.all(18),
+    return Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: H3Cores.painel,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: H3Cores.linha2),
-          boxShadow: const [
-            BoxShadow(color: Color(0x66000000), blurRadius: 24)
-          ],
         ),
-        child: SingleChildScrollView(
-          child: Column(
+        child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(children: [
-                Expanded(
-                    child: Text('Configurações da conta',
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: H3Cores.texto))),
-                InkWell(
-                    onTap: () => Navigator.of(context).pop(),
-                    child:
-                        Icon(Icons.close, size: 18, color: H3Cores.apagado)),
-              ]),
-              const SizedBox(height: 14),
               Obx(() {
                 final nome = u.displayNameOrUserName;
                 return Row(children: [
@@ -175,7 +130,6 @@ class _PainelContaState extends State<_PainelConta> {
                   cor: ativa ? H3Cores.ok : H3Cores.aviso),
               _linha('Válido até', fim == null ? 'Sem data de término' : _data(fim)),
               _titulo('Uso em tempo real'),
-              _usoSessoes(),
               _barra(Icons.swap_horiz, 'Acessos remotos',
                   _uso?['acessos_em_uso'], a['limite_acessos']),
               _barra(Icons.devices_outlined, 'Computadores',
@@ -189,27 +143,84 @@ class _PainelContaState extends State<_PainelConta> {
                       style: TextStyle(fontSize: 11, color: H3Cores.aviso)),
                 ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () => launchUrl(Uri.parse(_portal),
-                    mode: LaunchMode.externalApplication),
-                icon: const Icon(Icons.open_in_new, size: 16),
-                label: const Text('Gerenciar assinatura no portal'),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD64545),
-                    foregroundColor: Colors.white),
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await gFFI.userModel.logOut();
-                },
-                icon: const Icon(Icons.logout, size: 16),
-                label: const Text('Sair da conta'),
-              ),
+              _botaoPrincipal(
+                  Icons.workspace_premium_outlined,
+                  'Gerenciar assinatura no portal',
+                  'Plano, pagamentos e equipe',
+                  () => launchUrl(Uri.parse(_portal),
+                      mode: LaunchMode.externalApplication)),
+              const SizedBox(height: 10),
+              _botaoSecundario(Icons.tune, 'Configurações deste computador',
+                  widget.onConfigLocal),
+              const SizedBox(height: 10),
+              _botaoSecundario(Icons.logout, 'Sair da conta', () async {
+                await gFFI.userModel.logOut();
+              }, cor: const Color(0xFFD64545)),
             ],
           ),
+    );
+  }
+
+  Widget _botaoPrincipal(
+          IconData icone, String titulo, String sub, VoidCallback onTap) =>
+      InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(colors: [
+              H3Cores.destaque,
+              H3Cores.destaque.withOpacity(0.75)
+            ]),
+          ),
+          child: Row(children: [
+            Icon(icone, size: 22, color: H3Cores.destaqueTinta),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: H3Cores.destaqueTinta)),
+                  Text(sub,
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: H3Cores.destaqueTinta.withOpacity(0.8))),
+                ],
+              ),
+            ),
+            Icon(Icons.open_in_new, size: 18, color: H3Cores.destaqueTinta),
+          ]),
         ),
+      );
+
+  Widget _botaoSecundario(IconData icone, String rotulo, VoidCallback onTap,
+      {Color? cor}) {
+    final c = cor ?? H3Cores.texto;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: H3Cores.painel2,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cor?.withOpacity(0.5) ?? H3Cores.linha2),
+        ),
+        child: Row(children: [
+          Icon(icone, size: 18, color: c),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Text(rotulo,
+                  style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: c))),
+          Icon(Icons.chevron_right, size: 18, color: H3Cores.apagado),
+        ]),
       ),
     );
   }
@@ -246,14 +257,6 @@ class _PainelContaState extends State<_PainelConta> {
                   color: cor ?? H3Cores.texto)),
         ]),
       );
-
-  Widget _usoSessoes() => Obx(() {
-        final saida = widget.saida.length;
-        final entrada =
-            gFFI.serverModel.clients.where((c) => !c.disconnected).length;
-        return _linha('Sessões agora',
-            '${saida + entrada}  ($saida saindo · $entrada entrando)');
-      });
 
   Widget _barra(IconData icone, String rotulo, dynamic usado, dynamic limite) {
     final n = usado is int ? usado : null;

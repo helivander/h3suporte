@@ -27,6 +27,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
+import 'h3_conta_painel.dart';
 import 'h3_home_layout.dart';
 
 const double _kTabWidth = 220;
@@ -2348,7 +2349,11 @@ class _AccountState extends State<_Account> {
     return ListView(
       controller: scrollController,
       children: [
-        _Card(title: 'Account', children: [accountAction(), useInfo()]),
+        Obx(() => gFFI.userModel.userName.value.isEmpty
+            ? _Card(title: 'Account', children: [accountAction()])
+            : ContaConteudo(
+                onConfigLocal: () =>
+                    DesktopSettingPage.switch2page(SettingsTabKey.general))),
       ],
     ).marginOnly(bottom: _kListViewBottomMargin);
   }

@@ -9,7 +9,6 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
-import 'package:flutter_hbb/desktop/pages/h3_conta_painel.dart';
 import 'package:flutter_hbb/desktop/pages/h3_meus_dispositivos.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
@@ -298,8 +297,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       );
       final entrar = () async {
         if (logado) {
-          await abrirPainelConta(context,
-              saida: _sessoesSaida, compacto: compacto);
+          DesktopSettingPage.switch2page(SettingsTabKey.account);
         } else {
           await loginDialog();
         }
@@ -334,6 +332,20 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: logado ? H3Cores.texto : H3Cores.destaque)),
+                  if (logado)
+                    Obx(() {
+                      final n = _sessoesSaida.length +
+                          gFFI.serverModel.clients
+                              .where((c) => !c.disconnected)
+                              .length;
+                      return Text(
+                          n == 0
+                              ? 'Nenhuma sessão agora'
+                              : '$n ${n == 1 ? 'sessão' : 'sessões'} agora',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: n == 0 ? H3Cores.apagado : H3Cores.ok));
+                    }),
                 ],
               ),
             ),
