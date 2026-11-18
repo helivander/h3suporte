@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/common/widgets/peers_view.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
@@ -58,6 +60,7 @@ class _MyGroupState extends State<MyGroup> {
   }
 
   Widget _buildLandscape() {
+    if (H3Estilo.ativo(context)) return _buildLandscapeH3();
     return Row(
       children: [
         Container(
@@ -90,6 +93,65 @@ class _MyGroupState extends State<MyGroup> {
               )),
         )
       ],
+    );
+  }
+
+  Widget _buildLandscapeH3() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          width: 230,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: H3Cores.painel2,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: H3Cores.linha),
+          ),
+          child: Column(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: H3Cores.fundo,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: H3Cores.linha2),
+              ),
+              child: _buildLeftHeader(),
+            ),
+            const SizedBox(height: 10),
+            Expanded(child: _buildLeftList()),
+          ]),
+        ).marginOnly(right: 14),
+        Expanded(
+          child: Align(
+              alignment: Alignment.topLeft,
+              child: MyGroupPeerView(menuPadding: widget.menuPadding)),
+        )
+      ],
+    );
+  }
+
+  Widget _h3Linha(bool selected, Widget avatar, Widget nome, {Widget? selo}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: selected
+            ? LinearGradient(colors: [
+                H3Cores.destaque.withOpacity(0.22),
+                H3Cores.destaque.withOpacity(0.06),
+              ])
+            : null,
+        border: Border.all(
+            color: selected ? H3Cores.destaque.withOpacity(0.5) : Colors.transparent),
+      ),
+      child: Row(children: [
+        avatar,
+        const SizedBox(width: 10),
+        Expanded(child: nome),
+        if (selo != null) selo,
+      ]),
     );
   }
 
@@ -213,6 +275,37 @@ class _MyGroupState extends State<MyGroup> {
             selectedAccessibleItemName.value == username;
         final isMe = username == gFFI.userModel.userName.value;
         final colorMe = MyTheme.color(context).me!;
+        if (H3Estilo.ativo(context)) {
+          return _h3Linha(
+            selected,
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: str2color(username, 0xAF),
+              child: Text(displayName.characters.first.toUpperCase(),
+                  style: const TextStyle(color: Colors.white, fontSize: 13)),
+            ),
+            Text(displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? H3Cores.texto : H3Cores.apagado)),
+            selo: isMe
+                ? Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                        color: H3Cores.destaque.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text(translate('Me'),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: H3Cores.destaque)))
+                : null,
+          );
+        }
         return Container(
           decoration: BoxDecoration(
             color: selected ? MyTheme.color(context).highlight : null,
@@ -265,7 +358,7 @@ class _MyGroupState extends State<MyGroup> {
           ),
         );
       },
-    )).marginSymmetric(horizontal: 12).marginOnly(bottom: 6);
+    )).marginSymmetric(horizontal: H3Estilo.ativo(context) ? 0 : 12).marginOnly(bottom: H3Estilo.ativo(context) ? 0 : 6);
   }
 
   Widget _buildDeviceGroupItem(DeviceGroupPayload deviceGroup) {
@@ -281,6 +374,19 @@ class _MyGroupState extends State<MyGroup> {
       () {
         bool selected = isSelectedDeviceGroup.value &&
             selectedAccessibleItemName.value == name;
+        if (H3Estilo.ativo(context)) {
+          return _h3Linha(
+            selected,
+            Icon(IconFont.deviceGroupOutline, color: H3Cores.destaque, size: 22),
+            Text(name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? H3Cores.texto : H3Cores.apagado)),
+          );
+        }
         return Container(
           decoration: BoxDecoration(
             color: selected ? MyTheme.color(context).highlight : null,
@@ -304,6 +410,6 @@ class _MyGroupState extends State<MyGroup> {
           ),
         );
       },
-    )).marginSymmetric(horizontal: 12).marginOnly(bottom: 6);
+    )).marginSymmetric(horizontal: H3Estilo.ativo(context) ? 0 : 12).marginOnly(bottom: H3Estilo.ativo(context) ? 0 : 6);
   }
 }
