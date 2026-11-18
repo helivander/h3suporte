@@ -109,16 +109,6 @@ class _MyGroupState extends State<MyGroup> {
             border: Border.all(color: H3Cores.linha),
           ),
           child: Column(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: H3Cores.fundo,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: H3Cores.linha2),
-              ),
-              child: _buildLeftHeader(),
-            ),
-            const SizedBox(height: 10),
             Expanded(child: _buildLeftList()),
           ]),
         ).marginOnly(right: 14),
