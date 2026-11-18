@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../res/logo-header.svg" alt="RustDesk - Ваш удалённый рабочий стол"><br>
+  <img src="../flutter/assets/logo.png" alt="RustDesk - Ваш удалённый рабочий стол"><br>
   <a href="#первичные-шаги-для-сборки">Первичные шаги для сборки</a> •
   <a href="#как-собрать-с-помощью-docker">Как собрать с помощью Docker</a> •
   <a href="#структура-файлов">Структура файлов</a> •

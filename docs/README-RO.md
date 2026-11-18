@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../res/logo-header.svg" alt="RustDesk - desktopul tău la distanță"><br>
+  <img src="../flutter/assets/logo.png" alt="RustDesk - desktopul tău la distanță"><br>
   <a href="../README.md#raw-steps-to-build">Construire</a> •
   <a href="../README.md#how-to-build-with-docker">Docker</a> •
   <a href="../README.md#file-structure">Structură</a> •

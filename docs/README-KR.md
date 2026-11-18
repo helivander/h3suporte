@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../res/logo-header.svg" alt="RustDesk - Your remote desktop"><br>
+  <img src="../flutter/assets/logo.png" alt="RustDesk - Your remote desktop"><br>
   <a href="#빌드를_위한_원시_단계">빌드</a> •
   <a href="#Docker로_빌드하는_방법">Docker</a> •
   <a href="#파일_구조">구조</a> •

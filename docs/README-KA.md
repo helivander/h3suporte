@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../res/logo-header.svg" alt="RustDesk - თქვენი დისტანციური სამუშაო მაგიდა"><br>
+  <img src="../flutter/assets/logo.png" alt="RustDesk - თქვენი დისტანციური სამუშაო მაგიდა"><br>
   <a href="#აწყობის-ძირითადი-ნაბიჯები">აწყობა</a> •
   <a href="#როგორ-ავაწყოთ-docker-ით">Docker</a> •
   <a href="#ფაილების-სტრუქტურა">სტრუქტურა</a> •

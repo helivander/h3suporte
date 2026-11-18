@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../res/logo-header.svg" alt="RustDesk - Dein Remote-Desktop"><br>
+  <img src="../flutter/assets/logo.png" alt="RustDesk - Dein Remote-Desktop"><br>
   <a href="#grobe-schritte-zum-kompilieren">Kompilieren</a> •
   <a href="#auf-docker-kompilieren">Docker</a> •
   <a href="#dateistruktur">Dateistruktur</a> •

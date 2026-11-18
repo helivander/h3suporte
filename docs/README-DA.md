@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../res/logo-header.svg" alt="RustDesk - Your remote desktop"><br>
+  <img src="../flutter/assets/logo.png" alt="RustDesk - Your remote desktop"><br>
   <a href="#gratis-offentlige-servere">Servere</a> •
   <a href="#rå-trin-til-at-bygge">Byg</a> •
   <a href="#sådan-bygger-du-med-docker">Docker</a> •
