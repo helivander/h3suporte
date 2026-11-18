@@ -21,6 +21,7 @@ import '../../common/widgets/chat_page.dart';
 import '../../models/file_model.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
+import 'h3_home_layout.dart' show H3Cores;
 
 /// Set only by this window's own close control, and only once the user has confirmed. Any other
 /// way the window can go - a session logout closing every window, the window manager, a native
@@ -93,8 +94,9 @@ class _DesktopServerPageState extends State<DesktopServerPage>
       ],
       child: Consumer<ServerModel>(
         builder: (context, serverModel, child) {
+          H3Cores.escuro = Theme.of(context).brightness == Brightness.dark;
           final body = Scaffold(
-            backgroundColor: Theme.of(context).colorScheme.background,
+            backgroundColor: H3Cores.fundo,
             body: ConnectionManager(),
           );
           return isLinux
@@ -457,22 +459,20 @@ class _CmHeaderState extends State<_CmHeader>
     super.build(context);
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.0),
+        borderRadius: BorderRadius.circular(16.0),
         gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            Color(0xff00bfe1),
-            Color(0xff0071ff),
-          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [H3Cores.painel2, H3Cores.painel],
         ),
+        border: Border.all(color: H3Cores.linha),
       ),
       margin: EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
       padding: EdgeInsets.only(
-        top: 10.0,
-        bottom: 10.0,
-        left: 10.0,
-        right: 5.0,
+        top: 14.0,
+        bottom: 14.0,
+        left: 14.0,
+        right: 8.0,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,7 +487,7 @@ class _CmHeaderState extends State<_CmHeader>
                     child: Text(
                   client.name,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: H3Cores.texto,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                     overflow: TextOverflow.ellipsis,
@@ -497,48 +497,60 @@ class _CmHeaderState extends State<_CmHeader>
                 FittedBox(
                   child: Text(
                     "(${client.peerId})",
-                    style: TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: H3Cores.apagado, fontSize: 14),
                   ),
                 ),
                 if (client.type_() == ClientType.terminal)
                   FittedBox(
                     child: Text(
                       translate("Terminal"),
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: H3Cores.apagado, fontSize: 12),
                     ),
                   ),
                 if (client.type_() == ClientType.file)
                   FittedBox(
                     child: Text(
                       translate("Transfer file"),
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: H3Cores.apagado, fontSize: 12),
                     ),
                   ),
                 if (client.type_() == ClientType.camera)
                   FittedBox(
                     child: Text(
                       translate("View camera"),
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: H3Cores.apagado, fontSize: 12),
                     ),
                   ),
                 if (client.portForward.isNotEmpty)
                   FittedBox(
                     child: Text(
                       "Port Forward: ${client.portForward}",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: H3Cores.apagado, fontSize: 12),
                     ),
                   ),
                 SizedBox(height: 10.0),
                 FittedBox(
                     child: Row(
                   children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: !client.authorized
+                            ? H3Cores.aviso
+                            : client.disconnected
+                                ? H3Cores.apagado
+                                : H3Cores.ok,
+                      ),
+                    ).marginOnly(right: 6.0),
                     Text(
                       client.authorized
                           ? client.disconnected
                               ? translate("Disconnected")
                               : translate("Connected")
                           : "${translate("Request access to your device")}...",
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: H3Cores.texto),
                     ).marginOnly(right: 8.0),
                     if (client.authorized)
                       Obx(
@@ -546,7 +558,7 @@ class _CmHeaderState extends State<_CmHeader>
                           formatDurationToTime(
                             Duration(seconds: _time.value),
                           ),
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: H3Cores.destaque),
                         ),
                       )
                   ],
@@ -598,14 +610,15 @@ class _CmHeaderState extends State<_CmHeader>
       height: 70,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: str2color(client.name),
+        color: H3Cores.destaque.withOpacity(0.16),
         borderRadius: BorderRadius.circular(15.0),
+        border: Border.all(color: H3Cores.destaque.withOpacity(0.55)),
       ),
       child: Text(
         client.name.isNotEmpty ? client.name[0] : '?',
         style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: H3Cores.destaque,
           fontSize: 55,
         ),
       ),
@@ -633,9 +646,13 @@ class _PrivilegeBoardState extends State<_PrivilegeBoard> {
       child: Container(
         decoration: BoxDecoration(
           color: enabled
-              ? (canModify ? MyTheme.accent : MyTheme.accent.withOpacity(0.6))
-              : Colors.grey[700],
-          borderRadius: BorderRadius.circular(10.0),
+              ? (canModify
+                  ? H3Cores.destaque
+                  : H3Cores.destaque.withOpacity(0.6))
+              : H3Cores.painel2,
+          borderRadius: BorderRadius.circular(12.0),
+          border: Border.all(
+              color: enabled ? H3Cores.destaque : H3Cores.linha2),
         ),
         padding: EdgeInsets.all(8.0),
         child: InkWell(
@@ -649,7 +666,7 @@ class _PrivilegeBoardState extends State<_PrivilegeBoard> {
               Expanded(
                 child: Icon(
                   iconData,
-                  color: Colors.white,
+                  color: enabled ? H3Cores.destaqueTinta : H3Cores.apagado,
                 ),
               ),
             ],
@@ -672,25 +689,25 @@ class _PrivilegeBoardState extends State<_PrivilegeBoard> {
       margin: EdgeInsets.all(5.0),
       padding: EdgeInsets.all(5.0),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.0),
-        color: Theme.of(context).colorScheme.background,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 1,
-            offset: Offset(0, 1.5),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16.0),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [H3Cores.painel2, H3Cores.painel],
+        ),
+        border: Border.all(color: H3Cores.linha),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             translate("Permissions"),
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: H3Cores.texto),
             textAlign: TextAlign.center,
-          ).marginOnly(left: 4.0, bottom: 8.0),
+          ).marginOnly(left: 4.0, bottom: 8.0, top: 4.0),
           Expanded(
             child: GridView.count(
               crossAxisCount: crossAxisCount,
@@ -1121,10 +1138,10 @@ class _CmControlPanel extends StatelessWidget {
               child: buildButton(
                 context,
                 color: Colors.transparent,
-                border: Border.all(color: Colors.grey),
+                border: Border.all(color: H3Cores.linha2),
                 onClick: handleDisconnect,
                 text: 'Cancel',
-                textColor: null,
+                textColor: H3Cores.texto,
               ),
             ),
           ],
@@ -1147,23 +1164,31 @@ class _CmControlPanel extends StatelessWidget {
     if (icon != null) {
       textWidget = Text(
         translate(text),
-        style: TextStyle(color: textColor),
+        style: TextStyle(
+            color: color == MyTheme.accent ? H3Cores.destaqueTinta : textColor,
+            fontWeight: FontWeight.w600),
         textAlign: TextAlign.center,
       );
     } else {
       textWidget = Expanded(
         child: Text(
           translate(text),
-          style: TextStyle(color: textColor),
+          style: TextStyle(
+              color:
+                  color == MyTheme.accent ? H3Cores.destaqueTinta : textColor,
+              fontWeight: FontWeight.w600),
           textAlign: TextAlign.center,
         ),
       );
     }
-    final borderRadius = BorderRadius.circular(10.0);
+    final borderRadius = BorderRadius.circular(12.0);
+    final primario = color == MyTheme.accent;
     final btn = Container(
-      height: 28,
+      height: 34,
       decoration: BoxDecoration(
-          color: color, borderRadius: borderRadius, border: border),
+          color: primario ? H3Cores.destaque : color,
+          borderRadius: borderRadius,
+          border: border),
       child: InkWell(
         borderRadius: borderRadius,
         onTap: () {
