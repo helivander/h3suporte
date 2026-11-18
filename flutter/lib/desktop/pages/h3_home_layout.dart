@@ -485,65 +485,13 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     );
     final esteComputador = _cartao(
       titulo: 'Este computador',
-      icone: Icons.computer_outlined,
       subtitulo: 'Passe o ID e a senha para quem vai acessar.',
       filho: widget.deviceBoard,
     );
-    final cabecalho = Obx(() {
-      final nome = gFFI.userModel.isLogin
-          ? gFFI.userModel.displayNameOrUserName
-          : '';
-      final n = _sessoesSaida.length +
-          gFFI.serverModel.clients.where((c) => !c.disconnected).length;
-      return Row(children: [
-        Expanded(
-          child: _titulo(
-              nome.isEmpty ? 'Visão geral' : 'Olá, $nome',
-              'Controle outros computadores e veja o que está acontecendo agora.'),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: (n > 0 ? H3Cores.ok : H3Cores.apagado).withOpacity(0.12),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: n > 0 ? H3Cores.ok : H3Cores.apagado)),
-            const SizedBox(width: 8),
-            Text(
-                n == 0
-                    ? 'Nenhuma sessão agora'
-                    : '$n ${n == 1 ? 'sessão' : 'sessões'} agora',
-                style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: n > 0 ? H3Cores.ok : H3Cores.apagado)),
-          ]),
-        ),
-      ]);
-    });
     return LayoutBuilder(builder: (context, c) {
       final largo = c.maxWidth >= 1000;
       return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-        child: Column(children: [
-          cabecalho,
-          const SizedBox(height: 18),
-          Expanded(child: _corpoVisao(largo, conexoes, esteComputador)),
-        ]),
-      );
-    });
-  }
-
-  Widget _corpoVisao(bool largo, Widget conexoes, Widget esteComputador) {
-    return Builder(builder: (context) {
-      return Padding(
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.all(20),
         child: largo
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
