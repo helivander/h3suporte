@@ -47,3 +47,13 @@ Já feito neste Mac, tudo fora do repositório em `~/dev/`:
 - O app aberto assim é de desenvolvimento (debug, sem assinatura): mais lento que o instalado e **não** serve
   para distribuir. Para entregar, siga o fluxo de sempre (Actions → Release).
 - O release de Mac Apple Silicon usa Flutter 3.44; mudanças de tela que só quebram no 3.44 só aparecem no build do CI.
+
+## Instalador local para testar
+
+```bash
+res/build-mac-local.sh          # gera .pkg e .dmg em ~/dev/instaladores/ (assinatura ad-hoc, só para teste)
+res/build-mac-local.sh motor    # recompila o motor antes
+```
+
+Abre neste Mac sem aviso. Para entregar a clientes, só o Release do GitHub (assina com Developer ID e notariza).
+Feche o app aberto pelo `res/dev-ui.sh` antes.
