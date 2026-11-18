@@ -297,35 +297,47 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   }
 
   Widget _corpo(BuildContext context) {
+    final h3 = !bind.isIncomingOnly();
+    final menu = Container(
+      width: _kTabWidth,
+      decoration: h3
+          ? BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [H3Cores.painel2, H3Cores.painel]),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: H3Cores.linha))
+          : null,
+      child: Column(
+        children: [
+          _header(context),
+          Flexible(child: _listView(tabs: _settingTabs())),
+        ],
+      ),
+    );
+    final pagina = PageView(
+      controller: controller,
+      physics: NeverScrollableScrollPhysics(),
+      children: _children(),
+    );
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor:
+          h3 ? H3Cores.fundo : Theme.of(context).colorScheme.background,
       body: _buildBlock(
         children: <Widget>[
-          Container(
-            width: _kTabWidth,
-            color: bind.isIncomingOnly() ? null : H3Cores.painel,
-            child: Column(
-              children: [
-                _header(context),
-                Flexible(child: _listView(tabs: _settingTabs())),
-              ],
-            ),
-          ),
-          VerticalDivider(
-              width: 1, color: bind.isIncomingOnly() ? null : H3Cores.linha),
+          if (h3) Padding(padding: const EdgeInsets.all(14), child: menu) else menu,
+          if (!h3)
+            VerticalDivider(width: 1),
           Expanded(
             child: Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
+              color: h3 ? null : Theme.of(context).scaffoldBackgroundColor,
+              padding: h3 ? const EdgeInsets.fromLTRB(0, 14, 14, 14) : null,
               child: Align(
-                alignment: Alignment.topCenter,
+                alignment: h3 ? Alignment.topLeft : Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                      maxWidth: bind.isIncomingOnly() ? double.infinity : 740),
-                  child: PageView(
-                    controller: controller,
-                    physics: NeverScrollableScrollPhysics(),
-                    children: _children(),
-                  ),
+                  constraints: BoxConstraints(maxWidth: h3 ? 820 : double.infinity),
+                  child: pagina,
                 ),
               ),
             ),
