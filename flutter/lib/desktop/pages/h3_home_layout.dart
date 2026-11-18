@@ -63,6 +63,9 @@ class H3Cores {
 
 /// Tela inicial do app de acesso (não usada no build `-cliente`, que é
 /// incoming-only): menu lateral com Visão geral, Meus dispositivos e Relatórios.
+/// Aba de Configurações aberta dentro da tela inicial (sem criar aba nova); null = fechada.
+final h3ConfigAberta = Rxn<SettingsTabKey>();
+
 class H3HomeLayout extends StatefulWidget {
   /// ID, senha e aviso de senha predefinida deste computador.
   final Widget deviceBoard;
@@ -131,7 +134,51 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         value: gFFI.serverModel,
         child: Container(
           color: H3Cores.fundo,
-          child: LayoutBuilder(builder: (context, c) {
+          child: Obx(() => h3ConfigAberta.value != null
+              ? _configuracoes(h3ConfigAberta.value!)
+              : _inicio()),
+        ),
+      ),
+    );
+  }
+
+  Widget _configuracoes(SettingsTabKey aba) {
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+        child: Row(children: [
+          ElevatedButton.icon(
+            onPressed: () => h3ConfigAberta.value = null,
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text('Voltar ao sistema'),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: H3Cores.destaque,
+                foregroundColor: H3Cores.destaqueTinta,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10))),
+          ),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Fechar',
+            onPressed: () => h3ConfigAberta.value = null,
+            icon: Icon(Icons.close, color: H3Cores.texto),
+            style: IconButton.styleFrom(
+                backgroundColor: H3Cores.painel2,
+                side: BorderSide(color: H3Cores.linha2)),
+          ),
+        ]),
+      ),
+      Expanded(
+          child: DesktopSettingPage(
+              key: const ValueKey('h3-config'), initialTabkey: aba)),
+    ]);
+  }
+
+  Widget _inicio() {
+    return Builder(builder: (context) {
+      return LayoutBuilder(builder: (context, c) {
             final compacto = c.maxWidth < 900;
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -154,10 +201,8 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                 ),
               ],
             );
-          }),
-        ),
-      ),
-    );
+          });
+    });
   }
 
   Widget _menu(bool compacto) {
@@ -272,7 +317,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       padding: const EdgeInsets.fromLTRB(0, 2, 0, 18),
       child: Column(
         children: [
-          loadIcon(compacto ? 30 : 44),
+          loadIcon(compacto ? 38 : 64),
           if (!compacto) ...[
             const SizedBox(height: 10),
             Text('H3 Suporte',

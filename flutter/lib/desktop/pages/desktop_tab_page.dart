@@ -3,6 +3,7 @@ import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_home_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
@@ -22,6 +23,11 @@ class DesktopTabPage extends StatefulWidget {
       {SettingsTabKey initialPage = SettingsTabKey.general}) {
     try {
       DesktopTabController tabController = Get.find<DesktopTabController>();
+      if (!bind.isIncomingOnly()) {
+        h3ConfigAberta.value = initialPage;
+        tabController.jumpToByKey(kTabLabelHomePage);
+        return;
+      }
       tabController.add(TabInfo(
           key: kTabLabelSettingPage,
           label: kTabLabelSettingPage,
