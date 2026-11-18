@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import '../../common.dart';
 import '../../models/ai_agent_model.dart';
+import '../pages/h3_home_layout.dart';
 
 class AiChatPanel extends StatefulWidget {
   final AiAgentModel model;
@@ -112,52 +113,160 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Material(
       elevation: 8,
-      color: theme.scaffoldBackgroundColor,
+      color: H3Cores.painel,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: MyTheme.border)),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: H3Cores.linha2)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _header(),
-          const Divider(height: 1),
+          Divider(height: 1, color: H3Cores.linha),
           Expanded(child: _showSettings ? _settings() : _conversation()),
         ],
       ),
     );
   }
 
+  Widget _headerButton(String tip, IconData icon, VoidCallback? onTap) =>
+      Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: Tooltip(
+          message: tip,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: onTap,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                  color: H3Cores.painel,
+                  border: Border.all(color: H3Cores.linha2),
+                  borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon,
+                  size: 16,
+                  color: onTap == null
+                      ? H3Cores.apagado.withOpacity(0.4)
+                      : H3Cores.apagado),
+            ),
+          ),
+        ),
+      );
+
   Widget _header() {
+    final subtitle = model.provider == kAiProviderChatGpt
+        ? 'ChatGPT · ${model.chatGptModel}'
+        : 'Claude · ${model.model}';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
       child: Row(children: [
-        const Icon(Icons.smart_toy_outlined, size: 18),
-        const SizedBox(width: 8),
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+              color: H3Cores.destaque.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10)),
+          child:
+              Icon(Icons.smart_toy_outlined, size: 20, color: H3Cores.destaque),
+        ),
+        const SizedBox(width: 10),
         Expanded(
-            child: Text(translate('AI assistant'),
-                style: const TextStyle(fontWeight: FontWeight.w600))),
-        IconButton(
-            tooltip: translate('Settings'),
-            iconSize: 18,
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => setState(() => _showSettings = !_showSettings)),
-        Obx(() => IconButton(
-            tooltip: translate('Clear'),
-            iconSize: 18,
-            icon: const Icon(Icons.delete_outline),
-            onPressed:
-                model.status.value == AiAgentStatus.idle ? model.clear : null)),
-        IconButton(
-            tooltip: translate('Close'),
-            iconSize: 18,
-            icon: const Icon(Icons.close),
-            onPressed: model.hidePanel),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(translate('AI assistant'),
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: H3Cores.texto)),
+          Text(subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+        ])),
+        Obx(() => _headerButton(translate('Clear'), Icons.delete_outline,
+            model.status.value == AiAgentStatus.idle ? model.clear : null)),
+        _headerButton(translate('Settings'), Icons.settings_outlined,
+            () => setState(() => _showSettings = !_showSettings)),
+        _headerButton(translate('Close'), Icons.close, model.hidePanel),
       ]),
     );
   }
+
+  InputDecoration _inputDecoration({String? labelText, String? hintText}) {
+    OutlineInputBorder border(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: c));
+    return InputDecoration(
+        labelText: labelText,
+        hintText: hintText,
+        isDense: true,
+        filled: true,
+        fillColor: H3Cores.fundo,
+        labelStyle: TextStyle(color: H3Cores.apagado),
+        hintStyle: TextStyle(color: H3Cores.apagado),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        enabledBorder: border(H3Cores.linha2),
+        focusedBorder: border(H3Cores.destaque),
+        border: border(H3Cores.linha2));
+  }
+
+  Widget _providerSelector() {
+    Widget item(String p, String label) {
+      final on = _provider == p;
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(7),
+          onTap: () => setState(() => _provider = p),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+            decoration: BoxDecoration(
+                color: on ? H3Cores.painel2 : Colors.transparent,
+                border:
+                    Border.all(color: on ? H3Cores.linha2 : Colors.transparent),
+                borderRadius: BorderRadius.circular(7)),
+            child: Text(label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: on ? H3Cores.texto : H3Cores.apagado)),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+          color: H3Cores.fundo,
+          border: Border.all(color: H3Cores.linha2),
+          borderRadius: BorderRadius.circular(10)),
+      child: Row(children: [
+        item(kAiProviderClaude, translate('Claude (API key)')),
+        item(kAiProviderChatGpt,
+            translate('ChatGPT (sign in with your account)')),
+      ]),
+    );
+  }
+
+  Widget _notice(String text) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+            color: H3Cores.aviso.withOpacity(0.08),
+            border: Border.all(color: H3Cores.aviso.withOpacity(0.45)),
+            borderRadius: BorderRadius.circular(12)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.warning_amber_rounded, size: 18, color: H3Cores.aviso),
+          const SizedBox(width: 10),
+          Expanded(
+              child: Text(text,
+                  style: TextStyle(
+                      fontSize: 12, height: 1.4, color: H3Cores.texto))),
+        ]),
+      );
 
   Widget _settings() {
     field(String label, TextEditingController c, {bool secret = false}) =>
@@ -166,24 +275,12 @@ class _AiChatPanelState extends State<AiChatPanel> {
           child: TextField(
               controller: c,
               obscureText: secret,
-              decoration: InputDecoration(
-                  labelText: translate(label),
-                  isDense: true,
-                  border: const OutlineInputBorder())),
+              decoration: _inputDecoration(labelText: translate(label))),
         );
-    final hint = TextStyle(fontSize: 12, color: Theme.of(context).hintColor);
+    final hint = TextStyle(fontSize: 12, color: H3Cores.apagado);
     return ListView(padding: const EdgeInsets.all(12), children: [
-      for (final p in [kAiProviderClaude, kAiProviderChatGpt])
-        RadioListTile<String>(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            value: p,
-            groupValue: _provider,
-            title: Text(translate(p == kAiProviderChatGpt
-                ? 'ChatGPT (sign in with your account)'
-                : 'Claude (API key)')),
-            onChanged: (v) => setState(() => _provider = v ?? _provider)),
-      const SizedBox(height: 8),
+      _providerSelector(),
+      const SizedBox(height: 14),
       if (_provider == kAiProviderClaude) ...[
         field('API key', _apiKey, secret: true),
         field('Model', _modelName),
@@ -221,8 +318,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
         Text(translate('ai-agent-chatgpt-plan-tip'), style: hint),
         const SizedBox(height: 12),
       ],
-      Text(translate('ai-agent-privacy-tip'),
-          style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
+      _notice(translate('ai-agent-privacy-tip')),
       const SizedBox(height: 12),
       Align(
           alignment: Alignment.centerRight,
@@ -237,28 +333,54 @@ class _AiChatPanelState extends State<AiChatPanel> {
           child: Obx(() => model.entries.isEmpty
               ? Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(translate('ai-agent-privacy-tip'),
-                      style: TextStyle(
-                          fontSize: 12, color: Theme.of(context).hintColor)))
+                  child: _notice(translate('ai-agent-privacy-tip')))
               : ListView.builder(
                   controller: _scroll,
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(16),
                   itemCount: model.entries.length,
                   itemBuilder: (_, i) => _entry(model.entries[i])))),
       Obx(() => model.status.value == AiAgentStatus.awaitingApproval
           ? _approval()
           : const SizedBox.shrink()),
-      const Divider(height: 1),
-      Obx(() => CheckboxListTile(
-          dense: true,
-          visualDensity: VisualDensity.compact,
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-          title: Text(translate('Confirm each action')),
-          value: model.confirmEach.value,
-          onChanged: (v) => model.confirmEach.value = v ?? true)),
+      Obx(() => model.status.value == AiAgentStatus.running
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(translate('IA no controle'),
+                        style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                            minHeight: 6,
+                            color: H3Cores.destaque,
+                            backgroundColor: H3Cores.linha)),
+                  ]))
+          : const SizedBox.shrink()),
+      Divider(height: 1, color: H3Cores.linha),
+      Obx(() => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: Row(children: [
+              Expanded(
+                  child: Text(translate('Confirm each action'),
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: H3Cores.texto))),
+              Switch(
+                  value: model.confirmEach.value,
+                  activeColor: Colors.white,
+                  activeTrackColor: H3Cores.destaque,
+                  inactiveTrackColor: H3Cores.linha2,
+                  inactiveThumbColor: Colors.white,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (v) => model.confirmEach.value = v),
+            ]),
+          )),
       Padding(
-        padding: const EdgeInsets.fromLTRB(8, 0, 4, 8),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(
               child: TextField(
@@ -266,36 +388,63 @@ class _AiChatPanelState extends State<AiChatPanel> {
                   focusNode: _inputNode,
                   minLines: 1,
                   maxLines: 5,
-                  decoration: InputDecoration(
+                  style: TextStyle(color: H3Cores.texto),
+                  decoration: _inputDecoration(
                       hintText: translate(
-                          'Describe the task for the remote computer'),
-                      isDense: true,
-                      border: const OutlineInputBorder()))),
+                          'Describe the task for the remote computer')))),
+          const SizedBox(width: 8),
           Obx(() => model.status.value == AiAgentStatus.idle
-              ? IconButton(
-                  tooltip: translate('Send'),
-                  icon: const Icon(Icons.send),
-                  color: MyTheme.accent,
-                  onPressed: _send)
-              : IconButton(
-                  tooltip: translate('Stop'),
-                  icon: const Icon(Icons.stop_circle_outlined),
-                  color: Colors.red,
-                  onPressed: model.stop)),
+              ? _actionButton(Icons.send, translate('Send'), H3Cores.destaque,
+                  H3Cores.destaqueTinta, _send)
+              : _actionButton(Icons.stop, translate('Stop'), Colors.transparent,
+                  const Color(0xFFFF5D6C), model.stop,
+                  border: const Color(0xFFFF5D6C))),
         ]),
       ),
     ]);
   }
 
+  Widget _actionButton(
+          IconData icon, String tip, Color bg, Color fg, VoidCallback onTap,
+          {Color? border}) =>
+      Tooltip(
+        message: tip,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+                color: bg,
+                border: border == null ? null : Border.all(color: border),
+                borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 18, color: fg),
+          ),
+        ),
+      );
+
   Widget _approval() {
     return Container(
       width: double.infinity,
-      color: MyTheme.accent.withOpacity(0.08),
-      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: H3Cores.aviso.withOpacity(0.08),
+          border: Border.all(color: H3Cores.aviso.withOpacity(0.55)),
+          borderRadius: BorderRadius.circular(14)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(translate('The AI wants to run these actions'),
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
+        Row(children: [
+          Icon(Icons.warning_amber_rounded, size: 16, color: H3Cores.aviso),
+          const SizedBox(width: 8),
+          Expanded(
+              child: Text(translate('The AI wants to run these actions'),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: H3Cores.aviso))),
+        ]),
+        const SizedBox(height: 8),
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 120),
           child: SingleChildScrollView(
@@ -303,27 +452,36 @@ class _AiChatPanelState extends State<AiChatPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 for (final a in model.pendingActions)
-                  Text(a,
-                      style: const TextStyle(
-                          fontFamily: 'monospace', fontSize: 12))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(a,
+                        style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            color: H3Cores.texto)),
+                  )
               ])),
         ),
-        const SizedBox(height: 4),
-        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          TextButton(
-              onPressed: () => model.approve(false),
-              child: Text(translate('Decline'))),
-          const SizedBox(width: 8),
+        const SizedBox(height: 10),
+        Row(children: [
           ElevatedButton(
               onPressed: () => model.approve(true),
               child: Text(translate('Accept'))),
+          const SizedBox(width: 8),
+          OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: H3Cores.texto,
+                  side: BorderSide(color: H3Cores.linha2),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8))),
+              onPressed: () => model.approve(false),
+              child: Text(translate('Decline'))),
         ]),
       ]),
     );
   }
 
   Widget _entry(AiChatEntry e) {
-    final theme = Theme.of(context);
     switch (e.kind) {
       case AiEntryKind.user:
       case AiEntryKind.assistant:
@@ -331,41 +489,56 @@ class _AiChatPanelState extends State<AiChatPanel> {
         return Align(
           alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 3),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            constraints: const BoxConstraints(maxWidth: 300),
+            margin: const EdgeInsets.symmetric(vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+            constraints: const BoxConstraints(maxWidth: 320),
             decoration: BoxDecoration(
-                color: mine ? MyTheme.accent : theme.cardColor,
-                borderRadius: BorderRadius.circular(8)),
+                color: mine ? H3Cores.destaque : H3Cores.fundo,
+                border: mine ? null : Border.all(color: H3Cores.linha2),
+                borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(14),
+                    topRight: const Radius.circular(14),
+                    bottomLeft: Radius.circular(mine ? 14 : 4),
+                    bottomRight: Radius.circular(mine ? 4 : 14))),
             child: SelectableText(e.text,
-                style: TextStyle(color: mine ? Colors.white : null)),
+                style: TextStyle(
+                    height: 1.4,
+                    color: mine ? H3Cores.destaqueTinta : H3Cores.texto)),
           ),
         );
       case AiEntryKind.action:
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 1),
-          child: Text('› ${e.text}',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  color: theme.hintColor)),
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+                color: H3Cores.painel2,
+                border: Border.all(color: H3Cores.linha2),
+                borderRadius: BorderRadius.circular(6)),
+            child: Text(e.text,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: H3Cores.apagado)),
+          ),
         );
       case AiEntryKind.info:
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: 3),
           child: Text(e.text,
               style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
-                  color: theme.hintColor)),
+                  color: H3Cores.apagado)),
         );
       case AiEntryKind.error:
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: 3),
           child: SelectableText(e.text,
-              style: const TextStyle(fontSize: 12, color: Colors.red)),
+              style: const TextStyle(fontSize: 12, color: Color(0xFFFF5D6C))),
         );
     }
   }
