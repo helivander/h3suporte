@@ -184,6 +184,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
+  String _textoSair() {
+    final t = bind.mainGetBuildinOption(key: kOptionQuitButtonText).trim();
+    return t.isEmpty ? translate('Quit') : t;
+  }
+
   Widget buildIncomingH3Pane(BuildContext context) {
     final tema = H3Cores.tema(Theme.of(context).brightness);
     return ChangeNotifierProvider.value(
@@ -248,22 +253,41 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                         return const Offstage();
                       },
                     ),
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: H3Cores.painel2,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: H3Cores.linha),
-                      ),
-                      child: OnlineStatusWidget(
-                        onSvcStatusChanged: () {
-                          if (isInHomePage()) {
-                            Future.delayed(const Duration(milliseconds: 300),
-                                () => _updateWindowSize());
-                          }
-                        },
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: H3Cores.painel2,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: H3Cores.linha),
+                              ),
+                              child: OnlineStatusWidget(
+                                onSvcStatusChanged: () {
+                                  if (isInHomePage()) {
+                                    Future.delayed(
+                                        const Duration(milliseconds: 300),
+                                        () => _updateWindowSize());
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: () {
+                              SystemNavigator.pop();
+                              if (isWindows) {
+                                exit(0);
+                              }
+                            },
+                            child: Text(_textoSair()),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -660,23 +684,6 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           children: LinuxCards,
         );
       }
-    }
-    if (bind.isIncomingOnly()) {
-      final quitButtonText =
-          bind.mainGetBuildinOption(key: kOptionQuitButtonText).trim();
-      return Align(
-        alignment: Alignment.centerRight,
-        child: OutlinedButton(
-          onPressed: () {
-            SystemNavigator.pop(); // Close the application
-            // https://github.com/flutter/flutter/issues/66631
-            if (isWindows) {
-              exit(0);
-            }
-          },
-          child: Text(quitButtonText.isEmpty ? translate('Quit') : quitButtonText),
-        ),
-      ).marginAll(14);
     }
     return Container();
   }
