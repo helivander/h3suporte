@@ -764,6 +764,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       }
     });
     Get.put<RxBool>(svcStopped, tag: 'stop-service');
+    if (!isWeb && bind.mainIsInstalled()) {
+      Future.microtask(() async {
+        if (await mainGetBoolOption(kOptionStopService)) {
+          await start_service(true);
+        }
+      });
+    }
     rustDeskWinManager.registerActiveWindowListener(onActiveWindowChanged);
 
     screenToMap(window_size.Screen screen) => {
