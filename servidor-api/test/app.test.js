@@ -163,6 +163,18 @@ test("login e currentUser levam ao app as funções liberadas pelo plano", async
   }
 });
 
+test("a conta mostra plano, estado e uso da assinatura", async () => {
+  const r = await loginAna();
+  assert.equal(r.status, 200);
+  assert.equal(r.json.user.assinatura.estado, "ATIVA");
+  const uso = await chamar("GET", "/api/conta/uso", undefined, r.json.access_token);
+  assert.equal(uso.status, 200);
+  assert.equal(uso.json.assinatura.estado, "ATIVA");
+  assert.equal(uso.json.acessos_em_uso, 0);
+  assert.ok(uso.json.dispositivos >= 1);
+  assert.equal((await chamar("GET", "/api/conta/uso")).status, 401);
+});
+
 test("senha errada e chamadas sem token são recusadas com mensagem em português", async () => {
   const r = await loginAna({ password: "errada-errada-1" });
   assert.equal(r.status, 401);

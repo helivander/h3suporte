@@ -111,6 +111,21 @@ const usuario = (conta) => ({
 const usuarioComPlano = (conta, assinatura) => ({
   ...usuario(conta),
   funcoes: Array.isArray(assinatura?.funcoes) ? assinatura.funcoes : null,
+  papel: conta.papel ?? null,
+  assinatura: resumoAssinatura(assinatura),
+});
+
+const inteiroOuNulo = (v) => (Number.isInteger(v) && v > 0 ? v : null);
+
+/** Dados da assinatura que o app mostra na tela da conta (plano, estado, limites e fim da validade). */
+const resumoAssinatura = (a) => ({
+  plano: a?.plano?.nome ?? null,
+  estado: a?.estado ?? null,
+  limite_contas: inteiroOuNulo(a?.limiteContas),
+  limite_dispositivos: inteiroOuNulo(a?.limiteDispositivos),
+  limite_acessos: inteiroOuNulo(a?.limiteAcessos),
+  fim_em: a?.fimEm ?? null,
+  pago_ate: a?.pagoAte ?? null,
 });
 
 function paginar(url, lista) {
@@ -497,6 +512,16 @@ ${id}`;
             note: "",
           }));
         return enviar(res, 200, paginar(url, lista));
+      }
+      case "GET /api/conta/uso": {
+        const sessao = await autenticar(req);
+        const alvos = new Set([...acessosDa(sessao.assinatura.id, agora).values()].map((a) => a.alvo));
+        return enviar(res, 200, {
+          assinatura: resumoAssinatura(sessao.assinatura),
+          acessos_em_uso: alvos.size,
+          dispositivos: banco.dispositivosDaAssinatura(sessao.assinatura.id).length,
+          contas: (await equipe(sessao)).filter((c) => c.ativo !== false).length,
+        });
       }
       case "GET /api/dispositivos-conta":
       case "POST /api/dispositivos-conta":

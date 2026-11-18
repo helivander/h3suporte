@@ -38,6 +38,10 @@ class UserPayload {
   bool temFuncoes = false;
   List<String>? funcoes;
 
+  /// Papel na assinatura e resumo do plano (tela da conta); guardados em `user_info`.
+  String? papel;
+  Map<String, dynamic>? assinatura;
+
   UserPayload.fromJson(Map<String, dynamic> json)
       : name = json['name'] ?? '',
         displayName = json['display_name'] ?? '',
@@ -52,7 +56,9 @@ class UserPayload {
                 : UserStatus.kNormal,
         isAdmin = json['is_admin'] == true,
         temFuncoes = json.containsKey('funcoes'),
-        funcoes = (json['funcoes'] as List?)?.map((e) => e.toString()).toList();
+        funcoes = (json['funcoes'] as List?)?.map((e) => e.toString()).toList(),
+        papel = json['papel'] as String?,
+        assinatura = (json['assinatura'] as Map?)?.cast<String, dynamic>();
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> map = {
@@ -66,6 +72,8 @@ class UserPayload {
               : 1,
     };
     if (temFuncoes) map['funcoes'] = funcoes;
+    if (papel != null) map['papel'] = papel;
+    if (assinatura != null) map['assinatura'] = assinatura;
     return map;
   }
 
