@@ -62,6 +62,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
     if (!isIncomingOnly) return _buildBlock(child: buildH3Layout(context));
+    if (!bind.isOutgoingOnly()) {
+      return _buildBlock(child: buildIncomingH3Pane(context));
+    }
     return _buildBlock(
         child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,6 +179,88 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 ),
               )
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildIncomingH3Pane(BuildContext context) {
+    final tema = H3Cores.tema(Theme.of(context).brightness);
+    return ChangeNotifierProvider.value(
+      value: gFFI.serverModel,
+      child: Theme(
+        data: tema,
+        child: Container(
+          width: 300.0,
+          color: H3Cores.painel,
+          child: Column(
+            children: [
+              SingleChildScrollView(
+                controller: _leftPaneScrollController,
+                child: Column(
+                  key: _childKey,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    buildPresetPasswordWarning(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
+                      child: Center(child: loadLogo()),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+                      child: Text(
+                        'Seu computador pode ser acessado com este ID e senha.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 12.5, color: H3Cores.apagado),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: H3EsteComputador(),
+                    ),
+                    FutureBuilder<Widget>(
+                      future: Future.value(Obx(
+                          () => buildHelpCards(stateGlobal.updateUrl.value))),
+                      builder: (_, data) {
+                        if (data.hasData) {
+                          if (isInHomePage()) {
+                            Future.delayed(const Duration(milliseconds: 300),
+                                () => _updateWindowSize());
+                          }
+                          return Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 4),
+                            child: data.data!,
+                          );
+                        }
+                        return const Offstage();
+                      },
+                    ),
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: H3Cores.painel2,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: H3Cores.linha),
+                      ),
+                      child: OnlineStatusWidget(
+                        onSvcStatusChanged: () {
+                          if (isInHomePage()) {
+                            Future.delayed(const Duration(milliseconds: 300),
+                                () => _updateWindowSize());
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: Container()),
+            ],
+          ),
         ),
       ),
     );
