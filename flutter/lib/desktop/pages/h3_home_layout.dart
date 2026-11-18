@@ -4,6 +4,7 @@ import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
@@ -409,7 +410,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     final conexoes = _cartao(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
       expandir: true,
-      filho: ConnectionPage(h3: true),
+      filho: const H3Estilo(child: ConnectionPage(h3: true)),
     );
     final esteComputador = _cartao(
       titulo: 'Este computador',

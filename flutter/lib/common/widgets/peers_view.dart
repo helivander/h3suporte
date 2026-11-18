@@ -4,7 +4,9 @@ import 'dart:collection';
 import 'package:dynamic_layouts/dynamic_layouts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/consts.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/models/ab_model.dart';
 import 'package:flutter_hbb/models/peer_tab_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
@@ -191,6 +193,9 @@ class _PeersViewState extends State<_PeersView>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                if (H3Estilo.ativo(context))
+                  ..._vazioH3(context)
+                else ...[
                 Icon(
                   Icons.sentiment_very_dissatisfied_rounded,
                   color: Theme.of(context).tabBarTheme.labelColor,
@@ -205,6 +210,7 @@ class _PeersViewState extends State<_PeersView>
                     color: Theme.of(context).tabBarTheme.labelColor,
                   ),
                 ),
+                ],
               ],
             ),
           );
@@ -213,6 +219,41 @@ class _PeersViewState extends State<_PeersView>
         }
       }),
     );
+  }
+
+  List<Widget> _vazioH3(BuildContext context) {
+    final icones = {
+      LoadEvent.recent: Icons.history,
+      LoadEvent.favorite: Icons.star_outline,
+      LoadEvent.lan: Icons.explore_outlined,
+      LoadEvent.addressBook: Icons.contacts_outlined,
+    };
+    final linhas = translate(
+      _emptyMessages[widget.peers.loadEvent] ?? 'Empty',
+    ).split('\n');
+    return [
+      Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: H3Cores.destaque.withOpacity(0.12),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icones[widget.peers.loadEvent] ?? Icons.devices_outlined,
+            size: 30, color: H3Cores.destaque),
+      ).paddingOnly(bottom: 14),
+      Text(linhas.first,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: H3Cores.texto)),
+      if (linhas.length > 1)
+        Text(linhas.skip(1).join(' '),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: H3Cores.apagado))
+            .paddingOnly(top: 4),
+    ];
   }
 
   onVisibilityChanged(VisibilityInfo info) {

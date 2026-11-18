@@ -4,6 +4,8 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/widgets/address_book.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/common/widgets/my_group.dart';
 import 'package:flutter_hbb/common/widgets/peers_view.dart';
 import 'package:flutter_hbb/common/widgets/peer_card.dart';
@@ -106,12 +108,13 @@ class _PeerTabPageState extends State<PeerTabPage>
       return model.multiSelectionMode ? createMultiSelectionBar(model) : widget;
     }
 
+    final h3 = H3Estilo.ativo(context);
     return Column(
       textBaseline: TextBaseline.ideographic,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Obx(() => SizedBox(
-              height: 32,
+              height: h3 ? 44 : 32,
               child: Container(
                 padding: stateGlobal.isPortrait.isTrue
                     ? EdgeInsets.symmetric(horizontal: 2)
@@ -135,7 +138,81 @@ class _PeerTabPageState extends State<PeerTabPage>
     );
   }
 
+  static const _rotulosH3 = [
+    'Recentes',
+    'Favoritos',
+    'Navegar',
+    'Catálogo',
+    'Dispositivos',
+  ];
+
+  Widget _createSwitchBarH3(BuildContext context) {
+    final model = Provider.of<PeerTabModel>(context);
+    var counter = -1;
+    return ReorderableListView(
+        buildDefaultDragHandles: false,
+        onReorder: model.reorder,
+        scrollDirection: Axis.horizontal,
+        physics: NeverScrollableScrollPhysics(),
+        children: model.visibleEnabledOrderedIndexs.map((t) {
+          final selected = model.currentTab == t;
+          counter += 1;
+          return ReorderableDragStartListener(
+              key: ValueKey(t),
+              index: counter,
+              child: Tooltip(
+                preferBelow: false,
+                message: model.tabTooltip(t),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: isOptionFixed(kOptionPeerTabIndex)
+                        ? null
+                        : () async {
+                            await handleTabSelection(t);
+                            await bind.setLocalFlutterOption(
+                                k: kOptionPeerTabIndex, v: t.toString());
+                          },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      alignment: Alignment.center,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: selected ? 14 : 10),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? H3Cores.destaque.withOpacity(0.16)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: selected
+                                ? H3Cores.destaque.withOpacity(0.5)
+                                : Colors.transparent),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(model.tabIcon(t),
+                            size: 17,
+                            color: selected
+                                ? H3Cores.destaque
+                                : H3Cores.apagado),
+                        if (selected && t < _rotulosH3.length) ...[
+                          const SizedBox(width: 7),
+                          Text(_rotulosH3[t],
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: H3Cores.destaque)),
+                        ],
+                      ]),
+                    ),
+                  ),
+                ),
+              ));
+        }).toList());
+  }
+
   Widget _createSwitchBar(BuildContext context) {
+    if (H3Estilo.ativo(context)) return _createSwitchBarH3(context);
     final model = Provider.of<PeerTabModel>(context);
     var counter = -1;
     return ReorderableListView(
