@@ -194,6 +194,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
     );
   }
 
+  Color get _perigo =>
+      H3Cores.escuro ? const Color(0xFFFF5D6C) : const Color(0xFFC6283A);
+
   InputDecoration _inputDecoration({String? labelText, String? hintText}) {
     OutlineInputBorder border(Color c) => OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
@@ -313,7 +316,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
           Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: SelectableText(_loginError,
-                  style: const TextStyle(fontSize: 12, color: Colors.red))),
+                  style: TextStyle(fontSize: 12, color: _perigo))),
         field('Model', _chatGptModel),
         Text(translate('ai-agent-chatgpt-plan-tip'), style: hint),
         const SizedBox(height: 12),
@@ -397,8 +400,8 @@ class _AiChatPanelState extends State<AiChatPanel> {
               ? _actionButton(Icons.send, translate('Send'), H3Cores.destaque,
                   H3Cores.destaqueTinta, _send)
               : _actionButton(Icons.stop, translate('Stop'), Colors.transparent,
-                  const Color(0xFFFF5D6C), model.stop,
-                  border: const Color(0xFFFF5D6C))),
+                  _perigo, model.stop,
+                  border: _perigo)),
         ]),
       ),
     ]);
@@ -538,7 +541,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 3),
           child: SelectableText(e.text,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFFF5D6C))),
+              style: TextStyle(fontSize: 12, color: _perigo)),
         );
     }
   }
