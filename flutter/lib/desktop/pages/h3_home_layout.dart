@@ -67,6 +67,9 @@ class H3Cores {
 /// Aba de Configurações aberta dentro da tela inicial (sem criar aba nova); null = fechada.
 final h3ConfigAberta = Rxn<SettingsTabKey>();
 
+/// Aba selecionada dentro das Configurações; a barra do topo mostra o título fixo de algumas.
+final h3ConfigAbaAtual = Rxn<SettingsTabKey>();
+
 class H3HomeLayout extends StatefulWidget {
   /// ID, senha e aviso de senha predefinida deste computador.
   final Widget deviceBoard;
@@ -179,7 +182,35 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               ]),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 22),
+          Expanded(
+            child: Obx(() {
+              final t = {
+                SettingsTabKey.safety: [
+                  'Segurança',
+                  'Controle quem pode acessar este computador e como.'
+                ],
+                SettingsTabKey.network: [
+                  'Rede',
+                  'Servidor, proxy e opções de conexão.'
+                ],
+              }[h3ConfigAbaAtual.value];
+              if (t == null) return const SizedBox.shrink();
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(t[0],
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: H3Cores.texto)),
+                    Text(t[1],
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
+                  ]);
+            }),
+          ),
           Tooltip(
             message: 'Fechar',
             child: InkWell(

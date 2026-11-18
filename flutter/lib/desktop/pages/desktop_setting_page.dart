@@ -139,6 +139,8 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
       initialIndex = 0;
     }
     selectedTab = DesktopSettingPage.tabKeys[initialIndex].obs;
+    h3ConfigAbaAtual.value = selectedTab.value;
+    ever(selectedTab, (v) => h3ConfigAbaAtual.value = v);
     Get.put<Rx<SettingsTabKey>>(selectedTab, tag: _kSettingPageTabKeyTag);
     controller = PageController(initialPage: initialIndex);
     Get.put<PageController>(controller, tag: _kSettingPageControllerTag);
@@ -1120,26 +1122,6 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
         controller: scrollController,
         child: Column(
           children: [
-            if (!bind.isIncomingOnly())
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: EdgeInsets.only(left: _kCardLeftMargin, top: 6),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Segurança',
-                            style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                                color: H3Cores.texto)),
-                        const SizedBox(height: 4),
-                        Text('Controle quem pode acessar este computador e como.',
-                            style: TextStyle(
-                                fontSize: 13, color: H3Cores.apagado)),
-                      ]),
-                ),
-              ),
             _lock(locked, 'Unlock Security Settings', () {
               locked = false;
               setState(() => {});
@@ -2026,6 +2008,126 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
         );
 
     final outgoingOnly = bind.isOutgoingOnly();
+
+    if (!bind.isIncomingOnly()) {
+      Widget tile(IconData icone, String titulo, String desc,
+          {VoidCallback? onTap, Widget? trailing}) {
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: locked ? null : onTap,
+          child: Opacity(
+            opacity: locked ? 0.55 : 1,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: H3Cores.fundo,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: H3Cores.linha),
+              ),
+              child: Row(children: [
+                Icon(icone, size: 22, color: H3Cores.apagado),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(translate(titulo),
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: H3Cores.texto)),
+                        const SizedBox(height: 2),
+                        Text(desc,
+                            style: TextStyle(
+                                fontSize: 12,
+                                height: 1.35,
+                                color: H3Cores.apagado)),
+                      ]),
+                ),
+                const SizedBox(width: 10),
+                trailing ??
+                    Icon(Icons.chevron_right, size: 20, color: H3Cores.apagado),
+              ]),
+            ),
+          ),
+        );
+      }
+
+      Widget interruptor(IconData icone, String titulo, String desc, bool valor,
+          bool fixa, Future<void> Function(bool) alterar) {
+        return tile(icone, titulo, desc,
+            onTap: fixa ? null : () async {
+                    await alterar(!valor);
+                    setState(() {});
+                  },
+            trailing: Switch(
+              value: valor,
+              activeColor: Colors.white,
+              activeTrackColor: H3Cores.destaque,
+              inactiveTrackColor: H3Cores.linha2,
+              inactiveThumbColor: Colors.white,
+              onChanged: locked || fixa
+                  ? null
+                  : (v) async {
+                      await alterar(v);
+                      setState(() {});
+                    },
+            ));
+      }
+
+      final servidor = <Widget>[
+        if (!hideServer)
+          tile(Icons.dns_outlined, 'ID/Relay Server',
+              'Servidor que registra este computador e intermedia as conexões.',
+              onTap: () => showServerSettings(gFFI.dialogManager, setState)),
+        if (!hideProxy)
+          tile(Icons.network_ping_outlined, 'Socks5/Http(s) Proxy',
+              'Encaminha o tráfego por um proxy Socks5 ou HTTP(S).',
+              onTap: changeSocks5Proxy),
+      ];
+      final conexao = <Widget>[
+        if (!hideWebSocket)
+          interruptor(
+              Icons.web_asset_outlined,
+              'Use WebSocket',
+              'Conecta por WebSocket, útil em redes que bloqueiam o tráfego padrão.',
+              mainGetBoolOptionSync(kOptionAllowWebSocket),
+              isOptionFixed(kOptionAllowWebSocket),
+              (v) => mainSetBoolOption(kOptionAllowWebSocket, v)),
+        if (!isWeb)
+          futureBuilder(
+            future: bind.mainIsUsingPublicServer(),
+            hasData: (isUsingPublicServer) {
+              if (isUsingPublicServer) return const Offstage();
+              return Column(children: [
+                interruptor(
+                    Icons.no_encryption_outlined,
+                    'Allow insecure TLS fallback',
+                    'Permite continuar se a verificação TLS falhar. Use só se necessário.',
+                    mainGetBoolOptionSync(kOptionAllowInsecureTLSFallback),
+                    isOptionFixed(kOptionAllowInsecureTLSFallback),
+                    (v) => mainSetBoolOption(
+                        kOptionAllowInsecureTLSFallback, v)),
+                if (!outgoingOnly)
+                  interruptor(
+                      Icons.lan_outlined,
+                      'Disable UDP',
+                      'Desativa o UDP e usa só TCP nas conexões.',
+                      bind.mainGetOptionSync(key: kOptionDisableUdp) == 'Y',
+                      isOptionFixed(kOptionDisableUdp),
+                      (v) => bind.mainSetOption(
+                          key: kOptionDisableUdp, value: v ? 'Y' : 'N')),
+              ]);
+            },
+          ),
+      ];
+      return _colunasSimples([
+        if (servidor.isNotEmpty)
+          _Card(title: 'Servidor e proxy', children: servidor),
+        _Card(title: 'Conexão', children: conexao),
+      ]);
+    }
 
     final divider = const Divider(height: 1, indent: 16, endIndent: 16);
     return _Card(
@@ -3045,6 +3147,10 @@ IconData _iconeCard(String titulo) {
       return Icons.desktop_windows_outlined;
     case 'Network':
       return Icons.lan_outlined;
+    case 'Servidor e proxy':
+      return Icons.dns_outlined;
+    case 'Conexão':
+      return Icons.cable_outlined;
     default:
       return Icons.tune;
   }
