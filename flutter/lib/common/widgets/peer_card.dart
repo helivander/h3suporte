@@ -52,8 +52,6 @@ class _PeerCardState extends State<_PeerCard>
   var _menuPos = RelativeRect.fill;
   final double _cardRadius = 16;
   double get _tileRadius => H3Estilo.ativo(context) ? 12 : 5;
-  bool get _grupoH3 => H3Estilo.ativo(context) && widget.tab == PeerTabIndex.group;
-  bool get _grade => peerCardUiType.value == PeerUiType.grid && !_grupoH3;
   final double _borderWidth = 2;
 
   @override
@@ -72,9 +70,16 @@ class _PeerCardState extends State<_PeerCard>
         onDoubleTap: peerTabModel.multiSelectionMode
             ? null
             : () => widget.connect(context, peer.id),
+        onTapDown: (d) {
+          final x = d.globalPosition.dx;
+          final y = d.globalPosition.dy;
+          _menuPos = RelativeRect.fromLTRB(x, y, x, y);
+        },
         onTap: () {
           if (peerTabModel.multiSelectionMode) {
             peerTabModel.select(peer);
+          } else if (H3Estilo.ativo(context) && !isMobile) {
+            _showPeerMenu(peer.id);
           } else {
             if (isMobile) {
               widget.connect(context, peer.id);
@@ -106,7 +111,7 @@ class _PeerCardState extends State<_PeerCard>
             color: H3Estilo.ativo(context) ? H3Cores.linha : Colors.transparent,
             width: _borderWidth),
         borderRadius: BorderRadius.circular(
-          _grade ? _cardRadius : _tileRadius,
+          peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
         ),
       ),
     );
@@ -117,7 +122,7 @@ class _PeerCardState extends State<_PeerCard>
               color: Theme.of(context).colorScheme.primary,
               width: _borderWidth),
           borderRadius: BorderRadius.circular(
-            _grade ? _cardRadius : _tileRadius,
+            peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
           ),
         );
       },
@@ -127,12 +132,12 @@ class _PeerCardState extends State<_PeerCard>
             color: H3Estilo.ativo(context) ? H3Cores.linha : Colors.transparent,
             width: _borderWidth),
           borderRadius: BorderRadius.circular(
-            _grade ? _cardRadius : _tileRadius,
+            peerCardUiType.value == PeerUiType.grid ? _cardRadius : _tileRadius,
           ),
         );
       },
       child: gestureDetector(
-          child: Obx(() => _grade
+          child: Obx(() => peerCardUiType.value == PeerUiType.grid
               ? _buildPeerCard(context, peer, deco)
               : _buildPeerTile(context, peer, deco))),
     );
@@ -260,12 +265,7 @@ class _PeerCardState extends State<_PeerCard>
     final name = hideUsernameOnCard == true
         ? peer.hostname
         : '${peer.username}${peer.username.isNotEmpty && peer.hostname.isNotEmpty ? '@' : ''}${peer.hostname}';
-    final grupo = _grupoH3;
-    final titulo = grupo
-        ? (peer.alias.isNotEmpty
-            ? peer.alias
-            : (peer.hostname.isNotEmpty ? peer.hostname : formatID(peer.id)))
-        : (peer.alias.isEmpty ? formatID(peer.id) : peer.alias);
+    final titulo = peer.alias.isEmpty ? formatID(peer.id) : peer.alias;
     final cor = peer.online ? H3Cores.ok : H3Cores.apagado;
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
@@ -323,9 +323,7 @@ class _PeerCardState extends State<_PeerCard>
                 message: name,
                 waitDuration: const Duration(seconds: 1),
                 child: Text(
-                    grupo
-                        ? 'ID ${formatID(peer.id)}'
-                        : (name.isEmpty ? (peer.online ? 'Online' : 'Offline') : name),
+                    name.isEmpty ? (peer.online ? 'Online' : 'Offline') : name,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
               ),
@@ -336,23 +334,6 @@ class _PeerCardState extends State<_PeerCard>
             ],
           ),
         ),
-        if (grupo)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: ElevatedButton.icon(
-              onPressed: () => widget.connect(context, peer.id),
-              icon: const Icon(Icons.bolt, size: 16),
-              label: Text(translate('Connect')),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: H3Cores.destaque,
-                  foregroundColor: H3Cores.destaqueTinta,
-                  elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10))),
-            ),
-          ),
         checkBoxOrActionMoreLandscape(peer, isTile: true),
       ]),
     );
@@ -650,11 +631,19 @@ class _PeerCardState extends State<_PeerCard>
   /// Show the peer menu and handle user's choice.
   /// User might remove the peer or send a file to the peer.
   void _showPeerMenu(String id) async {
+    final h3 = H3Estilo.ativo(context);
     await mod_menu.showMenu(
       context: context,
       position: _menuPos,
       items: await super.widget.popupMenuEntryBuilder(context),
-      elevation: 8,
+      elevation: h3 ? 16 : 8,
+      color: h3 ? H3Cores.painel2 : null,
+      shape: h3
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: H3Cores.linha2))
+          : null,
+      constraints: h3 ? const BoxConstraints(minWidth: 230) : null,
     );
   }
 
