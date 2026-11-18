@@ -409,7 +409,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     final conexoes = _cartao(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
       expandir: true,
-      filho: ConnectionPage(),
+      filho: ConnectionPage(h3: true),
     );
     final esteComputador = _cartao(
       titulo: 'Este computador',

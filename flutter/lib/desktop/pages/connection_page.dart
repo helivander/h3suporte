@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/widgets/connection_page_title.dart';
 import 'package:flutter_hbb/consts.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/desktop/widgets/popup_menu.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
@@ -143,7 +144,9 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget {
-  const ConnectionPage({Key? key}) : super(key: key);
+  /// Visual da tela inicial H3 (cartão, campo e botões no tema verde-água).
+  final bool h3;
+  const ConnectionPage({Key? key, this.h3 = false}) : super(key: key);
 
   @override
   State<ConnectionPage> createState() => _ConnectionPageState();
@@ -327,19 +330,60 @@ class _ConnectionPageState extends State<ConnectionPage>
     );
   }
 
+  OutlineInputBorder _bordaH3(Color cor) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: cor));
+
   /// UI for the remote ID TextField.
   /// Search for a peer.
   Widget _buildRemoteIDTextField(BuildContext context) {
+    final h3 = widget.h3;
     var w = Container(
-      width: 320 + 20 * 2,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
+      width: h3 ? null : 320 + 20 * 2,
+      padding: h3
+          ? const EdgeInsets.fromLTRB(22, 22, 22, 20)
+          : const EdgeInsets.fromLTRB(20, 24, 20, 22),
       decoration: BoxDecoration(
-          borderRadius: const BorderRadius.all(Radius.circular(13)),
-          border: Border.all(color: Theme.of(context).colorScheme.background)),
+          color: h3 ? H3Cores.painel2 : null,
+          borderRadius: BorderRadius.all(Radius.circular(h3 ? 16 : 13)),
+          border: Border.all(
+              color: h3
+                  ? H3Cores.linha
+                  : Theme.of(context).colorScheme.background)),
       child: Ink(
         child: Column(
           children: [
-            getConnectionPageTitle(context, false).marginOnly(bottom: 15),
+            if (h3)
+              Row(children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: H3Cores.destaque.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.cast_connected,
+                      size: 18, color: H3Cores.destaque),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Controlar um computador remoto',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: H3Cores.texto)),
+                      Text('Digite o ID do computador que você vai acessar.',
+                          style: TextStyle(
+                              fontSize: 12, color: H3Cores.apagado)),
+                    ],
+                  ),
+                ),
+              ]).marginOnly(bottom: 16)
+            else
+              getConnectionPageTitle(context, false).marginOnly(bottom: 15),
             Row(
               children: [
                 Expanded(
@@ -415,7 +459,17 @@ class _ConnectionPageState extends State<ConnectionPage>
                           cursorColor:
                               Theme.of(context).textTheme.titleLarge?.color,
                           decoration: InputDecoration(
-                              filled: false,
+                              filled: h3,
+                              fillColor: h3 ? H3Cores.fundo : null,
+                              border: h3 ? _bordaH3(H3Cores.linha2) : null,
+                              enabledBorder:
+                                  h3 ? _bordaH3(H3Cores.linha2) : null,
+                              focusedBorder:
+                                  h3 ? _bordaH3(H3Cores.destaque) : null,
+                              prefixIcon: h3
+                                  ? Icon(Icons.search,
+                                      color: H3Cores.apagado, size: 22)
+                                  : null,
                               counterText: '',
                               hintText: _idInputFocused.value
                                   ? null
@@ -505,22 +559,41 @@ class _ConnectionPageState extends State<ConnectionPage>
             Padding(
               padding: const EdgeInsets.only(top: 13.0),
               child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                SizedBox(
-                  height: 28.0,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      onConnect();
-                    },
-                    child: Text(translate("Connect")),
+                if (h3)
+                  Expanded(
+                    child: SizedBox(
+                      height: 42,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          onConnect();
+                        },
+                        icon: const Icon(Icons.bolt, size: 20),
+                        label: Text(translate("Connect"),
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 28.0,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        onConnect();
+                      },
+                      child: Text(translate("Connect")),
+                    ),
                   ),
-                ),
                 const SizedBox(width: 8),
                 Container(
-                  height: 28.0,
-                  width: 28.0,
+                  height: h3 ? 42.0 : 28.0,
+                  width: h3 ? 42.0 : 28.0,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: h3
+                            ? H3Cores.linha2
+                            : Theme.of(context).dividerColor),
+                    borderRadius: BorderRadius.circular(h3 ? 10 : 8),
                   ),
                   child: Center(
                     child: StatefulBuilder(
