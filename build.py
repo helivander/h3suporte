@@ -945,7 +945,7 @@ def build_flutter_dmg(version, features):
     # FLUTTER_XCODE_* env vars are forwarded to xcodebuild as build settings.
     mac_arch = 'arm64' if platform.machine().lower() in ('arm64', 'aarch64') else 'x86_64'
     system2(
-        f'FLUTTER_XCODE_ARCHS={mac_arch} FLUTTER_XCODE_ONLY_ACTIVE_ARCH=YES flutter build macos --release')
+        f'FLUTTER_XCODE_ARCHS={mac_arch} FLUTTER_XCODE_ONLY_ACTIVE_ARCH=YES flutter build macos --release' + h3_dart_define())
     system2('cp -rf ../target/release/service ./build/macos/Build/Products/Release/H3Suporte.app/Contents/MacOS/')
     # O service entra depois da assinatura do Xcode e quebra o selo: sem reassinar, o macOS diz que o app
     # "está danificado". Ad-hoc sem hardened runtime, que recusaria o FlutterMacOS (outro Team ID). O build
@@ -970,6 +970,10 @@ def build_flutter_arch_manjaro(version, features):
     system2('HBB=`pwd`/.. FLUTTER=1 makepkg -f')
 
 
+def h3_dart_define():
+    return ' --dart-define=H3_IA=true' if os.environ.get('H3_IA') == 'true' else ''
+
+
 def build_flutter_windows(version, features, skip_portable_pack):
     if not skip_cargo:
         system2(f'cargo build --locked --features {features} --lib --release')
@@ -977,7 +981,7 @@ def build_flutter_windows(version, features, skip_portable_pack):
             print("cargo build failed, please check rust source code.")
             exit(-1)
     os.chdir('flutter')
-    system2('flutter build windows --release')
+    system2('flutter build windows --release' + h3_dart_define())
     os.chdir('..')
     shutil.copy2('target/release/deps/dylib_virtual_display.dll',
                  flutter_build_dir_2)

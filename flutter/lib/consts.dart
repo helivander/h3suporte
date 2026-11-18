@@ -723,3 +723,6 @@ extension WindowsTargetExt on int {
 }
 
 const kCheckSoftwareUpdateFinish = 'check_software_update_finish';
+
+/// Build "com IA" (somente administrador do sistema): `--dart-define=H3_IA=true`. Sem isso o app não tem o assistente.
+const bool kH3IaBuild = bool.fromEnvironment('H3_IA');

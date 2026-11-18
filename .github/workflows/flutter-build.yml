@@ -206,6 +206,19 @@ jobs:
               conn-type: "incoming",
               name-suffix: "-cliente",
             }
+          # H3 Suporte: build COM o assistente de IA, só para administrador do sistema (docs/versoes-agente.md).
+          # Nunca vai para o release público nem para a lista de atualização: fica só como artefato do workflow.
+          - {
+              target: x86_64-pc-windows-msvc,
+              os: windows-2022,
+              arch: x86_64,
+              flutter-arch: x64,
+              vcpkg-triplet: x64-windows-static,
+              build-args: "--vram",
+              conn-type: "",
+              name-suffix: "-ia",
+              ia: "true",
+            }
           - {
               target: aarch64-pc-windows-msvc,
               os: windows-11-arm,
@@ -373,6 +386,7 @@ jobs:
         env:
           # H3 Suporte: empty for the normal client; "incoming" for the receive-only client.
           CONN_TYPE: ${{ matrix.job.conn-type }}
+          H3_IA: ${{ matrix.job.ia }}
         run: |
           # Windows: build RustDesk
           # --hwcodec is shared by all Windows targets; per-target extras (e.g. --vram) come from the matrix
@@ -595,7 +609,7 @@ jobs:
           BASE_URL=${{ env.SIGN_BASE_URL }} SECRET_KEY=${{ secrets.SIGN_SECRET_KEY }} python3 res/job.py sign_files ./SignOutput
 
       - name: Upload signed Windows Flutter EXE
-        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.SIGN_BASE_URL != '-2'
+        if: matrix.job.ia != 'true' && env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.SIGN_BASE_URL != '-2'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-flutter-${{ matrix.job.arch }}-exe
@@ -603,16 +617,27 @@ jobs:
           if-no-files-found: error
 
       - name: Upload signed Windows Flutter MSI
-        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.SIGN_BASE_URL != '-2'
+        if: matrix.job.ia != 'true' && env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.SIGN_BASE_URL != '-2'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-flutter-${{ matrix.job.arch }}-msi
           path: ./SignOutput/${{ env.PKG_NAME }}-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.name-suffix }}.msi
           if-no-files-found: error
 
+      - name: Upload Windows build with AI (administrators only)
+        if: matrix.job.ia == 'true' && env.UPLOAD_ARTIFACT == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: h3suporte-ia-windows-${{ matrix.job.arch }}
+          path: |
+            ./SignOutput/${{ env.PKG_NAME }}-${{ env.VERSION }}-${{ matrix.job.arch }}-ia.exe
+            ./SignOutput/${{ env.PKG_NAME }}-${{ env.VERSION }}-${{ matrix.job.arch }}-ia.msi
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Publish Release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
-        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
+        if: matrix.job.ia != 'true' && env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
         with:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}

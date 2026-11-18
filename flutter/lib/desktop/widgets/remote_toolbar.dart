@@ -847,7 +847,9 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       toolbarItems.add(_KeyboardMenu(id: widget.id, ffi: widget.ffi));
     }
     toolbarItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
-    if (!isWeb && widget.ffi.connType == ConnType.defaultConn) {
+    if (kH3IaBuild &&
+        !isWeb &&
+        widget.ffi.connType == ConnType.defaultConn) {
       toolbarItems.add(_IconMenuButton(
         icon: SizedBox(
             width: _ToolbarTheme.buttonSize,
