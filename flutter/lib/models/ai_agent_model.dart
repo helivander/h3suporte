@@ -15,6 +15,7 @@ import '../common/widgets/overlay.dart';
 import '../consts.dart';
 import '../desktop/widgets/ai_chat_panel.dart';
 import 'ai_chatgpt_auth.dart';
+import 'ai_models.dart';
 import 'ai_chatgpt_utils.dart';
 import 'ai_agent_utils.dart';
 import 'model.dart';
@@ -72,6 +73,7 @@ class AiAgentModel {
 
   final List<Map<String, dynamic>> _messages = [];
   final List<Map<String, dynamic>> _chatGptInput = [];
+  final List<Map<String, dynamic>> _geminiContents = [];
   final chatGpt = ChatGptAuth();
   final List<String> _queuedTexts = [];
   Completer<String>? _screenshot;
@@ -98,10 +100,18 @@ class AiAgentModel {
     return v.isEmpty ? kAiDefaultBaseUrl : v;
   }
 
-  String get provider =>
-      bind.mainGetLocalOption(key: kAiOptionProvider) == kAiProviderChatGpt
-          ? kAiProviderChatGpt
-          : kAiProviderClaude;
+  String get provider {
+    final v = bind.mainGetLocalOption(key: kAiOptionProvider);
+    return v == kAiProviderChatGpt || v == kAiProviderGemini
+        ? v
+        : kAiProviderClaude;
+  }
+
+  String get geminiKey => bind.mainGetLocalOption(key: kAiOptionGeminiKey);
+  String get geminiModel {
+    final v = bind.mainGetLocalOption(key: kAiOptionGeminiModel);
+    return v.isEmpty ? kAiDefaultGeminiModel : v;
+  }
 
   String get chatGptModel {
     final v = bind.mainGetLocalOption(key: kAiOptionChatGptModel);
@@ -203,6 +213,16 @@ class AiAgentModel {
       await _runChatGpt();
       return;
     }
+    if (provider == kAiProviderGemini) {
+      _geminiContents.add({
+        'role': 'user',
+        'parts': [
+          {'text': text}
+        ]
+      });
+      await _runGemini();
+      return;
+    }
     _messages.add({'role': 'user', 'content': text});
     await _run();
   }
@@ -222,6 +242,7 @@ class AiAgentModel {
     if (status.value != AiAgentStatus.idle) return;
     _messages.clear();
     _chatGptInput.clear();
+    _geminiContents.clear();
     _queuedTexts.clear();
     entries.clear();
     _sentWidth = _sentHeight = 0;
@@ -633,6 +654,179 @@ class AiAgentModel {
         return translate('ai-agent-chatgpt-unavailable-tip');
     }
     return detail.isEmpty ? code : '$code ($detail)';
+  }
+
+  // ---- Gemini (generateContent com chamada de funções) ----
+
+  Future<void> _runGemini() async {
+    if (geminiKey.isEmpty) {
+      _add(AiEntryKind.error, 'Informe a chave da API do Gemini em Configurações > IA.');
+      return;
+    }
+    _stop = false;
+    status.value = AiAgentStatus.running;
+    try {
+      var turn = 0;
+      for (; turn < _kMaxTurns && !_stop; turn++) {
+        final resp = await _callGemini();
+        if (_stop) break;
+        final cand = ((resp['candidates'] as List?) ?? []).firstOrNull;
+        final parts = ((cand?['content']?['parts'] as List?) ?? [])
+            .whereType<Map>()
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
+        if (parts.isEmpty) {
+          final motivo = cand?['finishReason'] ?? resp['promptFeedback']?['blockReason'];
+          if (motivo != null && motivo != 'STOP') {
+            _add(AiEntryKind.error, 'Resposta bloqueada: $motivo');
+          }
+          break;
+        }
+        _geminiContents.add({'role': 'model', 'parts': parts});
+        final uses = <Map<String, dynamic>>[];
+        for (final p in parts) {
+          if (p['thought'] == true) continue;
+          if (p['text'] is String) {
+            _add(AiEntryKind.assistant, p['text'] as String);
+          } else if (p['functionCall'] is Map) {
+            final fc = Map<String, dynamic>.from(p['functionCall']);
+            uses.add({
+              'id': fc['name'],
+              'name': fc['name'],
+              'input': fc['args'] is Map
+                  ? Map<String, dynamic>.from(fc['args'])
+                  : <String, dynamic>{},
+            });
+          }
+        }
+        if (uses.isEmpty) {
+          if (_queuedTexts.isEmpty) break;
+          _flushQueuedGemini();
+          continue;
+        }
+        final approved = await _awaitApproval(uses);
+        _geminiContents.add(await _executeGeminiBatch(uses, approved));
+        _flushQueuedGemini();
+        if (!approved) break;
+      }
+      if (turn >= _kMaxTurns) {
+        _add(AiEntryKind.info, translate('ai-agent-step-limit-tip'));
+      }
+    } on _Stopped {
+      // reported below
+    } catch (e) {
+      if (!_stop) _add(AiEntryKind.error, e.toString());
+    } finally {
+      if (_stop) _add(AiEntryKind.info, translate('Stopped'));
+      _flushQueuedGemini();
+      pendingActions.clear();
+      _approval = null;
+      status.value = AiAgentStatus.idle;
+    }
+  }
+
+  void _flushQueuedGemini() {
+    for (final t in _queuedTexts) {
+      _geminiContents.add({
+        'role': 'user',
+        'parts': [
+          {'text': t}
+        ]
+      });
+    }
+    _queuedTexts.clear();
+  }
+
+  Future<Map<String, dynamic>> _executeGeminiBatch(
+      List<Map<String, dynamic>> uses, bool approved) async {
+    final respostas = <Map<String, dynamic>>[];
+    final imagens = <Map<String, dynamic>>[];
+    var failed = false;
+    for (final u in uses) {
+      final name = u['name'].toString();
+      final input = _inputOf(u);
+      String saida;
+      if (!approved || _stop) {
+        saida = 'The operator declined this action.';
+      } else if (failed) {
+        saida = _kSkipped;
+      } else {
+        try {
+          final blocos = await _execute(name, input);
+          for (final b in blocos) {
+            if (b is Map && b['type'] == 'image') {
+              imagens.add({
+                'inlineData': {
+                  'mimeType': b['source']['media_type'],
+                  'data': b['source']['data'],
+                }
+              });
+            }
+          }
+          saida = 'OK';
+          _add(AiEntryKind.action, describeAiAction(name, input));
+        } on _Stopped {
+          saida = 'The operator declined this action.';
+        } catch (e) {
+          failed = true;
+          saida = 'Error: $e';
+          _add(AiEntryKind.error, '$name: $e');
+        }
+      }
+      respostas.add({
+        'functionResponse': {
+          'name': name,
+          'response': {'output': saida}
+        }
+      });
+    }
+    return {'role': 'user', 'parts': [...respostas, ...imagens]};
+  }
+
+  Future<Map<String, dynamic>> _callGemini() async {
+    final platform = parent.target?.ffiModel.pi.platform ?? '';
+    final body = jsonEncode({
+      'system_instruction': {
+        'parts': [
+          {
+            'text': platform.isEmpty
+                ? _kSystemPrompt
+                : '$_kSystemPrompt\n\nRemote operating system: $platform.'
+          }
+        ]
+      },
+      'tools': geminiTools(),
+      'contents': _geminiContents,
+    });
+    if (body.length > _kMaxBodyBytes) {
+      throw translate('ai-agent-context-full-tip');
+    }
+    final uri = Uri.parse('$kGeminiBase/models/$geminiModel:generateContent');
+    for (var attempt = 0;; attempt++) {
+      final client = http.Client();
+      _client = client;
+      try {
+        final resp = await client.post(uri,
+            headers: {
+              'content-type': 'application/json',
+              'x-goog-api-key': geminiKey,
+            },
+            body: body).timeout(const Duration(minutes: 5));
+        if (resp.statusCode == 200) {
+          return Map<String, dynamic>.from(
+              jsonDecode(utf8.decode(resp.bodyBytes)));
+        }
+        final retryable = resp.statusCode == 429 || resp.statusCode >= 500;
+        if (!retryable || attempt >= 2) {
+          throw 'HTTP ${resp.statusCode}: ${_errorMessage(resp)}';
+        }
+      } finally {
+        client.close();
+        _client = null;
+      }
+      await Future.delayed(Duration(seconds: 2 << attempt));
+      if (_stop) throw _Stopped();
+    }
   }
 
   // ---- actions ----

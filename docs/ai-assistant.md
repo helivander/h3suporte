@@ -75,6 +75,22 @@ Limites do provedor ChatGPT:
 - Uso do plano por apps comerciais pode exigir o formulário de interesse da
   OpenAI; o teste foi feito com a conta do usuário.
 
+## Provedor Gemini e lista de modelos
+
+Em Configurações > IA o técnico escolhe entre Claude, Gemini e ChatGPT e, para cada um, o modelo numa lista.
+O botão de atualizar busca os modelos disponíveis na API do provedor (Claude: `GET /v1/models`; Gemini:
+`GET /v1beta/models`, só os que aceitam `generateContent`); a opção "Outro" permite digitar um nome.
+
+- Gemini: chave da API do Google AI Studio (`ai-agent-gemini-key`) e modelo (`ai-agent-gemini-model`, padrão
+  `gemini-2.5-pro`). As ações são as mesmas funções do ChatGPT, declaradas como `functionDeclarations`; a captura
+  de tela volta como `inlineData` junto da resposta da função. Código em `_runGemini` (`ai_agent_model.dart`) e
+  `ai_models.dart`.
+- Claude por conta (OAuth): **não implementado de propósito**. A Anthropic só permite o login da assinatura
+  Pro/Max no Claude Code e no claude.ai e proíbe em aplicativos de terceiros
+  ([termos](https://code.claude.com/docs/en/legal-and-compliance)). O app usa a chave de API do console.
+- Não testado contra a API real do Gemini nem numa sessão remota: só análise, testes das funções puras
+  (`flutter/test/ai_models_test.dart`) e compilação.
+
 ## Segurança
 
 - "Confirmar cada ação" vem ligado: o técnico aprova cada lote de ações antes

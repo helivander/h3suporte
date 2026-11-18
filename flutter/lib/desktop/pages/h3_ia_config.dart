@@ -3,6 +3,7 @@ import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/models/ai_agent_model.dart';
 import 'package:flutter_hbb/models/ai_chatgpt_auth.dart';
+import 'package:flutter_hbb/models/ai_models.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 
 /// Configuração do assistente de IA em Configurações > IA. A sessão remota só usa o chat.
@@ -28,8 +29,20 @@ class _IaConfigState extends State<IaConfig> {
       text: _get(kAiOptionChatGptModel).isEmpty
           ? kAiDefaultChatGptModel
           : _get(kAiOptionChatGptModel));
-  late String _provedor = _get(kAiOptionProvider) == kAiProviderChatGpt
-      ? kAiProviderChatGpt
+  late final _chaveGemini = TextEditingController(text: _get(kAiOptionGeminiKey));
+  late final _modeloGemini = TextEditingController(
+      text: _get(kAiOptionGeminiModel).isEmpty
+          ? kAiDefaultGeminiModel
+          : _get(kAiOptionGeminiModel));
+  final _listas = <String, List<String>>{};
+  final _outro = <String, bool>{};
+  bool _carregandoModelos = false;
+  String _erroModelos = '';
+  late String _provedor = {
+    kAiProviderChatGpt,
+    kAiProviderGemini
+  }.contains(_get(kAiOptionProvider))
+      ? _get(kAiOptionProvider)
       : kAiProviderClaude;
   late bool _abrirAuto = _get(kAiOptionAutoOpen) != 'N';
   late bool _confirmar = _get(kAiOptionConfirmEach) != 'N';
@@ -43,6 +56,8 @@ class _IaConfigState extends State<IaConfig> {
     _modelo.dispose();
     _url.dispose();
     _modeloGpt.dispose();
+    _chaveGemini.dispose();
+    _modeloGemini.dispose();
     super.dispose();
   }
 
@@ -54,6 +69,8 @@ class _IaConfigState extends State<IaConfig> {
     await s(kAiOptionModel, _modelo.text);
     await s(kAiOptionBaseUrl, _url.text);
     await s(kAiOptionChatGptModel, _modeloGpt.text);
+    await s(kAiOptionGeminiKey, _chaveGemini.text);
+    await s(kAiOptionGeminiModel, _modeloGemini.text);
     await s(kAiOptionAutoOpen, _abrirAuto ? 'Y' : 'N');
     await s(kAiOptionConfirmEach, _confirmar ? 'Y' : 'N');
     if (mounted) setState(() => _salvo = true);
@@ -96,6 +113,99 @@ class _IaConfigState extends State<IaConfig> {
             onChanged: (_) => setState(() => _salvo = false),
             decoration: _dec(rotulo)),
       );
+
+  TextEditingController _ctrlModelo(String p) => p == kAiProviderGemini
+      ? _modeloGemini
+      : p == kAiProviderChatGpt
+          ? _modeloGpt
+          : _modelo;
+
+  Future<void> _carregarModelos(String p) async {
+    setState(() {
+      _carregandoModelos = true;
+      _erroModelos = '';
+    });
+    try {
+      final chave = p == kAiProviderGemini ? _chaveGemini.text : _apiKey.text;
+      _listas[p] = await fetchAiModels(p, apiKey: chave, baseUrl: _url.text);
+    } catch (e) {
+      _erroModelos = e.toString();
+    }
+    if (mounted) setState(() => _carregandoModelos = false);
+  }
+
+  Widget _seletorModelo(String p) {
+    final c = _ctrlModelo(p);
+    final itens = <String>{
+      if (c.text.isNotEmpty) c.text,
+      ...(_listas[p] ?? kAiSuggestedModels[p] ?? const []),
+    }.toList();
+    final outro = _outro[p] == true;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Row(children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: outro ? '__outro__' : (itens.contains(c.text) ? c.text : null),
+            isExpanded: true,
+            dropdownColor: H3Cores.painel2,
+            style: TextStyle(color: H3Cores.texto, fontSize: 14),
+            decoration: _dec('Modelo'),
+            items: [
+              for (final m in itens) DropdownMenuItem(value: m, child: Text(m)),
+              const DropdownMenuItem(
+                  value: '__outro__', child: Text('Outro (digitar)…')),
+            ],
+            onChanged: (v) => setState(() {
+              _salvo = false;
+              if (v == '__outro__') {
+                _outro[p] = true;
+              } else if (v != null) {
+                _outro[p] = false;
+                c.text = v;
+              }
+            }),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Tooltip(
+          message: 'Atualizar lista de modelos',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: _carregandoModelos ? null : () => _carregarModelos(p),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: H3Cores.painel2,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: H3Cores.linha2),
+              ),
+              child: _carregandoModelos
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(Icons.refresh, size: 20, color: H3Cores.destaque),
+            ),
+          ),
+        ),
+      ]),
+      if (outro) ...[
+        const SizedBox(height: 12),
+        TextField(
+            controller: c,
+            style: TextStyle(color: H3Cores.texto),
+            onChanged: (_) => setState(() => _salvo = false),
+            decoration: _dec('Nome do modelo')),
+      ],
+      if (_erroModelos.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(_erroModelos,
+              style: TextStyle(fontSize: 12, color: H3Cores.aviso)),
+        ),
+      const SizedBox(height: 12),
+    ]);
+  }
 
   Widget _opcao(String p, IconData icone, String rotulo, String sub) {
     final on = _provedor == p;
@@ -213,7 +323,12 @@ class _IaConfigState extends State<IaConfig> {
   @override
   Widget build(BuildContext context) {
     final claude = _provedor == kAiProviderClaude;
-    final pronto = claude ? _apiKey.text.trim().isNotEmpty : _auth.isSignedIn;
+    final gemini = _provedor == kAiProviderGemini;
+    final pronto = claude
+        ? _apiKey.text.trim().isNotEmpty
+        : gemini
+            ? _chaveGemini.text.trim().isNotEmpty
+            : _auth.isSignedIn;
     final cor = pronto ? H3Cores.ok : H3Cores.aviso;
     return ListView(padding: const EdgeInsets.fromLTRB(15, 6, 15, 20), children: [
       Text('IA',
@@ -247,8 +362,10 @@ class _IaConfigState extends State<IaConfig> {
                   pronto
                       ? 'O chat abrirá automaticamente nas sessões remotas.'
                       : claude
-                          ? 'Informe a chave da API para ativar o assistente.'
-                          : 'Entre com a sua conta do ChatGPT para ativar o assistente.',
+                          ? 'Informe a chave da API do Claude para ativar o assistente.'
+                          : gemini
+                              ? 'Informe a chave da API do Gemini para ativar o assistente.'
+                              : 'Entre com a sua conta do ChatGPT para ativar o assistente.',
                   style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
             ]),
           ),
@@ -258,28 +375,62 @@ class _IaConfigState extends State<IaConfig> {
           'Provedor',
           'Escolha qual serviço de IA vai controlar o computador remoto.',
           LayoutBuilder(builder: (context, c) {
-            final a = _opcao(kAiProviderClaude, Icons.key_outlined, 'Claude',
-                'Chave da API Anthropic');
-            final b = _opcao(kAiProviderChatGpt, Icons.chat_outlined, 'ChatGPT',
-                'Entrar com a sua conta');
-            return c.maxWidth >= 520
-                ? Row(children: [
-                    Expanded(child: a),
-                    const SizedBox(width: 12),
-                    Expanded(child: b),
-                  ])
-                : Column(children: [a, const SizedBox(height: 12), b]);
+            final cartoes = [
+              _opcao(kAiProviderClaude, Icons.key_outlined, 'Claude',
+                  'Chave da API Anthropic'),
+              _opcao(kAiProviderGemini, Icons.auto_awesome_outlined, 'Gemini',
+                  'Chave da API Google'),
+              _opcao(kAiProviderChatGpt, Icons.chat_outlined, 'ChatGPT',
+                  'Entrar com a sua conta'),
+            ];
+            if (c.maxWidth >= 720) {
+              return Row(children: [
+                for (var i = 0; i < cartoes.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 12),
+                  Expanded(child: cartoes[i]),
+                ]
+              ]);
+            }
+            return Column(children: [
+              for (var i = 0; i < cartoes.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                cartoes[i],
+              ]
+            ]);
           })),
       _secao(
           'Conexão',
           claude
               ? 'Dados de acesso à API do Claude.'
-              : 'Sua conta do ChatGPT autoriza o uso do plano.',
+              : gemini
+                  ? 'Dados de acesso à API do Google Gemini.'
+                  : 'Sua conta do ChatGPT autoriza o uso do plano.',
           Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             if (claude) ...[
               _campo('Chave da API', _apiKey, segredo: true),
-              _campo('Modelo', _modelo),
+              _seletorModelo(kAiProviderClaude),
               _campo('Endereço da API', _url),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: H3Cores.info.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: H3Cores.info.withOpacity(0.4)),
+                ),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Icon(Icons.info_outline, size: 18, color: H3Cores.info),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                        'Entrar com a conta Claude (assinatura Pro/Max) não está disponível: a Anthropic só permite esse login no Claude Code e no claude.ai, e proíbe em aplicativos de terceiros. Use uma chave de API do console.anthropic.com.',
+                        style: TextStyle(
+                            fontSize: 12, height: 1.4, color: H3Cores.texto)),
+                  ),
+                ]),
+              ),
+            ] else if (gemini) ...[
+              _campo('Chave da API', _chaveGemini, segredo: true),
+              _seletorModelo(kAiProviderGemini),
             ] else ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -342,7 +493,7 @@ class _IaConfigState extends State<IaConfig> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: SelectableText(_erro,
                         style: TextStyle(fontSize: 12, color: H3Cores.aviso))),
-              _campo('Modelo', _modeloGpt),
+              _seletorModelo(kAiProviderChatGpt),
             ],
           ])),
       _secao(

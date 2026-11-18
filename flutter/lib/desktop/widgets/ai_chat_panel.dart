@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import '../../common.dart';
 import '../../models/ai_agent_model.dart';
+import '../../models/ai_models.dart';
 import '../pages/h3_home_layout.dart';
 
 class AiChatPanel extends StatefulWidget {
@@ -81,7 +82,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
   bool get _needsSetup => model.provider == kAiProviderChatGpt
       ? !model.chatGpt.isSignedIn
-      : model.apiKey.isEmpty;
+      : model.provider == kAiProviderGemini
+          ? model.geminiKey.isEmpty
+          : model.apiKey.isEmpty;
 
   Future<void> _saveSettings() async {
     await model.saveSettings(
@@ -281,6 +284,13 @@ class _AiChatPanelState extends State<AiChatPanel> {
               decoration: _inputDecoration(labelText: translate(label))),
         );
     final hint = TextStyle(fontSize: 12, color: H3Cores.apagado);
+    if (_provider == kAiProviderGemini) {
+      return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+              'O provedor Gemini é configurado em Configurações > IA (chave da API e modelo).',
+              style: hint));
+    }
     return ListView(padding: const EdgeInsets.all(12), children: [
       _providerSelector(),
       const SizedBox(height: 14),
