@@ -1,0 +1,12 @@
+{
+  "name": "h3suporte-acesso-web-poc",
+  "private": true,
+  "type": "module",
+  "description": "Prova de conceito: cliente de acesso remoto do H3 Suporte falando WebSocket com o servidor de conexão",
+  "dependencies": {
+    "blakejs": "^1.2.1",
+    "protobufjs": "^7.4.0",
+    "tweetnacl": "^1.0.3",
+    "ws": "^8.18.0"
+  }
+}
