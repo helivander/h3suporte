@@ -159,7 +159,7 @@ const texto = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0,
  * Contas, senhas e assinaturas ficam na Central; aqui ficam só o catálogo de endereços,
  * os dispositivos e a auditoria.
  */
-export function criarApp({ config, banco, central, versao = async () => null, relogio = Date.now }) {
+export function criarApp({ config, banco, central, versao = async () => null, downloads = async () => null, relogio = Date.now }) {
   const limiteLogin = criarLimite(10, 60_000);
   const limiteAuditoria = criarLimite(120, 60_000);
   const limiteSenhas = criarLimite(30, 60_000);
@@ -420,6 +420,10 @@ ${id}`;
         if (req.method === "POST") await lerCorpo(req, LIMITE_CORPO);
         const url = await versao();
         return url ? enviar(res, 200, { url }) : erro(res, 404, "Nenhuma versão publicada.");
+      }
+      case "GET /api/downloads": {
+        const dados = await downloads();
+        return dados ? enviar(res, 200, dados) : erro(res, 404, "Nenhuma versão publicada.");
       }
       case "POST /api/login":
         return login(req, res);
