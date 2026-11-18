@@ -505,7 +505,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           home: isDesktop
               ? const H3LoginGate(child: DesktopTabPage())
               : isWeb
-                  ? WebHomePage()
+                  ? H3LoginGate(child: WebHomePage())
                   : H3LoginGate(child: HomePage()),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,

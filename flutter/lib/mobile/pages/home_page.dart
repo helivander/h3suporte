@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
+import 'package:flutter_hbb/desktop/pages/h3_conta_painel.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/mobile/pages/server_page.dart';
 import 'package:flutter_hbb/mobile/pages/settings_page.dart';
 import 'package:flutter_hbb/web/settings_page.dart';
@@ -162,14 +165,45 @@ class WebHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     stateGlobal.isInMainPage = true;
     handleUnilink(context);
-    return Scaffold(
-      // backgroundColor: MyTheme.grayBg,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text("${bind.mainGetAppNameSync()} (Preview)"),
-        actions: connectionPage.appBarActions,
+    return H3Estilo(
+      child: Theme(
+        data: H3Cores.tema(Theme.of(context).brightness),
+        child: Builder(
+          builder: (context) => Scaffold(
+            backgroundColor: H3Cores.fundo,
+            appBar: AppBar(
+              centerTitle: true,
+              backgroundColor: H3Cores.painel,
+              title: Text("${bind.mainGetAppNameSync()} (Preview)"),
+              actions: [
+                IconButton(
+                  tooltip: 'Conta',
+                  icon: const Icon(Icons.account_circle_outlined),
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (ctx) => Center(
+                      child: Material(
+                        color: H3Cores.painel,
+                        borderRadius: BorderRadius.circular(16),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 460),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(18),
+                            child: ContaConteudo(
+                                onConfigLocal: () => Navigator.of(ctx).pop()),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                ...connectionPage.appBarActions,
+              ],
+            ),
+            body: connectionPage,
+          ),
+        ),
       ),
-      body: connectionPage,
     );
   }
 

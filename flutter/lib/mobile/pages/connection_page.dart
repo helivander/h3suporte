@@ -4,6 +4,8 @@ import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/common/widgets/connection_page_title.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
+import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -148,14 +150,16 @@ class _ConnectionPageState extends State<ConnectionPage> {
   /// UI for the remote ID TextField.
   /// Search for a peer and connect to it if the id exists.
   Widget _buildRemoteIDTextField() {
+    final h3 = H3Estilo.ativo(context);
     final w = SizedBox(
       height: 84,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
         child: Ink(
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.all(Radius.circular(13)),
+            color: h3 ? H3Cores.painel2 : Theme.of(context).cardColor,
+            borderRadius: BorderRadius.all(Radius.circular(h3 ? 16 : 13)),
+            border: h3 ? Border.all(color: H3Cores.linha) : null,
           ),
           child: Row(
             children: <Widget>[
@@ -230,11 +234,11 @@ class _ConnectionPageState extends State<ConnectionPage> {
                         onChanged: (String text) {
                           _idController.id = text;
                         },
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'WorkSans',
                           fontWeight: FontWeight.bold,
                           fontSize: 30,
-                          color: MyTheme.idColor,
+                          color: h3 ? H3Cores.texto : MyTheme.idColor,
                         ),
                         decoration: InputDecoration(
                           labelText: translate('Remote ID'),
@@ -245,11 +249,11 @@ class _ConnectionPageState extends State<ConnectionPage> {
                             fontSize: 16,
                             color: MyTheme.darkGray,
                           ),
-                          labelStyle: const TextStyle(
+                          labelStyle: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
                             letterSpacing: 0.2,
-                            color: MyTheme.darkGray,
+                            color: h3 ? H3Cores.apagado : MyTheme.darkGray,
                           ),
                         ),
                         inputFormatters: [IDTextInputFormatter()],
@@ -334,22 +338,67 @@ class _ConnectionPageState extends State<ConnectionPage> {
                         },
                         icon: Icon(Icons.clear, color: MyTheme.darkGray)),
                   )),
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_forward,
-                      color: MyTheme.darkGray, size: 45),
-                  onPressed: onConnect,
+              if (h3)
+                Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14))),
+                      onPressed: onConnect,
+                      child: const Icon(Icons.arrow_forward, size: 24),
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_forward,
+                        color: MyTheme.darkGray, size: 45),
+                    onPressed: onConnect,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
       ),
     );
     final child = Column(children: [
-      if (isWebDesktop)
+      if (isWebDesktop && h3)
+        Row(children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: H3Cores.destaque.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child:
+                Icon(Icons.cast_connected, size: 18, color: H3Cores.destaque),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Controlar um computador remoto',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: H3Cores.texto)),
+                Text('Digite o ID do computador que você vai acessar.',
+                    style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+              ],
+            ),
+          ),
+        ]).marginOnly(bottom: 10, top: 15, left: 12)
+      else if (isWebDesktop)
         getConnectionPageTitle(context, true)
             .marginOnly(bottom: 10, top: 15, left: 12),
       w
