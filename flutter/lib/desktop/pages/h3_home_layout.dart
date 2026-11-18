@@ -221,12 +221,18 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       });
     }
 
-    return Container(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 0, 14),
+      child: Container(
       width: compacto ? 68 : 220,
       padding: const EdgeInsets.fromLTRB(10, 18, 10, 14),
       decoration: BoxDecoration(
-        color: H3Cores.painel,
-        border: Border(right: BorderSide(color: H3Cores.linha)),
+        gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [H3Cores.painel2, H3Cores.painel]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: H3Cores.linha),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -257,20 +263,20 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           _conta(compacto),
         ],
       ),
+      ),
     );
   }
 
   Widget _marca(bool compacto) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(compacto ? 0 : 6, 2, 0, 18),
-      child: Row(
-        mainAxisAlignment:
-            compacto ? MainAxisAlignment.center : MainAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(0, 2, 0, 18),
+      child: Column(
         children: [
-          loadIcon(30),
+          loadIcon(compacto ? 30 : 44),
           if (!compacto) ...[
-            const SizedBox(width: 10),
+            const SizedBox(height: 10),
             Text('H3 Suporte',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
