@@ -1116,6 +1116,26 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
         controller: scrollController,
         child: Column(
           children: [
+            if (!bind.isIncomingOnly())
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: EdgeInsets.only(left: _kCardLeftMargin, top: 6),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Segurança',
+                            style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: H3Cores.texto)),
+                        const SizedBox(height: 4),
+                        Text('Controle quem pode acessar este computador e como.',
+                            style: TextStyle(
+                                fontSize: 13, color: H3Cores.apagado)),
+                      ]),
+                ),
+              ),
             _lock(locked, 'Unlock Security Settings', () {
               locked = false;
               setState(() => {});
@@ -2767,46 +2787,111 @@ class _AboutState extends State<_About> {
 
 //#region components
 
+IconData _iconeCard(String titulo) {
+  switch (titulo) {
+    case 'Permissions':
+      return Icons.verified_user_outlined;
+    case 'Password':
+      return Icons.key_outlined;
+    case '2FA':
+      return Icons.phonelink_lock_outlined;
+    case 'ID':
+      return Icons.badge_outlined;
+    case 'Language':
+      return Icons.language;
+    case 'Theme':
+      return Icons.palette_outlined;
+    case 'Service':
+      return Icons.dns_outlined;
+    case 'Account':
+      return Icons.person_outline;
+    case 'Display':
+      return Icons.desktop_windows_outlined;
+    case 'Network':
+      return Icons.lan_outlined;
+    default:
+      return Icons.tune;
+  }
+}
+
 // ignore: non_constant_identifier_names
 Widget _Card(
     {required String title,
     required List<Widget> children,
     List<Widget>? title_suffix}) {
+  final incoming = bind.isIncomingOnly();
   return Row(
     children: [
       Flexible(
         child: SizedBox(
           width: _kCardFixedWidth,
-          child: Card(
-            color: bind.isIncomingOnly() ? null : H3Cores.painel2,
-            elevation: bind.isIncomingOnly() ? null : 0,
-            shape: bind.isIncomingOnly()
+          child: Container(
+            decoration: incoming
                 ? null
-                : RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: H3Cores.linha)),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                        child: Text(
-                      translate(title),
-                      textAlign: TextAlign.start,
-                      style: TextStyle(
-                        fontSize: bind.isIncomingOnly() ? _kTitleFontSize : 16,
-                        fontWeight: bind.isIncomingOnly()
-                            ? null
-                            : FontWeight.w600,
-                      ),
-                    )),
-                    ...?title_suffix
-                  ],
-                ).marginOnly(left: _kContentHMargin, top: 10, bottom: 10),
-                ...children
-                    .map((e) => e.marginOnly(top: 4, right: _kContentHMargin)),
-              ],
-            ).marginOnly(bottom: 10),
+                : BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [H3Cores.painel2, H3Cores.painel]),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: H3Cores.linha)),
+            child: incoming
+                ? Card(
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text(
+                              translate(title),
+                              textAlign: TextAlign.start,
+                              style: TextStyle(fontSize: _kTitleFontSize),
+                            )),
+                            ...?title_suffix
+                          ],
+                        ).marginOnly(
+                            left: _kContentHMargin, top: 10, bottom: 10),
+                        ...children.map(
+                            (e) => e.marginOnly(top: 4, right: _kContentHMargin)),
+                      ],
+                    ).marginOnly(bottom: 10),
+                  )
+                : Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            margin: const EdgeInsets.only(right: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    H3Cores.destaque.withOpacity(0.28),
+                                    H3Cores.destaque.withOpacity(0.08)
+                                  ]),
+                            ),
+                            child: Icon(_iconeCard(title),
+                                size: 18, color: H3Cores.destaque),
+                          ),
+                          Expanded(
+                              child: Text(
+                            translate(title),
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w700),
+                          )),
+                          ...?title_suffix
+                        ],
+                      ).marginOnly(left: _kContentHMargin, top: 14, bottom: 10),
+                      Divider(height: 1, color: H3Cores.linha)
+                          .marginOnly(bottom: 6),
+                      ...children
+                          .map((e) => e.marginOnly(top: 4, right: _kContentHMargin)),
+                    ],
+                  ).marginOnly(bottom: 12),
           ).marginOnly(left: _kCardLeftMargin, top: 15),
         ),
       ),
@@ -3148,6 +3233,71 @@ Widget _lock(
   String label,
   Function() onUnlock,
 ) {
+  if (locked && !bind.isIncomingOnly()) {
+    Future<void> desbloquear() async {
+      final unlockPin = bind.mainGetUnlockPin();
+      if (unlockPin.isEmpty || isUnlockPinDisabled()) {
+        bool checked = await callMainCheckSuperUserPermission();
+        if (checked) onUnlock();
+      } else {
+        checkUnlockPinDialog(unlockPin, onUnlock);
+      }
+    }
+
+    return Row(children: [
+      Flexible(
+        child: SizedBox(
+          width: _kCardFixedWidth,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: H3Cores.aviso.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: H3Cores.aviso.withOpacity(0.45)),
+            ),
+            child: Row(children: [
+              Icon(Icons.lock_outline, size: 26, color: H3Cores.aviso),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                    'Estas configurações estão bloqueadas. Desbloqueie para alterar.',
+                    style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: H3Cores.texto)),
+              ),
+              const SizedBox(width: 12),
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: desbloquear,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(colors: [
+                      H3Cores.destaque,
+                      H3Cores.destaque.withOpacity(0.78)
+                    ]),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.lock_open_outlined,
+                        size: 17, color: H3Cores.destaqueTinta),
+                    const SizedBox(width: 8),
+                    Text(translate(label),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: H3Cores.destaqueTinta)),
+                  ]),
+                ),
+              ),
+            ]),
+          ).marginOnly(left: _kCardLeftMargin, top: 10),
+        ),
+      ),
+    ]);
+  }
   return Offstage(
       offstage: !locked,
       child: Row(
