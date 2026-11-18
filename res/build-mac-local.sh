@@ -3,8 +3,7 @@
 # Assina com o Developer ID do keychain e notariza (ad-hoc se o certificado faltar). Para a entrega oficial a
 # clientes use Actions -> Release. Preparo em docs/desenvolver-interface.md.
 #
-#   res/build-mac-local.sh          usa o motor já compilado (compila se faltar)
-#   res/build-mac-local.sh motor    recompila o motor antes (depois de mudar Rust)
+#   res/build-mac-local.sh          recompila o que mudou (motor e interface) e gera os instaladores
 set -euo pipefail
 cd "$(dirname "$0")/.."
 RAIZ="$PWD"
@@ -23,9 +22,9 @@ for f in flutter/lib/generated_bridge.dart src/bridge_generated.rs; do
 done
 pgrep -f "Products/Debug/H3Suporte" >/dev/null && { echo "Feche o app aberto pelo res/dev-ui.sh antes."; exit 1; }
 
-if [ "${1:-}" = "motor" ] || [ ! -f target/release/liblibrustdesk.dylib ] || [ ! -f target/release/service ]; then
-  MACOSX_DEPLOYMENT_TARGET=12.3 cargo build --locked --features "$FEATURES" --release
-fi
+# Sempre roda o cargo: é incremental e só recompila se algo mudou. Imagens como o ícone da barra de menus
+# (res/mac-tray-*.png) ficam embutidas no motor; sem recompilar, o instalador sairia com o ícone antigo.
+MACOSX_DEPLOYMENT_TARGET=12.3 cargo build --locked --features "$FEATURES" --release
 cp target/release/liblibrustdesk.dylib target/release/librustdesk.dylib
 
 # Mesmo ajuste do res/dev-ui.sh (Xcode 27 recusa alvo abaixo de macOS 12); os arquivos voltam ao git ao sair.
@@ -58,6 +57,8 @@ pkgbuild --analyze --root "$SAIDA/.pkgroot" "$SAIDA/.pkg.plist" >/dev/null
 pkgbuild --root "$SAIDA/.pkgroot" --component-plist "$SAIDA/.pkg.plist" --install-location /Applications \
   --identifier br.com.h3info.h3suporte --version "$VERSAO" ${ID_PKG:+--sign "$ID_PKG" --timestamp} "$BASE.pkg" >/dev/null
 ditto "$APP" "$SAIDA/.dmgroot/H3Suporte.app" && ln -s /Applications "$SAIDA/.dmgroot/Applications"
+# Ícone H3 no volume do dmg (aparece no Finder e na área de trabalho quando montado).
+cp flutter/macos/Runner/AppIcon.icns "$SAIDA/.dmgroot/.VolumeIcon.icns" && SetFile -a C "$SAIDA/.dmgroot"
 rm -f "$BASE.dmg" && hdiutil create -quiet -volname "H3 Suporte" -srcfolder "$SAIDA/.dmgroot" -format UDZO "$BASE.dmg"
 rm -rf "$SAIDA/.pkgroot" "$SAIDA/.dmgroot" "$SAIDA/.pkg.plist"
 
@@ -72,5 +73,15 @@ if [ -n "$ID_APP" ]; then
     echo "Perfil h3suporte-notary ausente: assinado, mas não notarizado."
   fi
 fi
+
+# Ícone H3 também nos arquivos .pkg e .dmg deste Mac (ícone de arquivo não viaja pela internet: vale só aqui).
+VERSAO="$VERSAO" swift - "$SAIDA" "$RAIZ/flutter/macos/Runner/AppIcon.icns" <<'SW' 2>/dev/null || true
+import AppKit
+let a = CommandLine.arguments
+let icone = NSImage(contentsOfFile: a[2])!
+for ext in ["pkg", "dmg"] {
+  NSWorkspace.shared.setIcon(icone, forFile: "\(a[1])/h3suporte-\(ProcessInfo.processInfo.environment["VERSAO"] ?? "")-local.\(ext)", options: [])
+}
+SW
 
 echo; echo "Prontos:"; ls -lh "$BASE.pkg" "$BASE.dmg"
