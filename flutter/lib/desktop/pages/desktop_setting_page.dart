@@ -2461,6 +2461,39 @@ class _DisplayState extends State<_Display> {
       setState(() {});
     }
 
+    if (!bind.isIncomingOnly()) {
+      return GestureDetector(
+        onTap: isOptFixed ? null : () => onChanged(!value),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 3),
+          padding: const EdgeInsets.fromLTRB(14, 4, 8, 4),
+          decoration: BoxDecoration(
+            color: H3Cores.fundo,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: H3Cores.linha),
+          ),
+          child: Row(children: [
+            Expanded(
+              child: Text(translate(label),
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: isOptFixed ? H3Cores.apagado : H3Cores.texto)),
+            ),
+            Transform.scale(
+              scale: 0.82,
+              child: Switch(
+                value: value,
+                activeColor: Colors.white,
+                activeTrackColor: H3Cores.destaque,
+                inactiveTrackColor: H3Cores.linha2,
+                inactiveThumbColor: Colors.white,
+                onChanged: isOptFixed ? null : onChanged,
+              ),
+            ),
+          ]),
+        ),
+      );
+    }
     return GestureDetector(
         child: Row(
           children: [
@@ -2498,7 +2531,43 @@ class _AccountState extends State<_Account> {
       controller: scrollController,
       children: [
         Obx(() => gFFI.userModel.userName.value.isEmpty
-            ? _Card(title: 'Account', children: [accountAction()])
+            ? (bind.isIncomingOnly()
+                ? _Card(title: 'Account', children: [accountAction()])
+                : Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            H3Cores.destaque.withOpacity(0.14),
+                            H3Cores.painel
+                          ]),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: H3Cores.linha2),
+                    ),
+                    child: Column(children: [
+                      Icon(Icons.account_circle_outlined,
+                          size: 56, color: H3Cores.destaque),
+                      const SizedBox(height: 14),
+                      Text('Entre na sua conta H3 Suporte',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: H3Cores.texto)),
+                      const SizedBox(height: 6),
+                      Text(
+                          'Guarde seus computadores na conta e conecte com um clique, de qualquer lugar.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 13, color: H3Cores.apagado)),
+                      const SizedBox(height: 18),
+                      ElevatedButton(
+                          style: _estiloBotaoH3(),
+                          onPressed: () => loginDialog(),
+                          child: Text(translate('Login'))),
+                    ]),
+                  ))
             : ContaConteudo(
                 onConfigLocal: () =>
                     DesktopSettingPage.switch2page(SettingsTabKey.general))),
@@ -2787,7 +2856,7 @@ class _About extends StatefulWidget {
 
 class _AboutState extends State<_About> {
   Widget _infoTile(IconData icone, String rotulo, String valor,
-      {bool mono = false}) {
+      {bool mono = false, bool copiar = false}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2827,6 +2896,21 @@ class _AboutState extends State<_About> {
             ),
           ]),
         ),
+        if (copiar)
+          Tooltip(
+            message: 'Copiar',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: valor));
+                showToast(translate('Copied'));
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(Icons.copy_rounded, size: 17, color: H3Cores.apagado),
+              ),
+            ),
+          ),
       ]),
     );
   }
@@ -2915,13 +2999,14 @@ class _AboutState extends State<_About> {
             const gap = 14.0;
             final cols = caixa.maxWidth >= 640 ? 2 : 1;
             final itens = <Widget>[
-              _infoTile(Icons.tag, translate('Version'), version),
+              _infoTile(Icons.tag, translate('Version'), version, copiar: true),
               _infoTile(Icons.event_outlined, translate('Build Date'), buildDate),
-              _infoTile(Icons.fingerprint, translate('ID'), myId),
+              _infoTile(Icons.fingerprint, translate('ID'), myId, copiar: true),
               if (!isWeb)
                 _infoTile(Icons.verified_outlined, translate('Fingerprint'),
                     fingerprint,
-                    mono: true),
+                    mono: true,
+                    copiar: true),
             ];
             final linhas = <Widget>[];
             for (var i = 0; i < itens.length; i += cols) {
@@ -3379,6 +3464,45 @@ Widget _Radio<T>(BuildContext context,
           }
         }
       : null;
+  if (!bind.isIncomingOnly()) {
+    final on = value == groupValue;
+    final ativo = onChange2 != null;
+    return GestureDetector(
+      onTap: () => onChange2?.call(value),
+      child: Opacity(
+        opacity: ativo ? 1 : 0.55,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            gradient: on
+                ? LinearGradient(colors: [
+                    H3Cores.destaque.withOpacity(0.18),
+                    H3Cores.destaque.withOpacity(0.05)
+                  ])
+                : null,
+            color: on ? null : H3Cores.fundo,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: on ? H3Cores.destaque.withOpacity(0.7) : H3Cores.linha,
+                width: on ? 1.4 : 1),
+          ),
+          child: Row(children: [
+            Expanded(
+              child: Text(translate(label),
+                  overflow: autoNewLine ? null : TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: on ? FontWeight.w600 : FontWeight.w500,
+                      color: on ? H3Cores.texto : H3Cores.apagado)),
+            ),
+            Icon(on ? Icons.check_circle : Icons.circle_outlined,
+                size: 20, color: on ? H3Cores.destaque : H3Cores.linha2),
+          ]),
+        ),
+      ),
+    );
+  }
   return GestureDetector(
     child: Row(
       children: [

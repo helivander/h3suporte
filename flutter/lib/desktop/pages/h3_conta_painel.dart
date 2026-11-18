@@ -80,85 +80,154 @@ class _ContaConteudoState extends State<ContaConteudo> {
     final ativa = estado == 'ATIVA';
     final papel = info['papel'] == 'TITULAR' ? 'Titular' : 'Membro';
     final fim = a['fim_em'] ?? a['pago_ate'];
-    return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: H3Cores.painel,
+    BoxDecoration caixa() => BoxDecoration(
+          gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [H3Cores.painel2, H3Cores.painel]),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: H3Cores.linha2),
-        ),
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Obx(() {
-                final nome = u.displayNameOrUserName;
-                return Row(children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: H3Cores.destaque,
-                    child: Text(
-                        nome.isEmpty ? '?' : nome.substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: H3Cores.destaqueTinta,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(nome,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: H3Cores.texto)),
-                        Text(u.userName.value,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontSize: 12, color: H3Cores.apagado)),
-                      ],
+          border: Border.all(color: H3Cores.linha),
+        );
+    Widget secao(String titulo, IconData icone, List<Widget> filhos) =>
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: caixa(),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            H3Cores.destaque.withOpacity(0.28),
+                            H3Cores.destaque.withOpacity(0.08)
+                          ]),
                     ),
+                    child: Icon(icone, size: 18, color: H3Cores.destaque),
                   ),
-                  _selo(papel, H3Cores.info),
-                ]);
-              }),
-              _titulo('Plano'),
-              _linha('Plano', '${a['plano'] ?? '—'}'),
-              _linha('Situação', ativa ? 'Ativa' : (estado.isEmpty ? '—' : estado),
-                  cor: ativa ? H3Cores.ok : H3Cores.aviso),
-              _linha('Válido até', fim == null ? 'Sem data de término' : _data(fim)),
-              _titulo('Uso em tempo real'),
-              _barra(Icons.swap_horiz, 'Acessos remotos',
-                  _uso?['acessos_em_uso'], a['limite_acessos']),
-              _barra(Icons.devices_outlined, 'Computadores',
-                  _uso?['dispositivos'], a['limite_dispositivos']),
-              _barra(Icons.group_outlined, 'Contas da equipe', _uso?['contas'],
-                  a['limite_contas']),
-              if (_falhou)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text('Sem conexão com o servidor. Tentando de novo…',
-                      style: TextStyle(fontSize: 11, color: H3Cores.aviso)),
-                ),
-              const SizedBox(height: 16),
-              _botaoPrincipal(
-                  Icons.workspace_premium_outlined,
-                  'Gerenciar assinatura no portal',
-                  'Plano, pagamentos e equipe',
-                  () => launchUrl(Uri.parse(_portal),
-                      mode: LaunchMode.externalApplication)),
-              const SizedBox(height: 10),
-              _botaoSecundario(Icons.tune, 'Configurações deste computador',
-                  widget.onConfigLocal),
-              const SizedBox(height: 10),
-              _botaoSecundario(Icons.logout, 'Sair da conta', () async {
-                await gFFI.userModel.logOut();
-              }, cor: const Color(0xFFD64545)),
-            ],
+                  Text(titulo,
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: H3Cores.texto)),
+                ]),
+                const SizedBox(height: 10),
+                Divider(height: 1, color: H3Cores.linha),
+                const SizedBox(height: 8),
+                ...filhos,
+              ]),
+        );
+
+    final perfil = Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [H3Cores.destaque.withOpacity(0.16), H3Cores.painel]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: H3Cores.linha2),
+      ),
+      child: Obx(() {
+        final nome = u.displayNameOrUserName;
+        return Row(children: [
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: H3Cores.destaque,
+            child: Text(
+                nome.isEmpty ? '?' : nome.substring(0, 1).toUpperCase(),
+                style: TextStyle(
+                    fontSize: 26,
+                    color: H3Cores.destaqueTinta,
+                    fontWeight: FontWeight.bold)),
           ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(nome,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: H3Cores.texto)),
+              const SizedBox(height: 2),
+              Text('@${u.userName.value}',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+              const SizedBox(height: 10),
+              Wrap(spacing: 8, runSpacing: 6, children: [
+                _selo(papel, H3Cores.info),
+                _selo(ativa ? 'Assinatura ativa' : (estado.isEmpty ? 'Sem plano' : estado),
+                    ativa ? H3Cores.ok : H3Cores.aviso),
+              ]),
+            ]),
+          ),
+        ]);
+      }),
     );
+
+    final plano = secao('Plano', Icons.workspace_premium_outlined, [
+      _linha('Plano', '${a['plano'] ?? '—'}'),
+      _linha('Situação', ativa ? 'Ativa' : (estado.isEmpty ? '—' : estado),
+          cor: ativa ? H3Cores.ok : H3Cores.aviso),
+      _linha('Válido até', fim == null ? 'Sem data de término' : _data(fim)),
+    ]);
+    final uso = secao('Uso em tempo real', Icons.speed_outlined, [
+      _barra(Icons.swap_horiz, 'Acessos remotos', _uso?['acessos_em_uso'],
+          a['limite_acessos']),
+      _barra(Icons.devices_outlined, 'Computadores', _uso?['dispositivos'],
+          a['limite_dispositivos']),
+      _barra(Icons.group_outlined, 'Contas da equipe', _uso?['contas'],
+          a['limite_contas']),
+      if (_falhou)
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text('Sem conexão com o servidor. Tentando de novo…',
+              style: TextStyle(fontSize: 11, color: H3Cores.aviso)),
+        ),
+    ]);
+
+    return LayoutBuilder(builder: (context, c) {
+      final largo = c.maxWidth >= 720;
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        perfil,
+        const SizedBox(height: 16),
+        if (largo)
+          IntrinsicHeight(
+            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Expanded(child: plano),
+              const SizedBox(width: 16),
+              Expanded(child: uso),
+            ]),
+          )
+        else ...[plano, const SizedBox(height: 16), uso],
+        const SizedBox(height: 16),
+        _botaoPrincipal(
+            Icons.workspace_premium_outlined,
+            'Gerenciar assinatura no portal',
+            'Plano, pagamentos e equipe',
+            () => launchUrl(Uri.parse(_portal),
+                mode: LaunchMode.externalApplication)),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(
+              child: _botaoSecundario(Icons.tune,
+                  'Configurações deste computador', widget.onConfigLocal)),
+          const SizedBox(width: 12),
+          Expanded(
+              child: _botaoSecundario(Icons.logout, 'Sair da conta', () async {
+            await gFFI.userModel.logOut();
+          }, cor: const Color(0xFFD64545))),
+        ]),
+      ]);
+    });
   }
 
   Widget _botaoPrincipal(
