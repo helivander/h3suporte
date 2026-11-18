@@ -244,7 +244,7 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
           children.add(const _General());
           break;
         case SettingsTabKey.safety:
-          children.add(_estreita(const _Safety()));
+          children.add(const _Safety());
           break;
         case SettingsTabKey.network:
           children.add(_estreita(const _Network()));
@@ -1146,13 +1146,13 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
             }),
             preventMouseKeyBuilder(
               block: locked,
-              child: Column(children: [
+              child: _colunasSimples([
                 permissions(context),
+                more(context),
                 password(context),
                 _Card(title: '2FA', children: [tfa()]),
                 if (!isChangeIdDisabled())
                   _Card(title: 'ID', children: [changeId()]),
-                more(context),
               ]),
             ),
           ],
@@ -2985,6 +2985,23 @@ class _AboutState extends State<_About> {
 //#endregion
 
 //#region components
+
+/// Como [_duasColunas], mas sem rolagem própria: para uso dentro de outra rolagem.
+Widget _colunasSimples(List<Widget> itens) {
+  if (bind.isIncomingOnly()) return Column(children: itens);
+  return LayoutBuilder(builder: (context, caixa) {
+    if (caixa.maxWidth < 900) return Column(children: itens);
+    final esq = <Widget>[];
+    final dir = <Widget>[];
+    for (var i = 0; i < itens.length; i++) {
+      (i.isEven ? esq : dir).add(itens[i]);
+    }
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(child: Column(children: esq)),
+      Expanded(child: Column(children: dir)),
+    ]).paddingOnly(right: 15);
+  });
+}
 
 /// Em janelas largas distribui os cartões em duas colunas; nas estreitas (ou no modo só receber) mantém a lista.
 Widget _duasColunas(ScrollController c, List<Widget> itens) {
