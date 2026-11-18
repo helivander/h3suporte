@@ -597,8 +597,11 @@ class _PopupMenu<T> extends StatelessWidget {
     final PopupMenuThemeData popupMenuTheme = PopupMenuTheme.of(context);
 
     for (int i = 0; i < route.items.length; i += 1) {
-      final double start = (i + 1) * unit;
-      final double end = (start + 1.5 * unit).clamp(0.0, 1.0);
+      final double start =
+          route.animado ? (0.12 + i * 0.05).clamp(0.0, 0.7) : (i + 1) * unit;
+      final double end = route.animado
+          ? (start + 0.4).clamp(0.0, 1.0)
+          : (start + 1.5 * unit).clamp(0.0, 1.0);
       final CurvedAnimation opacity = CurvedAnimation(
         parent: route.animation!,
         curve: Interval(start, end),
@@ -653,6 +656,37 @@ class _PopupMenu<T> extends StatelessWidget {
         ),
       ),
     );
+
+    if (route.animado) {
+      final curva = CurvedAnimation(
+          parent: route.animation!,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeIn);
+      return AnimatedBuilder(
+        animation: curva,
+        builder: (BuildContext context, Widget? child) {
+          final v = curva.value;
+          return Opacity(
+            opacity: v.clamp(0.0, 1.0),
+            child: Transform.translate(
+              offset: Offset(0, (1 - v) * 10),
+              child: Transform.scale(
+                scale: 0.92 + 0.08 * v,
+                alignment: Alignment.topLeft,
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: Material(
+          shape: route.shape ?? popupMenuTheme.shape,
+          color: route.color ?? popupMenuTheme.color,
+          type: MaterialType.card,
+          elevation: route.elevation ?? popupMenuTheme.elevation ?? 8.0,
+          child: child,
+        ),
+      );
+    }
 
     return AnimatedBuilder(
       animation: route.animation!,
@@ -900,6 +934,7 @@ class _PopupMenuRoute<T> extends PopupRoute<T> {
     this.color,
     required this.capturedThemes,
     this.constraints,
+    this.animado = false,
   }) : itemSizes = List<Size?>.filled(items.length, null);
 
   final RelativeRect position;
@@ -914,6 +949,7 @@ class _PopupMenuRoute<T> extends PopupRoute<T> {
   final Color? color;
   final CapturedThemes capturedThemes;
   final BoxConstraints? constraints;
+  final bool animado;
 
   @override
   Animation<double> createAnimation() {
@@ -925,7 +961,8 @@ class _PopupMenuRoute<T> extends PopupRoute<T> {
   }
 
   @override
-  Duration get transitionDuration => _kMenuDuration;
+  Duration get transitionDuration =>
+      animado ? const Duration(milliseconds: 240) : _kMenuDuration;
 
   @override
   bool get barrierDismissible => true;
@@ -1152,6 +1189,7 @@ Future<T?> showMenu<T>({
   Color? color,
   bool useRootNavigator = false,
   BoxConstraints? constraints,
+  bool animado = false,
 }) {
   assert(items.isNotEmpty);
   assert(debugCheckHasMaterialLocalizations(context));
@@ -1183,6 +1221,7 @@ Future<T?> showMenu<T>({
     capturedThemes:
         InheritedTheme.capture(from: context, to: navigator.context),
     constraints: constraints,
+    animado: animado,
   ));
 }
 

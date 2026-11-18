@@ -644,6 +644,7 @@ class _PeerCardState extends State<_PeerCard>
               side: BorderSide(color: H3Cores.linha2))
           : null,
       constraints: h3 ? const BoxConstraints(minWidth: 230) : null,
+      animado: h3,
     );
   }
 
