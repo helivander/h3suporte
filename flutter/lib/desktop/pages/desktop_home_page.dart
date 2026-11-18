@@ -12,6 +12,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
+import 'package:flutter_hbb/desktop/pages/h3_este_computador.dart';
 import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/desktop/widgets/update_progress.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
@@ -187,8 +188,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!isOutgoingOnly) buildPresetPasswordWarning(),
-          if (!isOutgoingOnly) buildIDBoard(context),
-          if (!isOutgoingOnly) buildPasswordBoard(context),
+          if (!isOutgoingOnly) const H3EsteComputador(),
         ],
       ),
       helpCards: () => buildHelpCards(stateGlobal.updateUrl.value),
