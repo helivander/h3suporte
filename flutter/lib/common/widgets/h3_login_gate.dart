@@ -48,7 +48,7 @@ class _H3LoginGateState extends State<H3LoginGate> {
       if (bind.isDisableAccount() || _logado) return widget.child;
       final cores = Theme.of(context).colorScheme;
       return Scaffold(
-        backgroundColor: cores.background,
+        backgroundColor: cores.surface,
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 360),

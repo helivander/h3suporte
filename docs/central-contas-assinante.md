@@ -374,3 +374,10 @@ Plano sem `limiteAcessos` não recusa nenhum acesso.
 
 Limites conhecidos: servidor-api fora do ar, lento (8 s) ou sem a rota não impede o acesso (o suporte não para por causa
 da API); o cliente web não passa por essa checagem (o núcleo dele fica fora deste repositório).
+
+## Tela de login obrigatória no app
+
+O app (desktop e celular) abre travado numa tela "Entrar" (`flutter/lib/common/widgets/h3_login_gate.dart`, ligada em
+`main.dart`) e abre o diálogo de login sozinho. O restante do sistema só aparece depois de entrar numa conta cuja
+assinatura está ativa, pois o servidor-api só devolve sessão nesse caso. Se a sessão cai (401 no `currentUser`,
+logout), a tela de login volta. Fica de fora a versão web e builds com a conta desativada (`isDisableAccount`).
