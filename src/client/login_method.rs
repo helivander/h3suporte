@@ -60,7 +60,9 @@ mod tests {
     #[test]
     fn session_creation_initializes_login_method() {
         let remote_id = hbb_common::config::LocalConfig::get_remote_id();
+        let user_info = hbb_common::config::LocalConfig::get_option("user_info");
         for method in ["", "request-approval"] {
+            hbb_common::config::LocalConfig::set_option("user_info".to_owned(), r#"{"name":"teste"}"#.to_owned());
             let session_id = uuid::Uuid::new_v4();
             let result = crate::flutter_ffi::session_add_sync(
                 session_id,
@@ -95,6 +97,7 @@ mod tests {
             crate::flutter::sessions::remove_session_by_session_id(&monitor_session_id);
             let session = crate::flutter::sessions::remove_session_by_session_id(&session_id);
             hbb_common::config::LocalConfig::set_remote_id(&remote_id);
+            hbb_common::config::LocalConfig::set_option("user_info".to_owned(), user_info.clone());
             assert!(result.0.is_empty(), "{}", result.0);
             assert!(monitor_result.0.is_empty(), "{}", monitor_result.0);
             assert_eq!(methods, [Some(method.to_owned()), Some(method.to_owned())]);
