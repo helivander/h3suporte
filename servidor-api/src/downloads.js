@@ -1,10 +1,10 @@
-// Instaladores da última versão estável, para a Central montar os links de download sem ficar velha.
-// Mesmo critério do atualizador (versao.js): release estável com a lista assinada. O build com IA (-ia)
-// nunca é listado: ele é só para o administrador e não vai para o release público.
+// Instaladores da última versão publicada, para a Central montar os links de download sem ficar velha.
+// Diferente do atualizador (versao.js), que exige release estável com a lista assinada, aqui vale o release mais recente
+// que não seja rascunho e tenha instaladores (os releases do CI saem como pré-lançamento, ex.: v1.5.3-13). O build com IA
+// (-ia) nunca é listado: ele é só para o administrador e não vai para o release público.
 const SUCESSO_MS = 10 * 60_000;
 const FALHA_MS = 60_000;
-const TAG_ESTAVEL = /^v\d+\.\d+\.\d+$/;
-const ARQUIVOS_ASSINADOS = ["rustdesk-update.json", "rustdesk-update.json.sig"];
+const TAG_VERSAO = /^v\d+\.\d+\.\d+(-\d+)?$/;
 const PLATAFORMAS = { exe: "windows", msi: "windows", dmg: "macos", pkg: "macos", deb: "linux", rpm: "linux", apk: "android" };
 const INSTALADOR = /^h3suporte-.+\.(exe|msi|dmg|pkg|deb|rpm|apk)$/i;
 const COM_IA = /-ia\.[a-z]+$/i;
@@ -16,30 +16,26 @@ export function criarDownloads({ repo, token = "", buscar = fetch, relogio = Dat
   async function consultar() {
     const headers = { accept: "application/vnd.github+json", "user-agent": "h3suporte-servidor-api" };
     if (token) headers.authorization = `Bearer ${token}`;
-    const resp = await buscar(`https://api.github.com/repos/${repo}/releases/latest`, {
+    const resp = await buscar(`https://api.github.com/repos/${repo}/releases?per_page=15`, {
       headers,
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (resp.status === 404) return null;
     if (!resp.ok) throw new Error(`GitHub respondeu ${resp.status}`);
-    const release = await resp.json();
-    const assets = release.assets ?? [];
-    const nomes = new Set(assets.map((a) => a.name));
-    const pronto =
-      !release.draft &&
-      !release.prerelease &&
-      TAG_ESTAVEL.test(release.tag_name ?? "") &&
-      ARQUIVOS_ASSINADOS.every((n) => nomes.has(n));
-    if (!pronto) return null;
-    const arquivos = assets
-      .filter((a) => INSTALADOR.test(a.name) && !COM_IA.test(a.name) && a.browser_download_url)
-      .map((a) => ({
-        nome: a.name,
-        plataforma: PLATAFORMAS[a.name.split(".").pop().toLowerCase()],
-        tipo: a.name.split(".").pop().toLowerCase(),
-        tamanho: a.size ?? null,
-        url: a.browser_download_url,
-      }));
+    const instaladores = (release) =>
+      (release.assets ?? []).filter((a) => INSTALADOR.test(a.name) && !COM_IA.test(a.name) && a.browser_download_url);
+    // A API lista do mais novo para o mais antigo.
+    const release = (await resp.json()).find(
+      (r) => !r.draft && TAG_VERSAO.test(r.tag_name ?? "") && instaladores(r).length > 0,
+    );
+    if (!release) return null;
+    const arquivos = instaladores(release).map((a) => ({
+      nome: a.name,
+      plataforma: PLATAFORMAS[a.name.split(".").pop().toLowerCase()],
+      tipo: a.name.split(".").pop().toLowerCase(),
+      tamanho: a.size ?? null,
+      url: a.browser_download_url,
+    }));
     return {
       versao: release.tag_name.slice(1),
       tag: release.tag_name,

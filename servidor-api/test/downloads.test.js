@@ -15,11 +15,11 @@ const assets = [
   asset("h3suporte-1.5.4-macos-apple-silicon.pkg"),
   asset("SHA256SUMS.txt"),
 ];
-const github = (release, status = 200) => async () =>
-  new Response(JSON.stringify(release), { status, headers: { "content-type": "application/json" } });
+const github = (releases, status = 200) => async () =>
+  new Response(JSON.stringify(releases), { status, headers: { "content-type": "application/json" } });
 
-test("lista só os instaladores públicos da última versão estável, sem o -ia", async () => {
-  const dados = await criarDownloads({ repo: "h3/app", buscar: github({ tag_name: "v1.5.4", assets }) })();
+test("lista só os instaladores públicos da última versão, sem o -ia", async () => {
+  const dados = await criarDownloads({ repo: "h3/app", buscar: github([{ tag_name: "v1.5.4", assets }]) })();
   assert.equal(dados.versao, "1.5.4");
   assert.deepEqual(
     dados.arquivos.map((a) => [a.nome, a.plataforma, a.tipo]),
@@ -32,13 +32,27 @@ test("lista só os instaladores públicos da última versão estável, sem o -ia
   assert.equal(dados.arquivos[0].url, "https://dl/h3suporte-1.5.4-x86_64.exe");
 });
 
-test("sem release estável assinado não há downloads", async () => {
-  for (const release of [
-    { tag_name: "v1.5.4", assets: assets.slice(2) },
-    { tag_name: "v1.5.4", prerelease: true, assets },
-    { tag_name: "v1.5.3-2", assets },
+test("vale o pré-lançamento mais recente com instaladores, sem exigir a lista assinada", async () => {
+  const dados = await criarDownloads({
+    repo: "h3/app",
+    buscar: github([
+      { tag_name: "v1.5.3-14", draft: true, assets },
+      { tag_name: "v1.5.3-13", prerelease: true, assets: [asset("h3suporte-1.5.3-x86_64.exe"), asset("h3suporte-1.5.3-x86_64.dmg")] },
+      { tag_name: "v1.5.3-12", prerelease: true, assets },
+    ]),
+  })();
+  assert.equal(dados.versao, "1.5.3-13");
+  assert.deepEqual(dados.arquivos.map((a) => a.nome), ["h3suporte-1.5.3-x86_64.exe", "h3suporte-1.5.3-x86_64.dmg"]);
+});
+
+test("sem release com instaladores não há downloads", async () => {
+  for (const releases of [
+    [],
+    [{ tag_name: "v1.5.3-8", prerelease: true, assets: [asset("rustdesk.sbom.json")] }],
+    [{ tag_name: "v1.5.4", draft: true, assets }],
+    [{ tag_name: "nightly", assets }],
   ]) {
-    assert.equal(await criarDownloads({ repo: "h3/app", buscar: github(release) })(), null);
+    assert.equal(await criarDownloads({ repo: "h3/app", buscar: github(releases) })(), null);
   }
 });
 

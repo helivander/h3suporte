@@ -42,7 +42,7 @@ Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
 | `POST /api/audit/{conn,file,alarm}`                     | Guarda a auditoria (64 KB por registro, 120/min por IP)                                         |
 | `GET /api/login-options`                                | `[]` (sem login por Google/Microsoft)                                                           |
 | `GET/POST /api/versao`                                  | Atualizador do app: `{url}` do último release estável do GitHub com a lista assinada; `404` sem versão |
-| `GET /api/downloads`                                    | Instaladores da última versão estável (`versao`, `tag`, `pagina`, `arquivos[]` com `nome`, `plataforma`, `tipo`, `tamanho`, `url`), sem o build `-ia`; cache de 10 min; `404` sem versão |
+| `GET /api/downloads`                                    | Instaladores da última versão publicada, inclusive pré-lançamento do CI (`versao`, `tag`, `pagina`, `arquivos[]` com `nome`, `plataforma`, `tipo`, `tamanho`, `url`), sem o build `-ia`; cache de 10 min; `404` sem versão |
 | `GET /saude`                                            | `{"ok":true}`                                                                                   |
 
 Sessão do portal da Central: um token `cw_…` (aba "Acesso remoto" do portal) não passa pelo `/api/login` daqui. Na
