@@ -10,12 +10,36 @@ const kAiOptionGeminiModel = 'ai-agent-gemini-model';
 const kAiDefaultGeminiModel = 'gemini-2.5-pro';
 const kGeminiBase = 'https://generativelanguage.googleapis.com/v1beta';
 
-/// Modelos sugeridos enquanto a lista do provedor não é carregada.
+/// Modelos sugeridos (do mais indicado para o mais simples) enquanto a lista do provedor não é carregada.
 const kAiSuggestedModels = {
-  'claude': ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
-  'chatgpt': ['gpt-6.1-sol'],
-  'gemini': ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-3-pro-preview'],
+  'claude': ['claude-fable-5-2', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
+  'chatgpt': ['gpt-6.1-sol', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'],
+  'gemini': [
+    'gemini-3.8-flash',
+    'gemini-3.1-pro-preview',
+    'gemini-3-flash-preview',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+  ],
 };
+
+/// Deixa na lista só os modelos de texto que servem ao agente: o Gemini devolve também imagem, voz, embeddings e
+/// modelos abertos. Os mais novos vêm primeiro.
+List<String> filtrarModelosAi(String provider, List<String> ids) {
+  if (provider != 'gemini') return ids;
+  final fora = RegExp(r'tts|image|embed|live|audio|robotics|computer-use|learnlm|aqa|veo|imagen|gemma|native');
+  final r = ids.where((m) => m.startsWith('gemini-') && !fora.hasMatch(m)).toSet().toList();
+  int ordem(String m) {
+    final v = RegExp(r'gemini-(\d+)(?:\.(\d+))?').firstMatch(m);
+    return v == null ? 0 : int.parse(v[1]!) * 100 + int.parse(v[2] ?? '0');
+  }
+
+  r.sort((a, b) {
+    final c = ordem(b).compareTo(ordem(a));
+    return c != 0 ? c : a.compareTo(b);
+  });
+  return r;
+}
 
 /// Busca os modelos disponíveis no provedor. Lança uma mensagem curta em caso de erro.
 Future<List<String>> fetchAiModels(String provider,
@@ -48,8 +72,9 @@ Future<List<String>> fetchAiModels(String provider,
       ids.add(m['id'].toString());
     }
   }
-  if (ids.isEmpty) throw 'Nenhum modelo retornado.';
-  return ids;
+  final lista = filtrarModelosAi(provider, ids);
+  if (lista.isEmpty) throw 'Nenhum modelo retornado.';
+  return lista;
 }
 
 dynamic _limpaSchema(dynamic v) {

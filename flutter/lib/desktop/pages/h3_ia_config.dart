@@ -120,6 +120,19 @@ class _IaConfigState extends State<IaConfig> {
           ? _modeloGpt
           : _modelo;
 
+  /// Ao escolher uma IA que já tem chave, carrega a lista dela sem precisar clicar em atualizar.
+  void _carregarSeFaltar(String p) {
+    if (p == kAiProviderChatGpt || _listas.containsKey(p) || _carregandoModelos) return;
+    final chave = p == kAiProviderGemini ? _chaveGemini.text : _apiKey.text;
+    if (chave.trim().isNotEmpty) _carregarModelos(p);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarSeFaltar(_provedor);
+  }
+
   Future<void> _carregarModelos(String p) async {
     setState(() {
       _carregandoModelos = true;
@@ -211,10 +224,13 @@ class _IaConfigState extends State<IaConfig> {
     final on = _provedor == p;
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: () => setState(() {
-        _provedor = p;
-        _salvo = false;
-      }),
+      onTap: () {
+        setState(() {
+          _provedor = p;
+          _salvo = false;
+        });
+        _carregarSeFaltar(p);
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
