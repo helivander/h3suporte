@@ -36,5 +36,9 @@ export function lerConfig(env = process.env) {
     // Releases do app para o atualizador; o token é opcional (só aumenta o limite de consultas ao GitHub).
     repoGithub: (env.GITHUB_REPO || "helivander/h3suporte").trim(),
     tokenGithub: (env.GITHUB_TOKEN ?? "").trim(),
+    // Instaladores com IA: quem os vê (nomes dos planos, separados por vírgula) e onde ficam extraídos. Precisa de
+    // GITHUB_TOKEN com leitura de Actions para baixar os artefatos do workflow.
+    planosIa: (env.PLANOS_IA || "DEV").split(",").map((p) => p.trim().toLowerCase()).filter(Boolean),
+    dirIa: env.DIR_IA || "dados/ia",
   };
 }

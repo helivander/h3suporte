@@ -4,6 +4,7 @@ import { abrirBanco } from "./banco.js";
 import { criarCentral } from "./central.js";
 import { lerConfig } from "./config.js";
 import { criarDownloads } from "./downloads.js";
+import { criarIa } from "./ia.js";
 import { criarVersao } from "./versao.js";
 
 const config = lerConfig();
@@ -11,7 +12,8 @@ const banco = abrirBanco(config.banco);
 const central = criarCentral({ url: config.central, credencial: config.credencial, timeoutMs: config.timeoutMs });
 const versao = criarVersao({ repo: config.repoGithub, token: config.tokenGithub });
 const downloads = criarDownloads({ repo: config.repoGithub, token: config.tokenGithub });
-const servidor = createServer(criarApp({ config, banco, central, versao, downloads }));
+const ia = criarIa({ repo: config.repoGithub, token: config.tokenGithub, dir: config.dirIa });
+const servidor = createServer(criarApp({ config, banco, central, versao, downloads, ia }));
 servidor.requestTimeout = 30_000;
 servidor.headersTimeout = 15_000;
 

@@ -9,7 +9,7 @@ O H3 Suporte tem **duas versões do app de acesso (Windows e macOS)**. A diferen
 | Arquivo (macOS) | `h3suporte-<versão>-<arch>.dmg` e `h3suporte-<versão>-macos-<apple-silicon\|intel>.pkg` | os mesmos com `-ia` antes da extensão (`-aarch64-ia.dmg`, `-macos-apple-silicon-ia.pkg`) |
 | Botão do robô na barra da sessão | não existe | existe |
 | Painel do assistente (`AiChatPanel`) | não é montado na sessão | montado |
-| Quem baixa | qualquer cliente com assinatura | **somente administrador da Central** |
+| Quem baixa | qualquer cliente com assinatura | **somente assinatura com plano DEV** (`PLANOS_IA` no servidor-api) |
 | Onde fica o instalador | release público do GitHub + lista assinada do atualizador | **só artefato privado do workflow** (`h3suporte-ia-windows-x86_64`, `h3suporte-ia-macos-aarch64`, `h3suporte-ia-macos-x86_64`; 30 dias) |
 | Atualização automática | sim, pela lista assinada | **não**: o build `-ia` nunca procura atualização |
 
@@ -37,14 +37,15 @@ Gerar as duas versões: Actions → **Release (build + publish)** como sempre; o
 O código da Central (portal e painel do administrador) fica fora deste repositório. A regra que ele deve seguir:
 
 1. **Download padrão** (`h3suporte-<versão>-x86_64.exe`/`.msi`): visível para titular, membro e parceiro, como hoje.
-2. **Download com IA** (`...-ia.exe`/`.msi`): **só aparece e só baixa com sessão de administrador da Central**.
-   Titular, membro, parceiro e visitante não veem o botão, o link nem o nome do arquivo.
-3. A checagem é **no servidor**: esconder o botão não basta. A rota de download do `-ia` responde `403` para quem não
-   for administrador e não revela se o arquivo existe.
+2. **Download com IA** (`...-ia.exe`/`.msi`/`.dmg`/`.pkg`): **só aparece e só baixa com sessão de uma assinatura do plano DEV**.
+   Os demais planos e visitantes não veem o botão, o link nem o nome do arquivo. Quem serve é o `servidor-api`
+   (`GET /api/downloads-ia`, veja o README dele); a Central só consome essas rotas.
+3. A checagem é **no servidor**: esconder o botão não basta. As rotas respondem `404` para quem não tem o plano e
+   não revelam se o arquivo existe.
 4. O arquivo vem do artefato `h3suporte-ia-windows-x86_64` ou `h3suporte-ia-macos-<arch>` (API do GitHub, token com leitura de Actions guardado só
-   no servidor da Central) e é entregue pelo servidor da Central. Nunca publicar o `-ia` no release do GitHub nem
+   no `servidor-api`), é extraído do zip e entregue direto pelo servidor. Nunca publicar o `-ia` no release do GitHub nem
    repassar o link do artefato.
-5. Registrar na auditoria quem baixou, quando e qual versão.
+5. A auditoria (`download_ia`) registra conta, arquivo e versão.
 6. Mostrar a versão e o nome "Com IA — uso interno" separado da lista de downloads dos clientes.
 
 ## Limites conhecidos

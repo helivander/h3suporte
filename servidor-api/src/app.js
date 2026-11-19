@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { pipeline } from "node:stream/promises";
 import { ErroCentral } from "./central.js";
 
 const KB = 1024;
@@ -161,10 +162,12 @@ const texto = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0,
  * Contas, senhas e assinaturas ficam na Central; aqui ficam só o catálogo de endereços,
  * os dispositivos e a auditoria.
  */
-export function criarApp({ config, banco, central, versao = async () => null, downloads = async () => null, relogio = Date.now }) {
+export function criarApp({ config, banco, central, versao = async () => null, downloads = async () => null, ia = null, relogio = Date.now }) {
   const limiteLogin = criarLimite(10, 60_000);
   const limiteAuditoria = criarLimite(120, 60_000);
   const limiteSenhas = criarLimite(30, 60_000);
+  const limiteIa = criarLimite(10, 60_000);
+  const planosIa = config.planosIa ?? ["dev"];
   const validando = new Map();
   const equipes = new Map();
   const vistos = new Map();
@@ -431,10 +434,67 @@ ${id}`;
     }
   }
 
+  /**
+   * Instaladores com IA: só para assinatura de um dos planos de `planosIa` (padrão DEV). Quem não tem o plano recebe
+   * o mesmo 404 de uma rota que não existe, sem revelar que o arquivo existe.
+   */
+  async function instaladoresIa(req, res, rota, url) {
+    const sessao = await autenticar(req);
+    const plano = String(sessao.assinatura?.plano?.nome ?? "").trim().toLowerCase();
+    if (!ia || !planosIa.includes(plano)) return erro(res, 404, "Não encontrado.");
+    let lista;
+    try {
+      lista = await ia.listar();
+    } catch {
+      return erro(res, 502, "Não foi possível consultar os instaladores agora.");
+    }
+    if (rota === "GET /api/downloads-ia") {
+      if (!lista?.length) return erro(res, 404, "Nenhum instalador com IA disponível.");
+      return enviar(res, 200, {
+        arquivos: lista.flatMap((i) =>
+          i.arquivos.map((a) => ({
+            nome: a.nome,
+            plataforma: i.plataforma,
+            arquitetura: i.arquitetura,
+            tipo: a.tipo,
+            versao: i.versao,
+            tamanho: a.tamanho,
+            criadoEm: i.criadoEm,
+            url: `/api/downloads-ia/${i.artefato}/${encodeURIComponent(a.nome)}`,
+          })),
+        ),
+      });
+    }
+    let artefato, nome;
+    try {
+      [artefato, nome] = url.pathname.slice("/api/downloads-ia/".length).split("/").map((p) => decodeURIComponent(p));
+    } catch {
+      return erro(res, 404, "Não encontrado.");
+    }
+    const arquivo = await ia.arquivo(artefato, nome);
+    if (!arquivo) return erro(res, 404, "Não encontrado.");
+    if (!limiteIa.consumir(sessao.conta.id, relogio())) return erro(res, 429, MENSAGENS.MUITAS_TENTATIVAS);
+    banco.registrarAuditoria(
+      { tipo: "download_ia", dados: JSON.stringify({ conta: sessao.conta.id, arquivo: arquivo.nome, versao: arquivo.versao }) },
+      relogio(),
+    );
+    res.writeHead(200, {
+      "content-type": "application/octet-stream",
+      "content-length": arquivo.tamanho,
+      "content-disposition": `attachment; filename="${arquivo.nome}"`,
+      "cache-control": "no-store",
+    });
+    await pipeline(ia.abrir(arquivo.caminho), res);
+  }
+
   async function rotear(req, res) {
     const url = new URL(req.url ?? "/", "http://local");
     const rota = `${req.method} ${url.pathname.replace(/\/+$/, "")}`;
     const agora = relogio();
+
+    if (rota === "GET /api/downloads-ia" || (req.method === "GET" && /^\/api\/downloads-ia\/[^/]+\/[^/]+$/.test(url.pathname))) {
+      return instaladoresIa(req, res, rota, url);
+    }
 
     switch (rota) {
       case "GET /saude":

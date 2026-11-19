@@ -43,6 +43,8 @@ Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).
 | `GET /api/login-options`                                | `[]` (sem login por Google/Microsoft)                                                           |
 | `GET/POST /api/versao`                                  | Atualizador do app: `{url}` do último release estável do GitHub com a lista assinada; `404` sem versão |
 | `GET /api/downloads`                                    | Instaladores da última versão publicada, inclusive pré-lançamento do CI (`versao`, `tag`, `pagina`, `arquivos[]` com `nome`, `plataforma`, `tipo`, `tamanho`, `url`), sem o build `-ia`; cache de 10 min; `404` sem versão |
+| `GET /api/downloads-ia`                                 | Instaladores **com IA** (`arquivos[]` com `nome`, `plataforma`, `arquitetura`, `tipo`, `versao`, `tamanho`, `criadoEm`, `url`). Exige login (`Authorization: Bearer`) e assinatura de um plano de `PLANOS_IA` (padrão `DEV`); outro plano recebe `404`, sem login `401`; `404` sem artefato, `502` se o GitHub falhar |
+| `GET /api/downloads-ia/{artefato}/{arquivo}`            | Entrega o instalador direto (mesmas regras; 10/min por conta; fica na auditoria como `download_ia`) |
 | `GET /saude`                                            | `{"ok":true}`                                                                                   |
 
 Sessão do portal da Central: um token `cw_…` (aba "Acesso remoto" do portal) não passa pelo `/api/login` daqui. Na
@@ -120,3 +122,12 @@ suspensão da assinatura, Central fora do ar, grupo e as rotas de registro.
 - Grupos de dispositivos, gravação de sessão (`/api/record`) e estratégias remotas não são suportados.
 - Limites de tentativa ficam em memória: com mais de uma instância, cada uma conta separado (a Central
   também limita).
+
+## Instaladores com IA
+
+O build `-ia` só existe como artefato privado do workflow (zip, 30 dias). O servidor baixa o mais recente de cada
+plataforma (`h3suporte-ia-windows-x86_64`, `h3suporte-ia-macos-aarch64`, `h3suporte-ia-macos-x86_64`) com o
+`GITHUB_TOKEN` (leitura de Actions), extrai o `.exe`/`.msi`/`.dmg`/`.pkg` em `DIR_IA` e o entrega direto: o link do
+GitHub nunca chega ao cliente. A lista é consultada a cada 10 min; artefatos novos substituem os antigos em disco.
+Sem `GITHUB_TOKEN` a função fica desligada (`404`). O download exige o cabeçalho `Authorization` (não aceita token na
+URL): a Central baixa pelo servidor dela ou busca com o token da sessão e entrega o arquivo.
