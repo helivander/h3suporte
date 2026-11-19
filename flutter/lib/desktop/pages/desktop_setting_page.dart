@@ -517,6 +517,7 @@ class _GeneralState extends State<_General> {
   Widget build(BuildContext context) {
     final scrollController = ScrollController();
     return _duasColunas(scrollController, [
+        if (!isWeb) iniciarComSistema(),
         if (!isWeb) service(),
         theme(),
         _Card(title: 'Language', children: [language()]),
@@ -527,6 +528,53 @@ class _GeneralState extends State<_General> {
         other(),
         if (!bind.isIncomingOnly()) keyboardShortcuts(),
     ]).marginOnly(bottom: _kListViewBottomMargin);
+  }
+
+  /// "Iniciar com o sistema": o serviço do H3 Suporte sobe com o computador, antes do login no sistema e sem
+  /// precisar entrar numa conta H3 (quem recebe o acesso não precisa de conta), com o ícone na bandeja.
+  /// Usa o mesmo mecanismo do botão Serviço (`stop-service`: instala ou remove o serviço do sistema).
+  Widget iniciarComSistema() {
+    if (bind.isOutgoingOnly()) return const Offstage();
+    return Obx(() {
+      final instalado = bind.mainIsInstalled();
+      final ligado = instalado &&
+          !serviceStop.value &&
+          (!isMacOS || bind.mainIsInstalledDaemon(prompt: false));
+      Future<void> alternar(bool v) async {
+        serviceBtnEnabled.value = false;
+        if (v && isMacOS && !bind.mainIsInstalledDaemon(prompt: false)) {
+          bind.mainIsInstalledDaemon(prompt: true);
+        }
+        if (v == serviceStop.value) await start_service(v);
+        Future.delayed(const Duration(seconds: 1), () {
+          serviceBtnEnabled.value = true;
+          if (mounted) setState(() {});
+        });
+      }
+
+      return _Card(title: 'Iniciar com o sistema', children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: Text(
+            'Abrir o H3 Suporte quando o computador ligar',
+            style: TextStyle(fontSize: 14, color: H3Cores.texto),
+          ),
+          subtitle: Text(
+            instalado
+                ? 'O acesso remoto fica disponível logo ao ligar, mesmo antes de entrar no sistema e sem login '
+                    'na conta H3 Suporte. O ícone aparece na bandeja.'
+                : 'Instale o H3 Suporte neste computador para ele iniciar com o sistema.',
+            style: TextStyle(fontSize: 12, color: H3Cores.apagado),
+          ),
+          trailing: Switch(
+            value: ligado,
+            onChanged: instalado && serviceBtnEnabled.value ? alternar : null,
+          ),
+        ),
+        if (!instalado && isWindows && !bind.isDisableInstallation())
+          _Button('Instalar', () => bind.mainGotoInstall()),
+      ]);
+    });
   }
 
   Widget keyboardShortcuts() {

@@ -50,8 +50,14 @@ fn make_tray() -> hbb_common::ResultType<()> {
         icon = include_bytes!("../res/tray-icon.ico");
     }
 
+    // On macOS the tray icon is a template image: only its alpha is drawn, so the opaque
+    // app icon from the assets would show up as a solid white square.
+    #[cfg(target_os = "macos")]
+    let asset: Option<image::DynamicImage> = None;
+    #[cfg(not(target_os = "macos"))]
+    let asset = load_icon_from_asset();
     let (icon_rgba, icon_width, icon_height) = {
-        let image = load_icon_from_asset()
+        let image = asset
             .unwrap_or(image::load_from_memory(icon).context("Failed to open icon path")?)
             .into_rgba8();
         let (width, height) = image.dimensions();
@@ -298,6 +304,7 @@ async fn start_query_session_count(sender: std::sync::mpsc::Sender<Data>) {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 fn load_icon_from_asset() -> Option<image::DynamicImage> {
     let Some(path) = std::env::current_exe().map_or(None, |x| x.parent().map(|x| x.to_path_buf()))
     else {
