@@ -692,6 +692,7 @@ class AiAgentModel {
             final fc = Map<String, dynamic>.from(p['functionCall']);
             uses.add({
               'id': fc['name'],
+              if (fc['id'] != null) 'call_id': fc['id'],
               'name': fc['name'],
               'input': fc['args'] is Map
                   ? Map<String, dynamic>.from(fc['args'])
@@ -741,9 +742,11 @@ class AiAgentModel {
       List<Map<String, dynamic>> uses, bool approved) async {
     final respostas = <Map<String, dynamic>>[];
     final imagens = <Map<String, dynamic>>[];
+    final aninhar = !RegExp(r'gemini-(1|2)').hasMatch(geminiModel);
     var failed = false;
     for (final u in uses) {
       final name = u['name'].toString();
+      final fotos = <Map<String, dynamic>>[];
       final input = _inputOf(u);
       String saida;
       if (!approved || _stop) {
@@ -755,7 +758,7 @@ class AiAgentModel {
           final blocos = await _execute(name, input);
           for (final b in blocos) {
             if (b is Map && b['type'] == 'image') {
-              imagens.add({
+              fotos.add({
                 'inlineData': {
                   'mimeType': b['source']['media_type'],
                   'data': b['source']['data'],
@@ -773,12 +776,16 @@ class AiAgentModel {
           _add(AiEntryKind.error, '$name: $e');
         }
       }
+      // Gemini 3: o id da chamada volta na resposta e as imagens vão dentro dela; o 2.5 recusa esses campos.
       respostas.add({
         'functionResponse': {
+          if (aninhar && u['call_id'] != null) 'id': u['call_id'],
           'name': name,
-          'response': {'output': saida}
+          'response': {'output': saida},
+          if (aninhar && fotos.isNotEmpty) 'parts': fotos,
         }
       });
+      if (!aninhar) imagens.addAll(fotos);
     }
     return {'role': 'user', 'parts': [...respostas, ...imagens]};
   }

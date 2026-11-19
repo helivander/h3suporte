@@ -85,6 +85,9 @@ O botão de atualizar busca os modelos disponíveis na API do provedor (Claude: 
   `gemini-2.5-pro`). As ações são as mesmas funções do ChatGPT, declaradas como `functionDeclarations`; a captura
   de tela volta como `inlineData` junto da resposta da função. Código em `_runGemini` (`ai_agent_model.dart`) e
   `ai_models.dart`.
+- Gemini 3 e posteriores: o `id` que o modelo manda em cada `functionCall` volta no `functionResponse` e as capturas
+  de tela vão dentro dele (`functionResponse.parts`). Modelos `gemini-1*`/`gemini-2*` seguem o formato antigo (imagem
+  solta depois das respostas), porque recusam esses campos. Não testado contra a API real.
 - Claude por conta (OAuth): **não implementado de propósito**. A Anthropic só permite o login da assinatura
   Pro/Max no Claude Code e no claude.ai e proíbe em aplicativos de terceiros
   ([termos](https://code.claude.com/docs/en/legal-and-compliance)). O app usa a chave de API do console.
