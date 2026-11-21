@@ -41,7 +41,13 @@ cp -f target/release/service "$APP/Contents/MacOS/"
 ID_APP="$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' | head -1)"
 ID_PKG="$(security find-identity -v | sed -n 's/.*"\(Developer ID Installer:[^"]*\)".*/\1/p' | head -1)"
 if [ -n "$ID_APP" ]; then
-  bash .github/scripts/sign-macos-app.sh "$APP" "$ID_APP" flutter/macos/Runner/Release.entitlements
+  # O servidor de carimbo de tempo da Apple falha de vez em quando ("A timestamp was expected"): o codesign de cada
+  # binário é repetido por um atalho no PATH, sem mexer no script de assinatura compartilhado com o CI.
+  ATALHO="$(mktemp -d)"
+  printf '#!/bin/bash\nfor i in 1 2 3 4 5 6 7 8; do /usr/bin/codesign "$@" && exit 0; sleep 3; done; exit 1\n' > "$ATALHO/codesign"
+  chmod +x "$ATALHO/codesign"
+  PATH="$ATALHO:$PATH" bash .github/scripts/sign-macos-app.sh "$APP" "$ID_APP" flutter/macos/Runner/Release.entitlements
+  rm -rf "$ATALHO"
 else
   codesign --force --deep --sign - --entitlements flutter/macos/Runner/Release.entitlements "$APP"
 fi
@@ -54,8 +60,12 @@ ditto "$APP" "$SAIDA/.pkgroot/H3Suporte.app"
 pkgbuild --analyze --root "$SAIDA/.pkgroot" "$SAIDA/.pkg.plist" >/dev/null
 /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$SAIDA/.pkg.plist" ||
   /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$SAIDA/.pkg.plist"
-pkgbuild --root "$SAIDA/.pkgroot" --component-plist "$SAIDA/.pkg.plist" --install-location /Applications \
-  --identifier br.com.h3info.h3suporte --version "$VERSAO" ${ID_PKG:+--sign "$ID_PKG" --timestamp} "$BASE.pkg" >/dev/null
+for tentativa in 1 2 3 4 5 6 7 8; do
+  pkgbuild --root "$SAIDA/.pkgroot" --component-plist "$SAIDA/.pkg.plist" --install-location /Applications \
+    --identifier br.com.h3info.h3suporte --version "$VERSAO" ${ID_PKG:+--sign "$ID_PKG" --timestamp} "$BASE.pkg" >/dev/null && break
+  [ "$tentativa" = 8 ] && exit 1
+  sleep 3
+done
 ditto "$APP" "$SAIDA/.dmgroot/H3Suporte.app" && ln -s /Applications "$SAIDA/.dmgroot/Applications"
 # Ícone H3 no volume do dmg (aparece no Finder e na área de trabalho quando montado).
 cp flutter/macos/Runner/AppIcon.icns "$SAIDA/.dmgroot/.VolumeIcon.icns" && SetFile -a C "$SAIDA/.dmgroot"
@@ -64,7 +74,11 @@ rm -rf "$SAIDA/.pkgroot" "$SAIDA/.dmgroot" "$SAIDA/.pkg.plist"
 
 # Com Developer ID, assina o dmg e notariza os dois (perfil h3suporte-notary do notarytool); sem ele, fica só assinado.
 if [ -n "$ID_APP" ]; then
-  codesign --force --sign "$ID_APP" --timestamp "$BASE.dmg"
+  for tentativa in 1 2 3 4 5 6; do
+    codesign --force --sign "$ID_APP" --timestamp "$BASE.dmg" && break
+    [ "$tentativa" = 6 ] && exit 1
+    sleep 5
+  done
   if xcrun notarytool history --keychain-profile h3suporte-notary >/dev/null 2>&1; then
     for f in "$BASE.pkg" "$BASE.dmg"; do
       xcrun notarytool submit "$f" --keychain-profile h3suporte-notary --wait && xcrun stapler staple "$f"
