@@ -9,6 +9,7 @@ import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/common/widgets/keyboard_shortcuts/display.dart';
 import 'package:flutter_hbb/common/widgets/toolbar.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
+import 'package:flutter_hbb/models/h3_comandos_rapidos.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -853,6 +854,9 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     // Do not show keyboard for camera connection type.
     if (widget.ffi.connType == ConnType.defaultConn) {
       toolbarItems.add(_KeyboardMenu(id: widget.id, ffi: widget.ffi));
+    }
+    if (widget.ffi.connType == ConnType.defaultConn) {
+      toolbarItems.add(_QuickCommandsMenu(id: widget.id, ffi: widget.ffi));
     }
     toolbarItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
     if (kH3IaBuild &&
@@ -2832,6 +2836,74 @@ class _KeyboardMenu extends StatelessWidget {
           onPressed: () => ffi.inputModel.onMobilePower(),
           ffi: ffi),
     ];
+  }
+}
+
+class _QuickCommandsMenu extends StatelessWidget {
+  final String id;
+  final FFI ffi;
+  const _QuickCommandsMenu({Key? key, required this.id, required this.ffi})
+      : super(key: key);
+
+  Future<void> _rodar(BuildContext context, H3Comando c) async {
+    final platform = ffi.ffiModel.pi.platform;
+    final sessionId = ffi.sessionId;
+    final aviso = c.confirmar;
+    if (aviso != null) {
+      final ok = await ffi.dialogManager.show<bool>((setState, close, context) =>
+          CustomAlertDialog(
+            title: Row(children: [
+              const Icon(Icons.warning_rounded,
+                  color: Colors.redAccent, size: 28),
+              Flexible(child: Text(c.titulo).paddingOnly(left: 10)),
+            ]),
+            content: Text(
+                '$aviso\n${ffi.ffiModel.pi.username}@${ffi.ffiModel.pi.hostname} ($id)'),
+            actions: [
+              dialogButton('Cancel',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: close,
+                  isOutline: true),
+              dialogButton('OK',
+                  icon: const Icon(Icons.done_rounded),
+                  onPressed: () => close(true)),
+            ],
+            onCancel: close,
+            onSubmit: () => close(true),
+          ));
+      if (ok != true) return;
+    }
+    await executarComandoRapido(sessionId, c, platform);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ffiModel = Provider.of<FfiModel>(context);
+    if (!ffiModel.keyboard || ffiModel.viewOnly) return const Offstage();
+    final grupos = comandosRapidosPara(ffiModel.pi.platform);
+    if (grupos.isEmpty) return const Offstage();
+    return _IconSubmenuButton(
+        tooltip: 'Comandos rápidos',
+        icon: SizedBox(
+            width: _ToolbarTheme.buttonSize,
+            height: _ToolbarTheme.buttonSize,
+            child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 22)),
+        color: _ToolbarTheme.blueColor,
+        hoverColor: _ToolbarTheme.hoverBlueColor,
+        ffi: ffi,
+        menuChildrenGetter: (_) => [
+              for (final g in grupos)
+                _SubmenuButton(
+                    ffi: ffi,
+                    child: Text(g.titulo),
+                    menuChildren: [
+                      for (final c in g.comandos)
+                        MenuButton(
+                            ffi: ffi,
+                            child: Text(c.titulo),
+                            onPressed: () => _rodar(context, c)),
+                    ]),
+            ]);
   }
 }
 
