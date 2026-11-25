@@ -246,8 +246,13 @@ export function criarApp({ config, banco, central, versao = async () => null, do
         pendente = revalidar(token, tokenHash, sessao).finally(() => validando.delete(tokenHash));
         validando.set(tokenHash, pendente);
       }
-      // Rota no caminho da conexão: não espera a Central se a sessão ainda está paga.
-      if (segundoPlano && relogio() < Date.parse(sessao.assinatura?.pagoAte ?? "")) {
+      // Rota no caminho da conexão: não espera a Central se a sessão ainda está paga
+      // (ou dentro da tolerância offline quando pagoAte é null, como em assinaturas de provedor).
+      const pagoAte = Date.parse(sessao.assinatura?.pagoAte ?? "");
+      const aindaPago = Number.isNaN(pagoAte)
+        ? relogio() - sessao.validadaEm < config.toleranciaMs
+        : relogio() < pagoAte;
+      if (segundoPlano && aindaPago) {
         pendente.catch(() => {});
       } else {
         atual = await pendente;
@@ -602,7 +607,7 @@ ${id}`;
           .map((d) => ({
             id: d.id,
             info: { device_name: d.nome ?? "", os: d.so ?? "", username: "" },
-            status: 1,
+            status: d.visto_em != null && agora - d.visto_em < ONLINE_MS ? 1 : 0,
             user: nomes.get(d.conta_id),
             user_name: nomes.get(d.conta_id),
             note: "",
@@ -638,6 +643,23 @@ ${id}`;
             dispositivo: texto(corpo.id, 64),
             nonce: texto(corpo.nonce, 64),
             dados: JSON.stringify(corpo),
+          },
+          agora,
+        );
+        return enviar(res, 200, "");
+      }
+      case "PUT /api/audit": {
+        const sessao = await autenticar(req);
+        const corpo = await lerJson(req);
+        const guid = texto(corpo.guid, 128);
+        const nota = texto(corpo.note, 2000);
+        if (!guid) return erro(res, 400, "Identificador da sessão ausente.");
+        banco.registrarAuditoria(
+          {
+            tipo: "note",
+            dispositivo: texto(corpo.id, 64),
+            nonce: `note:${guid}`,
+            dados: JSON.stringify({ guid, note: nota ?? "", contaId: sessao.conta.id }),
           },
           agora,
         );

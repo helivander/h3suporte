@@ -73,8 +73,11 @@ export function abrirBanco(caminho) {
         assinatura_id = excluded.assinatura_id, visto_em = excluded.visto_em`),
     desvincular: q("UPDATE dispositivo SET conta_id = NULL, assinatura_id = NULL WHERE id = ? AND conta_id = ?"),
     sysinfo: q(`INSERT INTO dispositivo (id, uuid, nome, so, versao, visto_em) VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT (id) DO UPDATE SET uuid = excluded.uuid, nome = excluded.nome, so = excluded.so,
-        versao = excluded.versao, visto_em = excluded.visto_em`),
+      ON CONFLICT (id) DO UPDATE SET uuid = coalesce(dispositivo.uuid, excluded.uuid),
+        nome = CASE WHEN dispositivo.uuid IS NULL OR excluded.uuid IS NULL OR dispositivo.uuid = excluded.uuid THEN excluded.nome ELSE dispositivo.nome END,
+        so = CASE WHEN dispositivo.uuid IS NULL OR excluded.uuid IS NULL OR dispositivo.uuid = excluded.uuid THEN excluded.so ELSE dispositivo.so END,
+        versao = CASE WHEN dispositivo.uuid IS NULL OR excluded.uuid IS NULL OR dispositivo.uuid = excluded.uuid THEN excluded.versao ELSE dispositivo.versao END,
+        visto_em = CASE WHEN dispositivo.uuid IS NULL OR excluded.uuid IS NULL OR dispositivo.uuid = excluded.uuid THEN excluded.visto_em ELSE dispositivo.visto_em END`),
     visto: q("UPDATE dispositivo SET visto_em = ? WHERE id = ?"),
     daAssinatura: q(`SELECT id, nome, so, conta_id, visto_em FROM dispositivo
       WHERE assinatura_id = ? ORDER BY nome, id`),

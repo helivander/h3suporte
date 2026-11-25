@@ -190,7 +190,12 @@ class WebHomePage extends StatelessWidget {
                           child: SingleChildScrollView(
                             padding: const EdgeInsets.all(18),
                             child: ContaConteudo(
-                                onConfigLocal: () => Navigator.of(ctx).pop()),
+                                onConfigLocal: () => Navigator.of(ctx).pop(),
+                                onLogout: () {
+                                  if (Navigator.of(ctx).canPop()) {
+                                    Navigator.of(ctx).pop();
+                                  }
+                                }),
                           ),
                         ),
                       ),

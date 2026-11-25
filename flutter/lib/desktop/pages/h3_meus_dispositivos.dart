@@ -156,6 +156,7 @@ class H3MeusDispositivosPage extends StatefulWidget {
 class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
   List<H3Dispositivo> _lista = [];
   bool _carregando = false;
+  bool _carregouUmaVez = false;
   bool _registrando = false;
   String _erro = '';
   Timer? _timer;
@@ -184,6 +185,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
       return;
     }
     if (_carregando) return;
+    if (!_carregouUmaVez && mounted) setState(() => _carregando = true);
     _carregando = true;
     try {
       final lista = await H3Dispositivos.listar();
@@ -199,6 +201,11 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
       if (mounted) setState(() => _erro = 'Não foi possível falar com o servidor.');
     } finally {
       _carregando = false;
+      if (!_carregouUmaVez && mounted) {
+        setState(() => _carregouUmaVez = true);
+      } else {
+        _carregouUmaVez = true;
+      }
     }
   }
 
@@ -271,8 +278,8 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
               child: const Text('Cancelar')),
           TextButton(
               onPressed: () => Navigator.pop(c, true),
-              child: const Text('Remover',
-                  style: TextStyle(color: Color(0xFFFF5D6C)))),
+              child: Text('Remover',
+                  style: TextStyle(color: H3Cores.perigo))),
         ],
       ),
     );
@@ -433,8 +440,27 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
     Widget corpo;
     if (!logado) {
       corpo = _vazio('Entre na sua conta para ver os dispositivos registrados.');
+    } else if (_carregando && !_carregouUmaVez) {
+      corpo = Container(
+        padding: const EdgeInsets.all(28),
+        decoration: _caixa,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: H3Cores.destaque),
+            ),
+            const SizedBox(width: 12),
+            Text('Carregando dispositivos...',
+                style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+          ],
+        ),
+      );
     } else if (_erro.isNotEmpty) {
-      corpo = _vazio(_erro);
+      corpo = _vazio(_erro, tentarNovamente: _carregar);
     } else if (_lista.isEmpty) {
       corpo = _vazio(
           'Nenhum dispositivo registrado ainda. Abra o H3 Suporte no computador que quer acessar, entre na mesma conta e escolha Registrar na conta.');
@@ -613,16 +639,30 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
     );
   }
 
-  Widget _vazio(String msg) => Container(
+  Widget _vazio(String msg, {VoidCallback? tentarNovamente}) => Container(
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: H3Cores.linha2),
           color: H3Cores.fundo,
         ),
-        child: Text(msg,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: H3Cores.apagado)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(msg,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: H3Cores.apagado)),
+            if (tentarNovamente != null) ...[
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: tentarNovamente,
+                icon: Icon(Icons.refresh, size: 16, color: H3Cores.destaque),
+                label: Text('Tentar novamente',
+                    style: TextStyle(color: H3Cores.destaque)),
+              ),
+            ],
+          ],
+        ),
       );
 
   Widget _pilula(bool online) => Container(

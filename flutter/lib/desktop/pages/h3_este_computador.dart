@@ -83,9 +83,10 @@ class H3EsteComputador extends StatelessWidget {
         message: dica,
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
+          hoverColor: H3Cores.painel2,
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(7),
+            padding: const EdgeInsets.all(9),
             child: Icon(icone, size: 18, color: H3Cores.apagado),
           ),
         ),

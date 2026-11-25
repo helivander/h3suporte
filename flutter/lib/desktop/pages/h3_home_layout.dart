@@ -31,11 +31,13 @@ class H3Cores {
   static Color get linha2 => _c(0xFF26393F, 0xFFC9D6DA);
   static Color get texto => _c(0xFFE6F1F2, 0xFF13262B);
   static Color get apagado => _c(0xFF8AA1A6, 0xFF587177);
-  static Color get destaque => _c(0xFF1FD1C1, 0xFF0B9A8F);
+  static Color get destaque => _c(0xFF1FD1C1, 0xFF087F76);
   static Color get destaqueTinta => _c(0xFF04201D, 0xFFFFFFFF);
   static Color get ok => _c(0xFF3DDC84, 0xFF1C9A58);
   static Color get aviso => _c(0xFFF0B544, 0xFFB5730F);
   static Color get info => _c(0xFF4F8CFF, 0xFF2D6BDB);
+  static Color get perigo => _c(0xFFFF5D6C, 0xFFC6283A);
+  static Color get perigoTinta => const Color(0xFFFFFFFF);
 
   /// Tema verde-água; [brilho] vem do tema escolhido nas Configurações (Claro/Escuro/Sistema).
   static ThemeData tema(Brightness brilho) {
@@ -58,6 +60,10 @@ class H3Cores {
         secondary: destaque,
         background: fundo,
       ),
+      extensions: <ThemeExtension<dynamic>>[
+        ...base.extensions.values.where((e) => e is! H3Tokens),
+        escuro ? H3Tokens.dark : H3Tokens.light,
+      ],
     );
   }
 }

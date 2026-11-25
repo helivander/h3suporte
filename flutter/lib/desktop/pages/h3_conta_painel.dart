@@ -16,7 +16,10 @@ const _portal = 'https://keys.h3info.com/assinante';
 class ContaConteudo extends StatefulWidget {
   /// Abre a aba de configurações locais do computador.
   final VoidCallback onConfigLocal;
-  const ContaConteudo({super.key, required this.onConfigLocal});
+
+  /// Chamado após sair da conta (ex.: fechar modal na Web).
+  final VoidCallback? onLogout;
+  const ContaConteudo({super.key, required this.onConfigLocal, this.onLogout});
 
   @override
   State<ContaConteudo> createState() => _ContaConteudoState();
@@ -189,8 +192,22 @@ class _ContaConteudoState extends State<ContaConteudo> {
       if (_falhou)
         Padding(
           padding: const EdgeInsets.only(top: 6),
-          child: Text('Sem conexão com o servidor. Tentando de novo…',
-              style: TextStyle(fontSize: 11, color: H3Cores.aviso)),
+          child: Row(children: [
+            Expanded(
+              child: Text('Sem conexão com o servidor.',
+                  style: TextStyle(fontSize: 11, color: H3Cores.aviso)),
+            ),
+            TextButton(
+              onPressed: _buscar,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text('Tentar novamente',
+                  style: TextStyle(fontSize: 11, color: H3Cores.destaque)),
+            ),
+          ]),
         ),
     ]);
 
@@ -224,7 +241,8 @@ class _ContaConteudoState extends State<ContaConteudo> {
           Expanded(
               child: _botaoSecundario(Icons.logout, 'Sair da conta', () async {
             await gFFI.userModel.logOut();
-          }, cor: const Color(0xFFD64545))),
+            widget.onLogout?.call();
+          }, cor: H3Cores.perigo)),
         ]),
       ]);
     });

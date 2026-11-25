@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/user_model.dart';
@@ -17,6 +18,7 @@ class H3LoginGate extends StatefulWidget {
 
 class _H3LoginGateState extends State<H3LoginGate> {
   Worker? _worker;
+  bool _dialogoAberto = false;
 
   bool get _logado =>
       gFFI.userModel.isLogin || UserModel.getLocalUserInfo() != null;
@@ -31,7 +33,15 @@ class _H3LoginGateState extends State<H3LoginGate> {
   void _pedirLogin() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 300));
-      if (mounted && !_logado) await loginDialog();
+      if (!mounted || bind.isDisableAccount() || _logado || _dialogoAberto) {
+        return;
+      }
+      _dialogoAberto = true;
+      try {
+        await loginDialog();
+      } finally {
+        _dialogoAberto = false;
+      }
     });
   }
 
@@ -46,32 +56,54 @@ class _H3LoginGateState extends State<H3LoginGate> {
     return Obx(() {
       gFFI.userModel.userName.value;
       if (bind.isDisableAccount() || _logado) return widget.child;
-      final cores = Theme.of(context).colorScheme;
+      final t = H3Tokens.of(context);
       return Scaffold(
-        backgroundColor: cores.surface,
+        backgroundColor: t.fundo,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Container(
+              margin: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: t.painel,
+                borderRadius: BorderRadius.circular(H3Raios.lg),
+                border: Border.all(color: t.linha),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock_outline, size: 48, color: cores.primary),
+                  Image.asset('assets/icon.png', width: 56, height: 56),
                   const SizedBox(height: 16),
-                  const Text('H3 Suporte',
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  Text('H3 Suporte',
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: t.texto)),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Entre com sua conta H3 Suporte para usar o sistema. '
                     'É preciso ter uma assinatura ativa.',
                     textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, height: 1.45, color: t.apagado),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => loginDialog(),
-                    child: const Text('Entrar'),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 42,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: t.destaque,
+                        foregroundColor: t.destaqueTinta,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(H3Raios.sm),
+                        ),
+                      ),
+                      onPressed: () => loginDialog(),
+                      child: const Text('Entrar',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
                   ),
                 ],
               ),

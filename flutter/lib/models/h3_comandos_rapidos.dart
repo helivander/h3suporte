@@ -185,24 +185,32 @@ List<(String?, String?, int)> passosDe(H3Comando c, String plataforma) {
   ];
 }
 
+final _executando = <SessionID>{};
+
 /// Executa [c] na sessão remota. A lista de passos garante pausas entre as teclas para o sistema remoto acompanhar.
 Future<void> executarComandoRapido(
     SessionID sessionId, H3Comando c, String plataforma) async {
-  switch (c.tipo) {
-    case H3TipoComando.ctrlAltDel:
-      await bind.sessionCtrlAltDel(sessionId: sessionId);
-    case H3TipoComando.bloquear:
-      await bind.sessionLockScreen(sessionId: sessionId);
-    case H3TipoComando.teclas:
-      await _tecla(sessionId, c.valor);
-    case H3TipoComando.executar:
-      for (final (tecla, texto, espera) in passosDe(c, plataforma)) {
-        if (tecla != null) await _tecla(sessionId, tecla);
-        if (texto != null) {
-          await bind.sessionInputString(sessionId: sessionId, value: texto);
+  if (_executando.contains(sessionId)) return;
+  _executando.add(sessionId);
+  try {
+    switch (c.tipo) {
+      case H3TipoComando.ctrlAltDel:
+        await bind.sessionCtrlAltDel(sessionId: sessionId);
+      case H3TipoComando.bloquear:
+        await bind.sessionLockScreen(sessionId: sessionId);
+      case H3TipoComando.teclas:
+        await _tecla(sessionId, c.valor);
+      case H3TipoComando.executar:
+        for (final (tecla, texto, espera) in passosDe(c, plataforma)) {
+          if (tecla != null) await _tecla(sessionId, tecla);
+          if (texto != null) {
+            await bind.sessionInputString(sessionId: sessionId, value: texto);
+          }
+          if (espera > 0) await Future.delayed(Duration(milliseconds: espera));
         }
-        if (espera > 0) await Future.delayed(Duration(milliseconds: espera));
-      }
+    }
+  } finally {
+    _executando.remove(sessionId);
   }
 }
 

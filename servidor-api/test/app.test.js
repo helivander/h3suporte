@@ -433,3 +433,37 @@ test("sessão cw_ do portal da Central: vale depois de a Central confirmar; recu
   assert.equal((await chamar("GET", "/api/dispositivos-conta", undefined, outra)).status, 401, "cs_ só vale pelo /api/login");
   assert.equal(estado.validacoes, 2);
 });
+
+test("acesso com pagoAte null segue em segundo plano dentro da tolerância quando Central cai", async () => {
+  estado.assinatura = { id: "ass-1", estado: "ATIVA", pagoAte: null, plano: { id: "p1", nome: "Provedor" } };
+  const login = await chamar("POST", "/api/login", { username: "ana@empresa.com", password: "senha-da-ana-123", uuid: "u1" });
+  assert.equal(login.status, 200);
+  const token = login.json.access_token;
+
+  agora += 6 * 60_000;
+  estado.fora = true;
+  const r = await chamar("POST", "/api/acessos/abrir", { id: "acesso-1", peer: "alvo-1" }, token);
+  assert.equal(r.status, 200);
+});
+
+test("PUT /api/audit registra nota de sessão autenticada e GET /api/peers reflete online", async () => {
+  const login = await chamar("POST", "/api/login", {
+    username: "ana@empresa.com",
+    password: "senha-da-ana-123",
+    id: "dev-1",
+    uuid: "u-dev-1",
+    deviceInfo: { name: "PC Ana", os: "Windows" },
+  });
+  const token = login.json.access_token;
+
+  const nota = await chamar("PUT", "/api/audit", { guid: "sessao-123", note: "Suporte concluído" }, token);
+  assert.equal(nota.status, 200);
+
+  const peersOnline = await chamar("GET", "/api/peers", undefined, token);
+  assert.equal(peersOnline.status, 200);
+  assert.equal(peersOnline.json.data.find((p) => p.id === "dev-1")?.status, 1);
+
+  agora += 5 * 60_000;
+  const peersOffline = await chamar("GET", "/api/peers", undefined, token);
+  assert.equal(peersOffline.json.data.find((p) => p.id === "dev-1")?.status, 0);
+});
