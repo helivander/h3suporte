@@ -60,7 +60,7 @@ class H3Cores {
         secondary: destaque,
         background: fundo,
       ),
-      extensions: <ThemeExtension<dynamic>>[
+      extensions: [
         ...base.extensions.values.where((e) => e is! H3Tokens),
         escuro ? H3Tokens.dark : H3Tokens.light,
       ],
