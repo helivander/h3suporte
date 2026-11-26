@@ -2071,6 +2071,12 @@ class RustdeskImpl {
     return js.context.callMethod('getByName', ['last_audit_note']);
   }
 
+  Future<String> sessionH3RegisterDevice(
+      {required UuidValue sessionId, required String password, dynamic hint}) {
+    return Future.value(
+        '{"erro":"Registrar não está disponível no navegador."}');
+  }
+
   Future<void> sessionSetAuditGuid(
       {required UuidValue sessionId, required String guid, dynamic hint}) {
     return Future(

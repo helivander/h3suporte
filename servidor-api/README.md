@@ -65,6 +65,13 @@ aparece na lista e conecta sem digitar a senha. A senha é cifrada com `CHAVE_DI
 antes de ir para o SQLite, presa à conta e ao ID. Só a conta dona a lê, uma por vez, e cada leitura entra na
 auditoria (`senha_dispositivo`). Sem a chave o recurso fica desligado. Gerar a chave:
 
+O técnico também registra o computador que está acessando: no cartão "Sessão em andamento", **Registrar** gera a
+senha no app dele e a manda pela conexão já autenticada (mensagem `H3RegisterDevice` em `Misc`, tratada em
+`src/h3_registro.rs`). O computador acessado só aceita em acesso de controle remoto com teclado liberado; libera a
+senha permanente quando só valia a de uso único ou só o clique (como o "Registrar este computador") e a define. A
+senha não aparece nele; o app do técnico guarda `{id, nome, so, senha}` por esta mesma rota, só na conta dele.
+Computador com versão antiga não responde e o app avisa após 20 s.
+
 ```bash
 openssl rand -hex 32
 ```

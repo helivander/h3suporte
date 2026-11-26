@@ -94,6 +94,7 @@ class H3HomeLayout extends StatefulWidget {
 class _H3HomeLayoutState extends State<H3HomeLayout> {
   final _aba = 0.obs;
   final _sessoesSaida = <String>[].obs;
+  final _registrando = <String>{}.obs;
   Timer? _timer;
 
   @override
@@ -629,11 +630,32 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               cor: H3Cores.destaque,
               titulo: _nomePeer(id),
               detalhe: 'Você está acessando · $id',
-              acao: TextButton(
-                onPressed: () => connect(context, id),
-                child: Text('Abrir',
-                    style: TextStyle(color: H3Cores.destaque)),
-              ),
+              acao: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (gFFI.userModel.userName.value.isNotEmpty)
+                  _registrando.contains(id)
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2)),
+                        )
+                      : Tooltip(
+                          message:
+                              'Guardar este computador em Meus dispositivos',
+                          child: TextButton(
+                            onPressed: () => _registrarRemoto(id),
+                            child: Text('Registrar',
+                                style: TextStyle(color: H3Cores.texto)),
+                          ),
+                        ),
+                TextButton(
+                  onPressed: () => connect(context, id),
+                  child: Text('Abrir',
+                      style: TextStyle(color: H3Cores.destaque)),
+                ),
+              ]),
             ),
           for (final c in entrada)
             _linhaSessao(
@@ -687,6 +709,61 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         );
       });
     });
+  }
+
+  /// Sessão (da janela de acesso remoto) aberta para [id].
+  Future<SessionID?> _sessaoDe(String id) async {
+    for (final w in await rustDeskWinManager.getAllSubWindowIds()) {
+      try {
+        final r = await DesktopMultiWindow.invokeMethod(
+            w, kWindowEventGetSessionIdList, null);
+        if (r is! String) continue;
+        for (final par in r.split(';')) {
+          final p = par.split(',');
+          if (p.length == 2 && p[0] == id) return SessionID(p[1]);
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  Future<void> _registrarRemoto(String id) async {
+    final nome = _nomePeer(id);
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        backgroundColor: H3Cores.painel2,
+        title: Text('Registrar $nome em Meus dispositivos?'),
+        content: const Text(
+            'O computador acessado recebe uma nova senha permanente, gerada aqui. A senha permanente que ele tinha '
+            'deixa de valer. A nova senha não aparece nele: fica guardada, cifrada, só na sua conta H3 Suporte, '
+            'para você acessá-lo de novo com um clique em Meus dispositivos.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: Text('Registrar',
+                  style: TextStyle(color: H3Cores.destaque))),
+        ],
+      ),
+    );
+    if (confirmou != true) return;
+    _registrando.add(id);
+    try {
+      final sessao = await _sessaoDe(id);
+      if (sessao == null) throw H3Erro('A sessão foi encerrada.');
+      await H3Dispositivos.registrarRemoto(id, sessao);
+      showToast('$nome registrado em Meus dispositivos.');
+    } on H3Erro catch (e) {
+      showToast(e.mensagem, timeout: const Duration(seconds: 6));
+    } catch (e) {
+      showToast('Não foi possível registrar: $e',
+          timeout: const Duration(seconds: 6));
+    } finally {
+      _registrando.remove(id);
+    }
   }
 
   String _nomePeer(String id) {

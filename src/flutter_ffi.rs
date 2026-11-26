@@ -2113,6 +2113,13 @@ pub fn session_send_note(session_id: SessionID, note: String) {
     }
 }
 
+pub fn session_h3_register_device(session_id: SessionID, password: String) -> String {
+    match sessions::get_session_by_session_id(&session_id) {
+        Some(session) => crate::h3_registro::registrar(&session, password),
+        None => serde_json::json!({ "erro": "A sessão foi encerrada." }).to_string(),
+    }
+}
+
 pub fn session_get_last_audit_note(session_id: SessionID) -> SyncReturn<String> {
     if let Some(session) = sessions::get_session_by_session_id(&session_id) {
         SyncReturn(session.last_audit_note.lock().unwrap().clone())

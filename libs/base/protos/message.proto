@@ -872,7 +872,19 @@ message Misc {
     // is rebuilt, and held again, the next time it is shown, before any connection names it
     // by id again, so the shape just selected is always there to give.
     uint64 request_cursor_data = 39;
+    // H3 Suporte: the controller registers the controlled device in its account ("Meus dispositivos").
+    H3RegisterDevice h3_register_device = 1001;
+    H3RegisterDeviceResult h3_register_device_result = 1002;
   }
+}
+
+message H3RegisterDevice {
+  string password = 1;
+}
+
+// Empty error means the permanent password was set.
+message H3RegisterDeviceResult {
+  string error = 1;
 }
 
 message VoiceCallRequest {

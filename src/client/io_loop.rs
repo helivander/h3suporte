@@ -2484,6 +2484,10 @@ impl<T: InvokeUiSession> Remote<T> {
                     Some(misc::Union::FollowCurrentDisplay(d_idx)) => {
                         self.handler.set_current_display(d_idx);
                     }
+                    Some(misc::Union::H3RegisterDeviceResult(r)) => {
+                        let sessao = self.handler.lc.read().unwrap().session_id;
+                        crate::h3_registro::responder(sessao, r);
+                    }
                     _ => {}
                 },
                 Some(message::Union::TestDelay(t)) => {

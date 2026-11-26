@@ -4108,6 +4108,11 @@ impl Connection {
                             self.send(msg_out).await;
                         }
                     }
+                    Some(misc::Union::H3RegisterDevice(pedido)) => {
+                        let permitido = self.is_remote() && self.peer_keyboard_enabled();
+                        self.send(crate::h3_registro::definir_senha(pedido, permitido).await)
+                            .await;
+                    }
                     // Only to a connection the cursor service would send the shape to.
                     #[cfg(not(any(target_os = "android", target_os = "ios")))]
                     Some(misc::Union::RequestCursorData(id)) => {

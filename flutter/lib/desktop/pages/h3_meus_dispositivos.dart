@@ -145,6 +145,35 @@ class H3Dispositivos {
           e.status);
     }
   }
+
+  /// Registra na conta o computador [id], acessado na sessão [sessionId]: a
+  /// senha é gerada aqui, o computador acessado a define como permanente pela
+  /// conexão e ela fica guardada, cifrada, em "Meus dispositivos".
+  static Future<void> registrarRemoto(String id, SessionID sessionId) async {
+    final senha = _gerarSenha();
+    final r = await bind.sessionH3RegisterDevice(
+        sessionId: sessionId, password: senha);
+    Map<String, dynamic> json = {};
+    try {
+      final v = jsonDecode(r);
+      if (v is Map<String, dynamic>) json = v;
+    } catch (_) {}
+    final erro =
+        json['erro']?.toString() ?? 'Resposta inválida do computador acessado.';
+    if (erro.isNotEmpty) throw H3Erro(erro);
+    try {
+      await _chamar('', corpo: {
+        'id': id,
+        'nome': json['nome']?.toString() ?? '',
+        'so': json['so']?.toString() ?? '',
+        'senha': senha,
+      });
+    } on H3Erro catch (e) {
+      throw H3Erro(
+          'A nova senha já vale no computador acessado, mas não foi guardada na conta: ${e.mensagem} Registre de novo.',
+          e.status);
+    }
+  }
 }
 
 class H3MeusDispositivosPage extends StatefulWidget {

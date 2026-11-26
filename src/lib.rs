@@ -16,6 +16,7 @@ pub use self::server::*;
 mod client;
 mod lan;
 pub mod acessos;
+pub mod h3_registro;
 pub mod plano;
 #[cfg(not(any(target_os = "ios")))]
 mod rendezvous_mediator;
