@@ -58,6 +58,13 @@ pub fn core_main() -> Option<CoreMainAction> {
                 .insert("conn-type".to_owned(), conn_type.to_owned());
         }
     }
+    // H3 Suporte: o técnico conectado pode mudar as configurações (sem isso a tela fica bloqueada durante o
+    // acesso). Só o padrão: quem desligar em Segurança continua desligado.
+    config::DEFAULT_SETTINGS
+        .write()
+        .unwrap()
+        .entry(keys::OPTION_ALLOW_REMOTE_CONFIG_MODIFICATION.to_owned())
+        .or_insert_with(|| "Y".to_owned());
     #[cfg(windows)]
     if !crate::platform::windows::bootstrap() {
         // return None to terminate the process

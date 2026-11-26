@@ -254,9 +254,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                         return const Offstage();
                       },
                     ),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-                      child: H3OfertaAgente(),
+                    H3OfertaAgente(
+                      onFechar: () => Future.delayed(
+                          const Duration(milliseconds: 300),
+                          () => _updateWindowSize()),
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
