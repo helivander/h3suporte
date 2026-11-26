@@ -700,6 +700,8 @@ message OptionMessage {
   BoolOption disable_camera = 17;
   BoolOption terminal_persistent = 18;
   BoolOption show_my_cursor = 19;
+  BoolOption block_keyboard = 20;
+  BoolOption block_mouse = 21;
 }
 
 message TestDelay {

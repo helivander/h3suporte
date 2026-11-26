@@ -264,6 +264,10 @@ enum MessageInput {
     Pointer((PointerDeviceEvent, i32)),
     BlockOn,
     BlockOff,
+    #[cfg(windows)]
+    H3TravaTeclado(bool),
+    #[cfg(windows)]
+    H3TravaMouse(bool),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -873,6 +877,11 @@ impl Connection {
                                 conn.send_permission(Permission::Recording, enabled).await;
                             } else if &name == "block_input" {
                                 conn.block_input = enabled;
+                                #[cfg(windows)]
+                                if !enabled {
+                                    conn.tx_input.send(MessageInput::H3TravaTeclado(false)).ok();
+                                    conn.tx_input.send(MessageInput::H3TravaMouse(false)).ok();
+                                }
                                 conn.send_permission(Permission::BlockInput, enabled).await;
                             } else if &name == "privacy_mode" {
                                 // Keep permission state and runtime state consistent:
@@ -1258,6 +1267,8 @@ impl Connection {
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     fn handle_input(receiver: std_mpsc::Receiver<MessageInput>, tx: Sender) {
         let mut block_input_mode = false;
+        #[cfg(windows)]
+        let (mut h3_teclado, mut h3_mouse) = (false, false);
         #[cfg(any(target_os = "windows", target_os = "macos"))]
         {
             rdev::set_mouse_extra_info(enigo::ENIGO_INPUT_EXTRA_VALUE);
@@ -1305,6 +1316,28 @@ impl Connection {
                             );
                         }
                     }
+                    #[cfg(windows)]
+                    MessageInput::H3TravaTeclado(travar) => {
+                        match crate::platform::windows::h3_trava::travar_teclado(travar) {
+                            Ok(()) => h3_teclado = travar,
+                            Err(e) => Self::send_block_input_error(
+                                &tx,
+                                back_notification::BlockInputState::BlkOnFailed,
+                                e.to_string(),
+                            ),
+                        }
+                    }
+                    #[cfg(windows)]
+                    MessageInput::H3TravaMouse(travar) => {
+                        match crate::platform::windows::h3_trava::travar_mouse(travar) {
+                            Ok(()) => h3_mouse = travar,
+                            Err(e) => Self::send_block_input_error(
+                                &tx,
+                                back_notification::BlockInputState::BlkOnFailed,
+                                e.to_string(),
+                            ),
+                        }
+                    }
                     MessageInput::BlockOff => {
                         let (ok, msg) = crate::platform::block_input(false);
                         if ok {
@@ -1330,6 +1363,15 @@ impl Connection {
         }
         #[cfg(target_os = "linux")]
         clear_remapped_keycode();
+        #[cfg(windows)]
+        {
+            if h3_teclado {
+                hbb_common::allow_err!(crate::platform::windows::h3_trava::travar_teclado(false));
+            }
+            if h3_mouse {
+                hbb_common::allow_err!(crate::platform::windows::h3_trava::travar_mouse(false));
+            }
+        }
         log::debug!("Input thread exited");
     }
 
@@ -1990,6 +2032,7 @@ impl Connection {
                 "is_installed".into(),
                 json!(crate::platform::is_installed()),
             );
+            platform_additions.insert("h3_input_lock".into(), json!(true));
             if crate::platform::is_installed() {
                 platform_additions.extend(virtual_display_manager::get_platform_additions());
             }
@@ -5154,6 +5197,27 @@ impl Connection {
                 }
             }
         }
+        #[cfg(windows)]
+        {
+            let permitido = self.keyboard && self.block_input;
+            for (opcao, comando) in [
+                (
+                    o.block_keyboard,
+                    MessageInput::H3TravaTeclado as fn(bool) -> MessageInput,
+                ),
+                (o.block_mouse, MessageInput::H3TravaMouse),
+            ] {
+                match opcao.enum_value() {
+                    Ok(BoolOption::Yes) if permitido => {
+                        self.tx_input.send(comando(true)).ok();
+                    }
+                    Ok(BoolOption::No) => {
+                        self.tx_input.send(comando(false)).ok();
+                    }
+                    _ => {}
+                }
+            }
+        }
         #[cfg(not(any(target_os = "android", target_os = "ios")))]
         if let Ok(q) = o.terminal_persistent.enum_value() {
             if q != BoolOption::NotSet {
@@ -6051,6 +6115,8 @@ impl Connection {
             && Self::is_bool_option_not_set(option.disable_camera)
             && Self::is_bool_option_not_set(option.terminal_persistent)
             && Self::is_bool_option_not_set(option.show_my_cursor)
+            && Self::is_bool_option_not_set(option.block_keyboard)
+            && Self::is_bool_option_not_set(option.block_mouse)
     }
 
     fn is_connection_housekeeping_message(msg: &Message) -> bool {
@@ -6192,7 +6258,9 @@ impl Connection {
             && Self::is_bool_option_not_set(option.follow_remote_window)
             && Self::is_bool_option_not_set(option.disable_camera)
             && Self::is_bool_option_not_set(option.terminal_persistent)
-            && Self::is_bool_option_not_set(option.show_my_cursor))
+            && Self::is_bool_option_not_set(option.show_my_cursor)
+            && Self::is_bool_option_not_set(option.block_keyboard)
+            && Self::is_bool_option_not_set(option.block_mouse))
     }
 
     fn option_has_non_terminal_login_field(option: &OptionMessage) -> bool {
@@ -6212,6 +6280,8 @@ impl Connection {
             || !Self::is_bool_option_not_set(option.follow_remote_window)
             || !Self::is_bool_option_not_set(option.disable_camera)
             || !Self::is_bool_option_not_set(option.show_my_cursor)
+            || !Self::is_bool_option_not_set(option.block_keyboard)
+            || !Self::is_bool_option_not_set(option.block_mouse)
     }
 
     fn option_has_any_field(option: &OptionMessage) -> bool {
@@ -7887,6 +7957,8 @@ mod test {
         option.image_quality = ImageQuality::Balanced.into();
         option.disable_audio = BoolOption::Yes.into();
         option.block_input = BoolOption::Yes.into();
+        option.block_keyboard = BoolOption::Yes.into();
+        option.block_mouse = BoolOption::Yes.into();
         option.privacy_mode = BoolOption::Yes.into();
 
         let (scoped, violation) =
@@ -7899,6 +7971,8 @@ mod test {
         );
         assert_eq!(scoped.disable_audio.enum_value(), Ok(BoolOption::Yes));
         assert_eq!(scoped.block_input.enum_value(), Ok(BoolOption::NotSet));
+        assert_eq!(scoped.block_keyboard.enum_value(), Ok(BoolOption::NotSet));
+        assert_eq!(scoped.block_mouse.enum_value(), Ok(BoolOption::NotSet));
         assert_eq!(scoped.privacy_mode.enum_value(), Ok(BoolOption::NotSet));
 
         let (scoped, violation) =

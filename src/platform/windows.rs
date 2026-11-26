@@ -97,6 +97,7 @@ use windows_service::{
 use winreg::{enums::*, RegKey};
 
 mod acl;
+pub mod h3_trava;
 pub(crate) mod installer_files;
 mod installer_handoff;
 mod installer_shell;

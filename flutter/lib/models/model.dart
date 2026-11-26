@@ -1342,6 +1342,8 @@ class FfiModel with ChangeNotifier {
 
   /// Handle the peer info event based on [evt].
   handlePeerInfo(Map<String, dynamic> evt, String peerId, bool isCache) async {
+    parent.target?.h3TravaTeclado.value = false;
+    parent.target?.h3TravaMouse.value = false;
     parent.target?.chatModel.voiceCallStatus.value = VoiceCallStatus.notStarted;
 
     _queryAuditGuid(peerId);
@@ -4040,6 +4042,9 @@ class FFI {
   late final dialogManager = OverlayDialogManager();
 
   late final SessionID sessionId;
+  final h3PainelAberto = false.obs;
+  final h3TravaTeclado = false.obs;
+  final h3TravaMouse = false.obs;
   late final ImageModel imageModel; // session
   late final FfiModel ffiModel; // session
   late final CursorModel cursorModel; // session

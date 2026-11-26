@@ -22,6 +22,7 @@ import '../../models/shortcut_model.dart';
 import '../../common/shared_state.dart';
 import '../../utils/image.dart';
 import '../widgets/remote_toolbar.dart';
+import '../widgets/h3_painel_sessao.dart';
 import '../widgets/kb_layout_type_chooser.dart';
 import '../widgets/tabbar_widget.dart';
 import 'macos_full_screen_focus_recovery.dart';
@@ -811,6 +812,12 @@ class _RemotePageState extends State<RemotePage>
               _ffi.ffiModel.pi.isSet.isFalse ? emptyOverlay() : Offstage(),
             ],
           ),
+          Positioned(
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: 340,
+              child: H3PainelSessao(id: widget.id, ffi: _ffi)),
         ],
       );
     }

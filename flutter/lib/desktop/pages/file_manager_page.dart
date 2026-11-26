@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:extended_text/extended_text.dart';
+import 'package:flutter_hbb/desktop/widgets/h3_arquivos.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/desktop/widgets/dragable_divider.dart';
 import 'package:percent_indicator/percent_indicator.dart';
@@ -167,7 +168,9 @@ class _FileManagerPageState extends State<FileManagerPage>
       OverlayEntry(builder: (_) {
         return willPopScope(Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: Row(
+          body: !isWeb
+              ? H3ArquivosView(ffi: _ffi, peerId: widget.id)
+              : Row(
             children: [
               if (!isWeb)
                 Flexible(

@@ -3282,6 +3282,14 @@ impl LoginConfigHandler {
             option.block_input = BoolOption::Yes.into();
         } else if name == "unblock-input" {
             option.block_input = BoolOption::No.into();
+        } else if name == "block-keyboard" {
+            option.block_keyboard = BoolOption::Yes.into();
+        } else if name == "unblock-keyboard" {
+            option.block_keyboard = BoolOption::No.into();
+        } else if name == "block-mouse" {
+            option.block_mouse = BoolOption::Yes.into();
+        } else if name == "unblock-mouse" {
+            option.block_mouse = BoolOption::No.into();
         } else if name == "show-quality-monitor" {
             config.show_quality_monitor.v = !config.show_quality_monitor.v;
         } else if name == "allow_swap_key" {

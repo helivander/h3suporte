@@ -869,6 +869,19 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     if (widget.ffi.connType == ConnType.defaultConn) {
       toolbarItems.add(_QuickCommandsMenu(id: widget.id, ffi: widget.ffi));
     }
+    if (widget.ffi.connType == ConnType.defaultConn) {
+      toolbarItems.add(_IconMenuButton(
+        icon: SizedBox(
+            width: _ToolbarTheme.buttonSize,
+            height: _ToolbarTheme.buttonSize,
+            child: const Icon(Icons.view_sidebar_rounded,
+                color: Colors.white, size: 20)),
+        tooltip: 'Menu lateral',
+        color: _ToolbarTheme.blueColor(context),
+        hoverColor: _ToolbarTheme.hoverBlueColor(context),
+        onPressed: () => widget.ffi.h3PainelAberto.toggle(),
+      ));
+    }
     toolbarItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
     if (kH3IaBuild &&
         !isWeb &&
