@@ -57,9 +57,11 @@ fn make_tray() -> hbb_common::ResultType<()> {
     #[cfg(not(target_os = "macos"))]
     let asset = load_icon_from_asset();
     let (icon_rgba, icon_width, icon_height) = {
-        let image = asset
-            .unwrap_or(image::load_from_memory(icon).context("Failed to open icon path")?)
-            .into_rgba8();
+        let image = match asset {
+            Some(image) => image,
+            None => image::load_from_memory(icon).context("Failed to open icon path")?,
+        }
+        .into_rgba8();
         let (width, height) = image.dimensions();
         let rgba = image.into_raw();
         (rgba, width, height)
@@ -128,8 +130,9 @@ fn make_tray() -> hbb_common::ResultType<()> {
         {
             // Do not use "xdg-open", it won't read the config.
             if crate::dbus::invoke_new_connection(crate::get_uri_prefix()).is_err() {
-                if let Ok(task) = crate::run_me::<&str>(vec![]) {
-                    crate::server::CHILD_PROCESS.lock().unwrap().push(task);
+                match crate::run_me::<&str>(vec![]) {
+                    Ok(task) => crate::server::CHILD_PROCESS.lock().unwrap().push(task),
+                    Err(err) => log::error!("Failed to launch UI from tray: {err}"),
                 }
             }
         }

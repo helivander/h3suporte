@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { after, before, beforeEach, test } from "node:test";
-import { criarApp } from "../src/app.js";
+import { criarApp, criarLimite, limparExpirados } from "../src/app.js";
 import { abrirBanco } from "../src/banco.js";
 import { criarCentral } from "../src/central.js";
+import { lerConfig } from "../src/config.js";
 
 // Central simulada com o contrato de docs/central-contas-assinante.md.
 const estado = {};
@@ -466,4 +467,79 @@ test("PUT /api/audit registra nota de sessão autenticada e GET /api/peers refle
   agora += 5 * 60_000;
   const peersOffline = await chamar("GET", "/api/peers", undefined, token);
   assert.equal(peersOffline.json.data.find((p) => p.id === "dev-1")?.status, 0);
+});
+
+test("limparExpirados remove apenas expirados e preserva ativos, respeitando o teto com descarte dos mais antigos", () => {
+  const mapa = new Map([
+    ["exp1", { ate: 100 }],
+    ["ativo1", { ate: 500 }],
+    ["exp2", { ate: 200 }],
+    ["ativo2", { ate: 600 }],
+  ]);
+  limparExpirados(mapa, 4, (v) => v.ate <= 250);
+  assert.deepEqual([...mapa.keys()], ["ativo1", "ativo2"]);
+
+  // Quando todos ainda estão ativos e atinge o limite, descarta os mais antigos até ficar abaixo do teto.
+  mapa.set("ativo3", { ate: 700 });
+  mapa.set("ativo4", { ate: 800 });
+  limparExpirados(mapa, 4, (v) => v.ate <= 250);
+  assert.deepEqual([...mapa.keys()], ["ativo2", "ativo3", "ativo4"]);
+});
+
+test("criarLimite respeita janela, renova após expiração e limita memória", () => {
+  const lim = criarLimite(2, 1000, 3);
+  assert.equal(lim.consumir("ip1", 100), true);
+  assert.equal(lim.consumir("ip1", 200), true);
+  assert.equal(lim.consumir("ip1", 300), false);
+  // Após a janela expirar, libera de novo.
+  assert.equal(lim.consumir("ip1", 1100), true);
+  // Preenche até o teto e garante que não cresce sem limite.
+  assert.equal(lim.consumir("ip2", 1100), true);
+  assert.equal(lim.consumir("ip3", 1100), true);
+  assert.equal(lim.consumir("ip4", 1100), true);
+});
+
+test("respostas HTTP incluem cabeçalhos de segurança e validam entradas inválidas", async () => {
+  const rSaude = await fetch(`${base}/saude`);
+  assert.equal(rSaude.status, 200);
+  assert.equal(rSaude.headers.get("cache-control"), "no-store");
+  assert.equal(rSaude.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(rSaude.headers.get("x-frame-options"), "DENY");
+  assert.equal(rSaude.headers.get("referrer-policy"), "no-referrer");
+
+  const jsonRuim = await fetch(`${base}/api/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{nao-eh-json",
+  });
+  assert.equal(jsonRuim.status, 400);
+
+  const grande = await fetch(`${base}/api/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ uuid: "u", username: "a@b.c", password: "x".repeat(70_000) }),
+  });
+  assert.equal(grande.status, 413);
+
+  const senhaLonga = await chamar("POST", "/api/login", {
+    uuid: "u",
+    username: "a@b.c",
+    password: "x".repeat(1025),
+  });
+  assert.equal(senhaLonga.status, 400);
+});
+
+test("lerConfig valida CENTRAL_URL, PORTA com espaços e CHAVE_DISPOSITIVOS", () => {
+  const cfg = lerConfig({ CENTRAL_URL: "https://central.exemplo.com/", PORTA: "   " });
+  assert.equal(cfg.porta, 21114);
+  assert.equal(cfg.central, "https://central.exemplo.com");
+
+  assert.throws(() => lerConfig({ CENTRAL_URL: "javascript:alert(1)", PERMITIR_HTTP: "1" }), /https:\/\//);
+  assert.throws(() => lerConfig({ CENTRAL_URL: "not-a-url", PERMITIR_HTTP: "1" }), /inválida/);
+  assert.throws(
+    () => lerConfig({ CENTRAL_URL: "https://central.exemplo.com", CHAVE_DISPOSITIVOS: "not!valid!base64!chars!" }),
+    /32 bytes/,
+  );
+  const httpDev = lerConfig({ CENTRAL_URL: "http://127.0.0.1:3000", PERMITIR_HTTP: "1" });
+  assert.equal(httpDev.central, "http://127.0.0.1:3000");
 });

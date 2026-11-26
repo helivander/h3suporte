@@ -53,13 +53,58 @@ void main() {
   test(
       'ações de energia pedem confirmação e plataformas sem lista ficam sem menu',
       () {
-    final energia = comandosRapidosPara(kPeerPlatformWindows)
-        .firstWhere((g) => g.titulo.startsWith('Energia'))
-        .comandos
-        .where((c) =>
-            c.valor.startsWith('shutdown /s') ||
-            c.valor.startsWith('shutdown /r'));
-    expect(energia.every((c) => c.confirmar != null), isTrue);
+    final grupoEnergia = comandosRapidosPara(kPeerPlatformWindows)
+        .firstWhere((g) => g.titulo.startsWith('Energia'));
+    final energia = grupoEnergia.comandos.where((c) =>
+        c.valor.startsWith('shutdown /s') ||
+        c.valor.startsWith('shutdown /r') ||
+        c.valor == 'logoff');
+    expect(energia.every((c) => c.confirmar != null && c.confirmar!.isNotEmpty),
+        isTrue);
+    final cancelar = grupoEnergia.comandos
+        .firstWhere((c) => c.valor == 'shutdown /a');
+    expect(cancelar.confirmar, isNull);
     expect(comandosRapidosPara(kPeerPlatformAndroid), isEmpty);
+    expect(comandosRapidosPara(''), isEmpty);
+    expect(comandosRapidosPara('desconhecido'), isEmpty);
+  });
+
+  test('macOS e Linux oferecem atalhos essenciais e valores não vazios', () {
+    final macTitulos = comandosRapidosPara(kPeerPlatformMacOS)
+        .expand((g) => g.comandos)
+        .map((c) => c.titulo)
+        .toList();
+    expect(macTitulos,
+        containsAll(['Bloquear tela', 'Terminal', 'Monitor de Atividade', 'Finder']));
+
+    final linuxTitulos = comandosRapidosPara(kPeerPlatformLinux)
+        .expand((g) => g.comandos)
+        .map((c) => c.titulo)
+        .toList();
+    expect(linuxTitulos,
+        containsAll(['Ctrl + Alt + Del', 'Bloquear tela', 'Abrir Terminal (Ctrl + Alt + T)']));
+
+    for (final p in [
+      kPeerPlatformWindows,
+      kPeerPlatformMacOS,
+      kPeerPlatformLinux,
+    ]) {
+      final todos = comandosRapidosPara(p).expand((g) => g.comandos);
+      for (final c in todos) {
+        if (c.tipo == H3TipoComando.executar || c.tipo == H3TipoComando.teclas) {
+          expect(c.valor, isNotEmpty, reason: c.titulo);
+        }
+      }
+    }
+  });
+
+  test('passosDe respeita pausas de abertura e digitação por plataforma', () {
+    final win = passosDe(
+        const H3Comando.executar('x', 'notepad'), kPeerPlatformWindows);
+    expect(win, [('win+r', null, 800), (null, 'notepad', 250), ('Return', null, 0)]);
+
+    final mac =
+        passosDe(const H3Comando.executar('x', 'Finder'), kPeerPlatformMacOS);
+    expect(mac, [('command+space', null, 700), (null, 'Finder', 250), ('Return', null, 0)]);
   });
 }

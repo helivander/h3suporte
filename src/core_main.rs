@@ -424,11 +424,17 @@ pub fn core_main() -> Option<CoreMainAction> {
                 let filepath;
                 let path = std::path::Path::new(&args[1]);
                 if !path.is_absolute() {
-                    let mut cur = std::env::current_dir().unwrap();
+                    let mut cur = match std::env::current_dir() {
+                        Ok(cur) => cur,
+                        Err(err) => {
+                            log::error!("Failed to get current directory for --import-config: {err}");
+                            return None;
+                        }
+                    };
                     cur.push(path);
-                    filepath = cur.to_str().unwrap().to_string();
+                    filepath = cur.to_string_lossy().into_owned();
                 } else {
-                    filepath = path.to_str().unwrap().to_string();
+                    filepath = path.to_string_lossy().into_owned();
                 }
                 import_config(&filepath);
             }

@@ -48,6 +48,7 @@ test("vale o pré-lançamento mais recente com instaladores, sem exigir a lista 
 test("sem release com instaladores não há downloads", async () => {
   for (const releases of [
     [],
+    null,
     [{ tag_name: "v1.5.3-8", prerelease: true, assets: [asset("rustdesk.sbom.json")] }],
     [{ tag_name: "v1.5.4", draft: true, assets }],
     [{ tag_name: "nightly", assets }],

@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../common.dart';
+import '../../common/widgets/h3_estilo.dart';
 import '../../models/ai_agent_model.dart';
 import '../../models/ai_models.dart';
-import '../pages/h3_home_layout.dart';
 
 class AiChatPanel extends StatefulWidget {
   final AiAgentModel model;
@@ -116,24 +116,26 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final t = H3Tokens.of(context);
     return Material(
       elevation: 8,
-      color: H3Cores.painel,
+      color: t.painel,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: H3Cores.linha2)),
+          side: BorderSide(color: t.linha2)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          _header(),
-          Divider(height: 1, color: H3Cores.linha),
-          Expanded(child: _showSettings ? _settings() : _conversation()),
+          _header(t),
+          Divider(height: 1, color: t.linha),
+          Expanded(child: _showSettings ? _settings(t) : _conversation(t)),
         ],
       ),
     );
   }
 
-  Widget _headerButton(String tip, IconData icon, VoidCallback? onTap) =>
+  Widget _headerButton(
+          H3Tokens t, String tip, IconData icon, VoidCallback? onTap) =>
       Padding(
         padding: const EdgeInsets.only(left: 6),
         child: Tooltip(
@@ -145,20 +147,18 @@ class _AiChatPanelState extends State<AiChatPanel> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                  color: H3Cores.painel,
-                  border: Border.all(color: H3Cores.linha2),
+                  color: t.painel,
+                  border: Border.all(color: t.linha2),
                   borderRadius: BorderRadius.circular(8)),
               child: Icon(icon,
                   size: 16,
-                  color: onTap == null
-                      ? H3Cores.apagado.withOpacity(0.4)
-                      : H3Cores.apagado),
+                  color: onTap == null ? t.apagado.withOpacity(0.4) : t.apagado),
             ),
           ),
         ),
       );
 
-  Widget _header() {
+  Widget _header(H3Tokens t) {
     final subtitle = model.provider == kAiProviderChatGpt
         ? 'ChatGPT · ${model.chatGptModel}'
         : 'Claude · ${model.model}';
@@ -169,10 +169,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-              color: H3Cores.destaque.withOpacity(0.12),
+              color: t.destaque.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10)),
-          child:
-              Icon(Icons.smart_toy_outlined, size: 20, color: H3Cores.destaque),
+          child: Icon(Icons.smart_toy_outlined, size: 20, color: t.destaque),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -180,27 +179,26 @@ class _AiChatPanelState extends State<AiChatPanel> {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(translate('AI assistant'),
               style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  color: H3Cores.texto)),
+                  fontWeight: FontWeight.w600, fontSize: 15, color: t.texto)),
           Text(subtitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+              style: TextStyle(fontSize: 12, color: t.apagado)),
         ])),
-        Obx(() => _headerButton(translate('Clear'), Icons.delete_outline,
+        Obx(() => _headerButton(
+            t,
+            translate('Clear'),
+            Icons.delete_outline,
             model.status.value == AiAgentStatus.idle ? model.clear : null)),
-        _headerButton(translate('Settings'), Icons.settings_outlined,
+        _headerButton(t, translate('Settings'), Icons.settings_outlined,
             () => setState(() => _showSettings = !_showSettings)),
-        _headerButton(translate('Close'), Icons.close, model.hidePanel),
+        _headerButton(t, translate('Close'), Icons.close, model.hidePanel),
       ]),
     );
   }
 
-  Color get _perigo =>
-      H3Cores.escuro ? const Color(0xFFFF5D6C) : const Color(0xFFC6283A);
-
-  InputDecoration _inputDecoration({String? labelText, String? hintText}) {
+  InputDecoration _inputDecoration(H3Tokens t,
+      {String? labelText, String? hintText}) {
     OutlineInputBorder border(Color c) => OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: c));
@@ -209,17 +207,17 @@ class _AiChatPanelState extends State<AiChatPanel> {
         hintText: hintText,
         isDense: true,
         filled: true,
-        fillColor: H3Cores.fundo,
-        labelStyle: TextStyle(color: H3Cores.apagado),
-        hintStyle: TextStyle(color: H3Cores.apagado),
+        fillColor: t.fundo,
+        labelStyle: TextStyle(color: t.apagado),
+        hintStyle: TextStyle(color: t.apagado),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        enabledBorder: border(H3Cores.linha2),
-        focusedBorder: border(H3Cores.destaque),
-        border: border(H3Cores.linha2));
+        enabledBorder: border(t.linha2),
+        focusedBorder: border(t.destaque),
+        border: border(t.linha2));
   }
 
-  Widget _providerSelector() {
+  Widget _providerSelector(H3Tokens t) {
     Widget item(String p, String label) {
       final on = _provider == p;
       return Expanded(
@@ -229,16 +227,15 @@ class _AiChatPanelState extends State<AiChatPanel> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
             decoration: BoxDecoration(
-                color: on ? H3Cores.painel2 : Colors.transparent,
-                border:
-                    Border.all(color: on ? H3Cores.linha2 : Colors.transparent),
+                color: on ? t.painel2 : Colors.transparent,
+                border: Border.all(color: on ? t.linha2 : Colors.transparent),
                 borderRadius: BorderRadius.circular(7)),
             child: Text(label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
-                    color: on ? H3Cores.texto : H3Cores.apagado)),
+                    color: on ? t.texto : t.apagado)),
           ),
         ),
       );
@@ -247,8 +244,8 @@ class _AiChatPanelState extends State<AiChatPanel> {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-          color: H3Cores.fundo,
-          border: Border.all(color: H3Cores.linha2),
+          color: t.fundo,
+          border: Border.all(color: t.linha2),
           borderRadius: BorderRadius.circular(10)),
       child: Row(children: [
         item(kAiProviderClaude, translate('Claude (API key)')),
@@ -258,32 +255,31 @@ class _AiChatPanelState extends State<AiChatPanel> {
     );
   }
 
-  Widget _notice(String text) => Container(
+  Widget _notice(H3Tokens t, String text) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-            color: H3Cores.aviso.withOpacity(0.08),
-            border: Border.all(color: H3Cores.aviso.withOpacity(0.45)),
+            color: t.aviso.withOpacity(0.08),
+            border: Border.all(color: t.aviso.withOpacity(0.45)),
             borderRadius: BorderRadius.circular(12)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(Icons.warning_amber_rounded, size: 18, color: H3Cores.aviso),
+          Icon(Icons.warning_amber_rounded, size: 18, color: t.aviso),
           const SizedBox(width: 10),
           Expanded(
               child: Text(text,
-                  style: TextStyle(
-                      fontSize: 12, height: 1.4, color: H3Cores.texto))),
+                  style: TextStyle(fontSize: 12, height: 1.4, color: t.texto))),
         ]),
       );
 
-  Widget _settings() {
+  Widget _settings(H3Tokens t) {
     field(String label, TextEditingController c, {bool secret = false}) =>
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: TextField(
               controller: c,
               obscureText: secret,
-              decoration: _inputDecoration(labelText: translate(label))),
+              decoration: _inputDecoration(t, labelText: translate(label))),
         );
-    final hint = TextStyle(fontSize: 12, color: H3Cores.apagado);
+    final hint = TextStyle(fontSize: 12, color: t.apagado);
     if (_provider == kAiProviderGemini) {
       return Padding(
           padding: const EdgeInsets.all(16),
@@ -292,7 +288,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
               style: hint));
     }
     return ListView(padding: const EdgeInsets.all(12), children: [
-      _providerSelector(),
+      _providerSelector(t),
       const SizedBox(height: 14),
       if (_provider == kAiProviderClaude) ...[
         field('API key', _apiKey, secret: true),
@@ -326,12 +322,12 @@ class _AiChatPanelState extends State<AiChatPanel> {
           Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: SelectableText(_loginError,
-                  style: TextStyle(fontSize: 12, color: _perigo))),
+                  style: TextStyle(fontSize: 12, color: t.perigo))),
         field('Model', _chatGptModel),
         Text(translate('ai-agent-chatgpt-plan-tip'), style: hint),
         const SizedBox(height: 12),
       ],
-      _notice(translate('ai-agent-privacy-tip')),
+      _notice(t, translate('ai-agent-privacy-tip')),
       const SizedBox(height: 12),
       Align(
           alignment: Alignment.centerRight,
@@ -340,20 +336,20 @@ class _AiChatPanelState extends State<AiChatPanel> {
     ]);
   }
 
-  Widget _conversation() {
+  Widget _conversation(H3Tokens t) {
     return Column(children: [
       Expanded(
           child: Obx(() => model.entries.isEmpty
               ? Padding(
                   padding: const EdgeInsets.all(16),
-                  child: _notice(translate('ai-agent-privacy-tip')))
+                  child: _notice(t, translate('ai-agent-privacy-tip')))
               : ListView.builder(
                   controller: _scroll,
                   padding: const EdgeInsets.all(16),
                   itemCount: model.entries.length,
-                  itemBuilder: (_, i) => _entry(model.entries[i])))),
+                  itemBuilder: (_, i) => _entry(t, model.entries[i])))),
       Obx(() => model.status.value == AiAgentStatus.awaitingApproval
-          ? _approval()
+          ? _approval(t)
           : const SizedBox.shrink()),
       Obx(() => model.status.value == AiAgentStatus.running
           ? Padding(
@@ -362,17 +358,17 @@ class _AiChatPanelState extends State<AiChatPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(translate('IA no controle'),
-                        style: TextStyle(fontSize: 12, color: H3Cores.apagado)),
+                        style: TextStyle(fontSize: 12, color: t.apagado)),
                     const SizedBox(height: 6),
                     ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                             minHeight: 6,
-                            color: H3Cores.destaque,
-                            backgroundColor: H3Cores.linha)),
+                            color: t.destaque,
+                            backgroundColor: t.linha)),
                   ]))
           : const SizedBox.shrink()),
-      Divider(height: 1, color: H3Cores.linha),
+      Divider(height: 1, color: t.linha),
       Obx(() => Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: Row(children: [
@@ -381,13 +377,13 @@ class _AiChatPanelState extends State<AiChatPanel> {
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: H3Cores.texto))),
+                          color: t.texto))),
               Switch(
                   value: model.confirmEach.value,
-                  activeColor: Colors.white,
-                  activeTrackColor: H3Cores.destaque,
-                  inactiveTrackColor: H3Cores.linha2,
-                  inactiveThumbColor: Colors.white,
+                  activeColor: t.destaqueTinta,
+                  activeTrackColor: t.destaque,
+                  inactiveTrackColor: t.linha2,
+                  inactiveThumbColor: t.apagado,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   onChanged: (v) => model.confirmEach.value = v),
             ]),
@@ -401,17 +397,17 @@ class _AiChatPanelState extends State<AiChatPanel> {
                   focusNode: _inputNode,
                   minLines: 1,
                   maxLines: 5,
-                  style: TextStyle(color: H3Cores.texto),
-                  decoration: _inputDecoration(
+                  style: TextStyle(color: t.texto),
+                  decoration: _inputDecoration(t,
                       hintText: translate(
                           'Describe the task for the remote computer')))),
           const SizedBox(width: 8),
           Obx(() => model.status.value == AiAgentStatus.idle
-              ? _actionButton(Icons.send, translate('Send'), H3Cores.destaque,
-                  H3Cores.destaqueTinta, _send)
+              ? _actionButton(Icons.send, translate('Send'), t.destaque,
+                  t.destaqueTinta, _send)
               : _actionButton(Icons.stop, translate('Stop'), Colors.transparent,
-                  _perigo, model.stop,
-                  border: _perigo)),
+                  t.perigo, model.stop,
+                  border: t.perigo)),
         ]),
       ),
     ]);
@@ -437,25 +433,25 @@ class _AiChatPanelState extends State<AiChatPanel> {
         ),
       );
 
-  Widget _approval() {
+  Widget _approval(H3Tokens t) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-          color: H3Cores.aviso.withOpacity(0.08),
-          border: Border.all(color: H3Cores.aviso.withOpacity(0.55)),
+          color: t.aviso.withOpacity(0.08),
+          border: Border.all(color: t.aviso.withOpacity(0.55)),
           borderRadius: BorderRadius.circular(14)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(Icons.warning_amber_rounded, size: 16, color: H3Cores.aviso),
+          Icon(Icons.warning_amber_rounded, size: 16, color: t.aviso),
           const SizedBox(width: 8),
           Expanded(
               child: Text(translate('The AI wants to run these actions'),
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
-                      color: H3Cores.aviso))),
+                      color: t.aviso))),
         ]),
         const SizedBox(height: 8),
         ConstrainedBox(
@@ -471,7 +467,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
                         style: TextStyle(
                             fontFamily: 'monospace',
                             fontSize: 12,
-                            color: H3Cores.texto)),
+                            color: t.texto)),
                   )
               ])),
         ),
@@ -483,8 +479,8 @@ class _AiChatPanelState extends State<AiChatPanel> {
           const SizedBox(width: 8),
           OutlinedButton(
               style: OutlinedButton.styleFrom(
-                  foregroundColor: H3Cores.texto,
-                  side: BorderSide(color: H3Cores.linha2),
+                  foregroundColor: t.texto,
+                  side: BorderSide(color: t.linha2),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8))),
               onPressed: () => model.approve(false),
@@ -494,7 +490,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
     );
   }
 
-  Widget _entry(AiChatEntry e) {
+  Widget _entry(H3Tokens t, AiChatEntry e) {
     switch (e.kind) {
       case AiEntryKind.user:
       case AiEntryKind.assistant:
@@ -506,8 +502,8 @@ class _AiChatPanelState extends State<AiChatPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
             constraints: const BoxConstraints(maxWidth: 320),
             decoration: BoxDecoration(
-                color: mine ? H3Cores.destaque : H3Cores.fundo,
-                border: mine ? null : Border.all(color: H3Cores.linha2),
+                color: mine ? t.destaque : t.fundo,
+                border: mine ? null : Border.all(color: t.linha2),
                 borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(14),
                     topRight: const Radius.circular(14),
@@ -515,8 +511,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
                     bottomRight: Radius.circular(mine ? 4 : 14))),
             child: SelectableText(e.text,
                 style: TextStyle(
-                    height: 1.4,
-                    color: mine ? H3Cores.destaqueTinta : H3Cores.texto)),
+                    height: 1.4, color: mine ? t.destaqueTinta : t.texto)),
           ),
         );
       case AiEntryKind.action:
@@ -526,16 +521,14 @@ class _AiChatPanelState extends State<AiChatPanel> {
             margin: const EdgeInsets.symmetric(vertical: 2),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-                color: H3Cores.painel2,
-                border: Border.all(color: H3Cores.linha2),
+                color: t.painel2,
+                border: Border.all(color: t.linha2),
                 borderRadius: BorderRadius.circular(6)),
             child: Text(e.text,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    color: H3Cores.apagado)),
+                    fontFamily: 'monospace', fontSize: 12, color: t.apagado)),
           ),
         );
       case AiEntryKind.info:
@@ -545,13 +538,13 @@ class _AiChatPanelState extends State<AiChatPanel> {
               style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
-                  color: H3Cores.apagado)),
+                  color: t.apagado)),
         );
       case AiEntryKind.error:
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 3),
           child: SelectableText(e.text,
-              style: TextStyle(fontSize: 12, color: _perigo)),
+              style: TextStyle(fontSize: 12, color: t.perigo)),
         );
     }
   }

@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
-import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/user_model.dart';
 import 'package:flutter_hbb/utils/http_service.dart' as http;
@@ -76,6 +76,7 @@ class _ContaConteudoState extends State<ContaConteudo> {
 
   @override
   Widget build(BuildContext context) {
+    final t = H3Tokens.of(context);
     final u = gFFI.userModel;
     final info = UserModel.getLocalUserInfo() ?? {};
     final a = _assinatura;
@@ -87,9 +88,9 @@ class _ContaConteudoState extends State<ContaConteudo> {
           gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [H3Cores.painel2, H3Cores.painel]),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: H3Cores.linha),
+              colors: [t.painel2, t.painel]),
+          borderRadius: BorderRadius.circular(H3Raios.lg),
+          border: Border.all(color: t.linha),
         );
     Widget secao(String titulo, IconData icone, List<Widget> filhos) =>
         Container(
@@ -104,25 +105,25 @@ class _ContaConteudoState extends State<ContaConteudo> {
                     height: 34,
                     margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(H3Raios.sm),
                       gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            H3Cores.destaque.withOpacity(0.28),
-                            H3Cores.destaque.withOpacity(0.08)
+                            t.destaque.withOpacity(0.28),
+                            t.destaque.withOpacity(0.08)
                           ]),
                     ),
-                    child: Icon(icone, size: 18, color: H3Cores.destaque),
+                    child: Icon(icone, size: 18, color: t.destaque),
                   ),
                   Text(titulo,
                       style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: H3Cores.texto)),
+                          color: t.texto)),
                 ]),
                 const SizedBox(height: 10),
-                Divider(height: 1, color: H3Cores.linha),
+                Divider(height: 1, color: t.linha),
                 const SizedBox(height: 8),
                 ...filhos,
               ]),
@@ -134,21 +135,21 @@ class _ContaConteudoState extends State<ContaConteudo> {
         gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [H3Cores.destaque.withOpacity(0.16), H3Cores.painel]),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: H3Cores.linha2),
+            colors: [t.destaque.withOpacity(0.16), t.painel]),
+        borderRadius: BorderRadius.circular(H3Raios.lg),
+        border: Border.all(color: t.linha2),
       ),
       child: Obx(() {
         final nome = u.displayNameOrUserName;
         return Row(children: [
           CircleAvatar(
             radius: 32,
-            backgroundColor: H3Cores.destaque,
+            backgroundColor: t.destaque,
             child: Text(
                 nome.isEmpty ? '?' : nome.substring(0, 1).toUpperCase(),
                 style: TextStyle(
                     fontSize: 26,
-                    color: H3Cores.destaqueTinta,
+                    color: t.destaqueTinta,
                     fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 18),
@@ -159,16 +160,16 @@ class _ContaConteudoState extends State<ContaConteudo> {
                   style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: H3Cores.texto)),
+                      color: t.texto)),
               const SizedBox(height: 2),
               Text('@${u.userName.value}',
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+                  style: TextStyle(fontSize: 13, color: t.apagado)),
               const SizedBox(height: 10),
               Wrap(spacing: 8, runSpacing: 6, children: [
-                _selo(papel, H3Cores.info),
+                _selo(papel, t.info),
                 _selo(ativa ? 'Assinatura ativa' : (estado.isEmpty ? 'Sem plano' : estado),
-                    ativa ? H3Cores.ok : H3Cores.aviso),
+                    ativa ? t.ok : t.aviso),
               ]),
             ]),
           ),
@@ -177,17 +178,17 @@ class _ContaConteudoState extends State<ContaConteudo> {
     );
 
     final plano = secao('Plano', Icons.workspace_premium_outlined, [
-      _linha('Plano', '${a['plano'] ?? '—'}'),
-      _linha('Situação', ativa ? 'Ativa' : (estado.isEmpty ? '—' : estado),
-          cor: ativa ? H3Cores.ok : H3Cores.aviso),
-      _linha('Válido até', fim == null ? 'Sem data de término' : _data(fim)),
+      _linha(t, 'Plano', '${a['plano'] ?? '—'}'),
+      _linha(t, 'Situação', ativa ? 'Ativa' : (estado.isEmpty ? '—' : estado),
+          cor: ativa ? t.ok : t.aviso),
+      _linha(t, 'Válido até', fim == null ? 'Sem data de término' : _data(fim)),
     ]);
     final uso = secao('Uso em tempo real', Icons.speed_outlined, [
-      _barra(Icons.swap_horiz, 'Acessos remotos', _uso?['acessos_em_uso'],
+      _barra(t, Icons.swap_horiz, 'Acessos remotos', _uso?['acessos_em_uso'],
           a['limite_acessos']),
-      _barra(Icons.devices_outlined, 'Computadores', _uso?['dispositivos'],
+      _barra(t, Icons.devices_outlined, 'Computadores', _uso?['dispositivos'],
           a['limite_dispositivos']),
-      _barra(Icons.group_outlined, 'Contas da equipe', _uso?['contas'],
+      _barra(t, Icons.group_outlined, 'Contas da equipe', _uso?['contas'],
           a['limite_contas']),
       if (_falhou)
         Padding(
@@ -195,7 +196,7 @@ class _ContaConteudoState extends State<ContaConteudo> {
           child: Row(children: [
             Expanded(
               child: Text('Sem conexão com o servidor.',
-                  style: TextStyle(fontSize: 11, color: H3Cores.aviso)),
+                  style: TextStyle(fontSize: 11, color: t.aviso)),
             ),
             TextButton(
               onPressed: _buscar,
@@ -205,7 +206,7 @@ class _ContaConteudoState extends State<ContaConteudo> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text('Tentar novamente',
-                  style: TextStyle(fontSize: 11, color: H3Cores.destaque)),
+                  style: TextStyle(fontSize: 11, color: t.destaque)),
             ),
           ]),
         ),
@@ -227,6 +228,7 @@ class _ContaConteudoState extends State<ContaConteudo> {
         else ...[plano, const SizedBox(height: 16), uso],
         const SizedBox(height: 16),
         _botaoPrincipal(
+            t,
             Icons.workspace_premium_outlined,
             'Gerenciar assinatura no portal',
             'Plano, pagamentos e equipe',
@@ -235,35 +237,33 @@ class _ContaConteudoState extends State<ContaConteudo> {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
-              child: _botaoSecundario(Icons.tune,
+              child: _botaoSecundario(t, Icons.tune,
                   'Configurações deste computador', widget.onConfigLocal)),
           const SizedBox(width: 12),
           Expanded(
-              child: _botaoSecundario(Icons.logout, 'Sair da conta', () async {
+              child: _botaoSecundario(t, Icons.logout, 'Sair da conta', () async {
             await gFFI.userModel.logOut();
             widget.onLogout?.call();
-          }, cor: H3Cores.perigo)),
+          }, cor: t.perigo)),
         ]),
       ]);
     });
   }
 
-  Widget _botaoPrincipal(
-          IconData icone, String titulo, String sub, VoidCallback onTap) =>
+  Widget _botaoPrincipal(H3Tokens t, IconData icone, String titulo, String sub,
+          VoidCallback onTap) =>
       InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(H3Raios.md),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(colors: [
-              H3Cores.destaque,
-              H3Cores.destaque.withOpacity(0.75)
-            ]),
+            borderRadius: BorderRadius.circular(H3Raios.md),
+            gradient: LinearGradient(
+                colors: [t.destaque, t.destaque.withOpacity(0.75)]),
           ),
           child: Row(children: [
-            Icon(icone, size: 22, color: H3Cores.destaqueTinta),
+            Icon(icone, size: 22, color: t.destaqueTinta),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -273,31 +273,32 @@ class _ContaConteudoState extends State<ContaConteudo> {
                       style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: H3Cores.destaqueTinta)),
+                          color: t.destaqueTinta)),
                   Text(sub,
                       style: TextStyle(
                           fontSize: 11.5,
-                          color: H3Cores.destaqueTinta.withOpacity(0.8))),
+                          color: t.destaqueTinta.withOpacity(0.8))),
                 ],
               ),
             ),
-            Icon(Icons.open_in_new, size: 18, color: H3Cores.destaqueTinta),
+            Icon(Icons.open_in_new, size: 18, color: t.destaqueTinta),
           ]),
         ),
       );
 
-  Widget _botaoSecundario(IconData icone, String rotulo, VoidCallback onTap,
+  Widget _botaoSecundario(
+      H3Tokens t, IconData icone, String rotulo, VoidCallback onTap,
       {Color? cor}) {
-    final c = cor ?? H3Cores.texto;
+    final c = cor ?? t.texto;
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(H3Raios.md),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: H3Cores.painel2,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cor?.withOpacity(0.5) ?? H3Cores.linha2),
+          color: t.painel2,
+          borderRadius: BorderRadius.circular(H3Raios.md),
+          border: Border.all(color: cor?.withOpacity(0.5) ?? t.linha2),
         ),
         child: Row(children: [
           Icon(icone, size: 18, color: c),
@@ -306,71 +307,62 @@ class _ContaConteudoState extends State<ContaConteudo> {
               child: Text(rotulo,
                   style: TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w600, color: c))),
-          Icon(Icons.chevron_right, size: 18, color: H3Cores.apagado),
+          Icon(Icons.chevron_right, size: 18, color: t.apagado),
         ]),
       ),
     );
   }
 
-  Widget _titulo(String t) => Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 6),
-        child: Text(t.toUpperCase(),
-            style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 0.8,
-                fontWeight: FontWeight.w700,
-                color: H3Cores.apagado)),
-      );
-
   Widget _selo(String t, Color cor) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
             color: cor.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(H3Raios.full)),
         child: Text(t,
             style: TextStyle(
                 fontSize: 11, fontWeight: FontWeight.w600, color: cor)),
       );
 
-  Widget _linha(String r, String v, {Color? cor}) => Padding(
+  Widget _linha(H3Tokens t, String r, String v, {Color? cor}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(children: [
-          Text(r, style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+          Text(r, style: TextStyle(fontSize: 13, color: t.apagado)),
           const Spacer(),
           Text(v,
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: cor ?? H3Cores.texto)),
+                  color: cor ?? t.texto)),
         ]),
       );
 
-  Widget _barra(IconData icone, String rotulo, dynamic usado, dynamic limite) {
+  Widget _barra(
+      H3Tokens t, IconData icone, String rotulo, dynamic usado, dynamic limite) {
     final n = usado is int ? usado : null;
     final max = limite is int && limite > 0 ? limite : null;
     final cheio = n != null && max != null && n >= max;
-    final cor = cheio ? H3Cores.aviso : H3Cores.destaque;
+    final cor = cheio ? t.aviso : t.destaque;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(icone, size: 16, color: H3Cores.apagado),
+          Icon(icone, size: 16, color: t.apagado),
           const SizedBox(width: 8),
-          Text(rotulo, style: TextStyle(fontSize: 13, color: H3Cores.texto)),
+          Text(rotulo, style: TextStyle(fontSize: 13, color: t.texto)),
           const Spacer(),
           Text(n == null ? '…' : (max == null ? '$n (sem limite)' : '$n de $max'),
               style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: cheio ? H3Cores.aviso : H3Cores.apagado)),
+                  color: cheio ? t.aviso : t.apagado)),
         ]),
         const SizedBox(height: 5),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(H3Raios.xs),
           child: LinearProgressIndicator(
             minHeight: 6,
             value: n == null ? null : (max == null ? (n > 0 ? 0.08 : 0) : (n / max).clamp(0.0, 1.0)),
-            backgroundColor: H3Cores.linha,
+            backgroundColor: t.linha,
             valueColor: AlwaysStoppedAnimation(cor),
           ),
         ),

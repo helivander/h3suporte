@@ -537,19 +537,51 @@ class _GeneralState extends State<_General> {
     if (bind.isOutgoingOnly()) return const Offstage();
     return Obx(() {
       final instalado = bind.mainIsInstalled();
-      final ligado = instalado &&
-          !serviceStop.value &&
-          (!isMacOS || bind.mainIsInstalledDaemon(prompt: false));
+      final daemonInstalado =
+          !isMacOS || bind.mainIsInstalledDaemon(prompt: false);
+      final ligado = instalado && !serviceStop.value && daemonInstalado;
       Future<void> alternar(bool v) async {
         serviceBtnEnabled.value = false;
         if (v && isMacOS && !bind.mainIsInstalledDaemon(prompt: false)) {
-          bind.mainIsInstalledDaemon(prompt: true);
+          final ok = bind.mainIsInstalledDaemon(prompt: true);
+          if (!ok) {
+            showToast(
+              'Não foi possível ativar o serviço no macOS. Autorize nas Configurações do Sistema e tente novamente.',
+            );
+            serviceBtnEnabled.value = true;
+            if (mounted) setState(() {});
+            return;
+          }
         }
-        if (v == serviceStop.value) await start_service(v);
+        if (v == serviceStop.value) {
+          await start_service(v);
+          showToast(
+            v
+                ? 'H3 Suporte configurado para iniciar com o sistema.'
+                : 'Inicialização com o sistema desativada.',
+          );
+        }
         Future.delayed(const Duration(seconds: 1), () {
           serviceBtnEnabled.value = true;
           if (mounted) setState(() {});
         });
+      }
+
+      final String subtitulo;
+      if (!instalado) {
+        subtitulo =
+            'Instale o H3 Suporte neste computador para ele iniciar com o sistema.';
+      } else if (isMacOS && !daemonInstalado) {
+        subtitulo =
+            'Ative para instalar o serviço em segundo plano no macOS (pode solicitar senha de administrador) '
+            'e iniciar o H3 Suporte com o sistema.';
+      } else if (ligado) {
+        subtitulo =
+            'Ativo: o acesso remoto fica disponível logo ao ligar, mesmo antes de entrar no sistema e sem login '
+            'na conta H3 Suporte. O ícone aparece na bandeja.';
+      } else {
+        subtitulo =
+            'Desativado: o H3 Suporte só ficará disponível quando você abrir o aplicativo manualmente.';
       }
 
       return _Card(title: 'Iniciar com o sistema', children: [
@@ -560,10 +592,7 @@ class _GeneralState extends State<_General> {
             style: TextStyle(fontSize: 14, color: H3Cores.texto),
           ),
           subtitle: Text(
-            instalado
-                ? 'O acesso remoto fica disponível logo ao ligar, mesmo antes de entrar no sistema e sem login '
-                    'na conta H3 Suporte. O ícone aparece na bandeja.'
-                : 'Instale o H3 Suporte neste computador para ele iniciar com o sistema.',
+            subtitulo,
             style: TextStyle(fontSize: 12, color: H3Cores.apagado),
           ),
           trailing: Switch(

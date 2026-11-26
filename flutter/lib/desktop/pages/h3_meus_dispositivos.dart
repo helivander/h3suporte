@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
@@ -329,7 +330,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [H3Cores.painel2, H3Cores.painel]),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(H3Raios.lg),
         border: Border.all(color: H3Cores.linha),
       );
 
@@ -344,7 +345,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
           height: 42,
           decoration: BoxDecoration(
             color: H3Cores.destaque.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(H3Raios.md),
           ),
           child: Icon(Icons.cloud_done_outlined,
               color: H3Cores.destaque, size: 22),
@@ -394,43 +395,23 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
     final fg = primario ? H3Cores.destaqueTinta : H3Cores.texto;
     return Opacity(
       opacity: onTap == null && !carregando ? 0.5 : 1,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+      child: _H3BotaoSuperficie(
+        raio: H3Raios.md,
+        primario: primario,
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: primario
-                ? LinearGradient(colors: [
-                    H3Cores.destaque,
-                    H3Cores.destaque.withOpacity(0.78)
-                  ])
-                : null,
-            color: primario ? null : H3Cores.painel2,
-            border: primario ? null : Border.all(color: H3Cores.linha2),
-            boxShadow: primario
-                ? [
-                    BoxShadow(
-                        color: H3Cores.destaque.withOpacity(0.28),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4))
-                  ]
-                : null,
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            carregando
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: fg))
-                : Icon(icone, size: 18, color: fg),
-            const SizedBox(width: 10),
-            Text(rotulo,
-                style: TextStyle(
-                    fontSize: 13.5, fontWeight: FontWeight.w700, color: fg)),
-          ]),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          carregando
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: fg))
+              : Icon(icone, size: 18, color: fg),
+          const SizedBox(width: 10),
+          Text(rotulo,
+              style: TextStyle(
+                  fontSize: 13.5, fontWeight: FontWeight.w700, color: fg)),
+        ]),
       ),
     );
   }
@@ -516,48 +497,33 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
             color: cor.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(H3Raios.full)),
         child: Text(t,
             style: TextStyle(
                 fontSize: 12, fontWeight: FontWeight.w600, color: cor)),
       );
 
-  Widget _cartaoDispositivo(dynamic d, String? meu) {
+  Widget _cartaoDispositivo(H3Dispositivo d, String? meu) {
     final eu = d.id == meu;
     Widget quadro(IconData i, String dica, VoidCallback f) => Tooltip(
           message: dica,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+          child: _H3BotaoSuperficie(
+            raio: H3Raios.sm,
+            primario: false,
+            largura: 40,
+            altura: 40,
             onTap: f,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: H3Cores.painel2,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: H3Cores.linha2),
-              ),
-              child: Icon(i, size: 19, color: H3Cores.apagado),
-            ),
+            child: Icon(i, size: 19, color: H3Cores.apagado),
           ),
         );
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [H3Cores.painel2, H3Cores.painel]),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: H3Cores.linha),
-      ),
+    return _H3CartaoInterativo(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(H3Raios.md),
               gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -598,35 +564,20 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
         const SizedBox(height: 14),
         Row(children: [
           Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
+            child: _H3BotaoSuperficie(
+              raio: H3Raios.sm,
+              primario: true,
+              altura: 40,
               onTap: () => _conectar(d),
-              child: Container(
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: LinearGradient(colors: [
-                    H3Cores.destaque,
-                    H3Cores.destaque.withOpacity(0.78)
-                  ]),
-                  boxShadow: [
-                    BoxShadow(
-                        color: H3Cores.destaque.withOpacity(0.22),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3))
-                  ],
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.bolt, size: 18, color: H3Cores.destaqueTinta),
-                  const SizedBox(width: 6),
-                  Text('Conectar',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.5,
-                          color: H3Cores.destaqueTinta)),
-                ]),
-              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.bolt, size: 18, color: H3Cores.destaqueTinta),
+                const SizedBox(width: 6),
+                Text('Conectar',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                        color: H3Cores.destaqueTinta)),
+              ]),
             ),
           ),
           const SizedBox(width: 8),
@@ -642,7 +593,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
   Widget _vazio(String msg, {VoidCallback? tentarNovamente}) => Container(
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(H3Raios.md),
           border: Border.all(color: H3Cores.linha2),
           color: H3Cores.fundo,
         ),
@@ -669,7 +620,7 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
         decoration: BoxDecoration(
           color: (online ? H3Cores.ok : H3Cores.apagado).withOpacity(0.12),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(H3Raios.full),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Container(
@@ -687,4 +638,154 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
                   color: online ? H3Cores.ok : H3Cores.apagado)),
         ]),
       );
+}
+
+class _H3CartaoInterativo extends StatefulWidget {
+  final Widget child;
+  const _H3CartaoInterativo({required this.child});
+
+  @override
+  State<_H3CartaoInterativo> createState() => _H3CartaoInterativoState();
+}
+
+class _H3CartaoInterativoState extends State<_H3CartaoInterativo> {
+  bool _hover = false;
+  bool _foco = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final borda = _foco
+        ? H3Cores.destaque.withOpacity(0.6)
+        : _hover
+            ? H3Cores.linha2
+            : H3Cores.linha;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Focus(
+        canRequestFocus: false,
+        onFocusChange: (v) => setState(() => _foco = v),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [H3Cores.painel2, H3Cores.painel]),
+            borderRadius: BorderRadius.circular(H3Raios.lg),
+            border: Border.all(color: borda),
+            boxShadow: _hover || _foco
+                ? [
+                    BoxShadow(
+                      color: H3Cores.destaque.withOpacity(_foco ? 0.14 : 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : null,
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+class _H3BotaoSuperficie extends StatefulWidget {
+  final double raio;
+  final bool primario;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry? padding;
+  final double? largura;
+  final double? altura;
+  final Widget child;
+
+  const _H3BotaoSuperficie({
+    required this.raio,
+    required this.primario,
+    required this.onTap,
+    required this.child,
+    this.padding,
+    this.largura,
+    this.altura,
+  });
+
+  @override
+  State<_H3BotaoSuperficie> createState() => _H3BotaoSuperficieState();
+}
+
+class _H3BotaoSuperficieState extends State<_H3BotaoSuperficie> {
+  bool _hover = false;
+  bool _foco = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final br = BorderRadius.circular(widget.raio);
+    final ativo = widget.onTap != null;
+    final borda = widget.primario
+        ? (_foco ? H3Cores.texto.withOpacity(0.85) : Colors.transparent)
+        : (_foco
+            ? H3Cores.destaque
+            : _hover && ativo
+                ? H3Cores.destaque.withOpacity(0.45)
+                : H3Cores.linha2);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        borderRadius: br,
+        boxShadow: widget.primario && ativo
+            ? [
+                BoxShadow(
+                  color: H3Cores.destaque.withOpacity(_hover || _foco ? 0.36 : 0.24),
+                  blurRadius: _hover || _foco ? 14 : 10,
+                  offset: const Offset(0, 3),
+                )
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: br,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: br,
+          onTap: widget.onTap,
+          onHover: (v) => setState(() => _hover = v),
+          onFocusChange: (v) => setState(() => _foco = v),
+          hoverColor: widget.primario
+              ? Colors.white.withOpacity(0.12)
+              : H3Cores.destaque.withOpacity(0.08),
+          focusColor: widget.primario
+              ? Colors.white.withOpacity(0.18)
+              : H3Cores.destaque.withOpacity(0.14),
+          splashColor: widget.primario
+              ? Colors.white.withOpacity(0.2)
+              : H3Cores.destaque.withOpacity(0.18),
+          child: Ink(
+            width: widget.largura,
+            height: widget.altura,
+            padding: widget.padding,
+            decoration: BoxDecoration(
+              borderRadius: br,
+              gradient: widget.primario
+                  ? LinearGradient(colors: [
+                      H3Cores.destaque,
+                      H3Cores.destaque.withOpacity(0.78),
+                    ])
+                  : null,
+              color: widget.primario ? null : H3Cores.painel2,
+              border: Border.all(color: borda, width: _foco ? 1.5 : 1),
+            ),
+            child: widget.largura != null || widget.altura != null
+                ? Center(child: widget.child)
+                : widget.child,
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -224,7 +224,12 @@ async fn start_hbbs_sync_async() {
                                 info_uploaded.last_uploaded = Some(Instant::now());
                             }
                         }
-                        _ => {
+                        Err(err) => {
+                            hbb_common::throttled_log!(
+                                API_LOG_INTERVAL,
+                                warn,
+                                "Failed to upload sysinfo: {err:?}"
+                            );
                             info_uploaded.last_uploaded = Some(Instant::now());
                         }
                     }

@@ -327,6 +327,8 @@ impl<T: InvokeUiSession> Remote<T> {
                                 if !self.handle_msg_from_ui(d, &mut peer).await {
                                     break;
                                 }
+                            } else {
+                                break;
                             }
                         }
                         _msg = rx_clip_client.recv() => {
@@ -1345,10 +1347,9 @@ impl<T: InvokeUiSession> Remote<T> {
             Data::NewVoiceCall => {
                 let msg = new_voice_call_request(true);
                 // Save the voice call request timestamp for the further validation.
-                self.voice_call_request_timestamp = Some(
+                self.voice_call_request_timestamp =
                     NonZeroI64::new(msg.voice_call_request().req_timestamp)
-                        .unwrap_or(NonZeroI64::new(get_time()).unwrap()),
-                );
+                        .or_else(|| NonZeroI64::new(get_time()));
                 allow_err!(peer.send(&msg).await);
                 self.handler.on_voice_call_waiting();
             }
@@ -1483,8 +1484,7 @@ impl<T: InvokeUiSession> Remote<T> {
         if !self.peer_info.is_support_virtual_display() {
             return;
         }
-        let lc = self.handler.lc.read().unwrap();
-        let displays = lc.get_option("virtual-display");
+        let displays = self.handler.lc.read().unwrap().get_option("virtual-display");
         for d in displays.split(',') {
             if let Ok(index) = d.parse::<i32>() {
                 let mut misc = Misc::new();
@@ -1504,11 +1504,17 @@ impl<T: InvokeUiSession> Remote<T> {
         if self.handler.is_view_camera() {
             return;
         }
-        let lc = self.handler.lc.read().unwrap();
-        if lc.version >= hbb_common::get_version_number("1.2.4")
-            && lc.get_toggle_option("privacy-mode")
-        {
-            let impl_key = lc.get_option("privacy-mode-impl-key");
+        let impl_key = {
+            let lc = self.handler.lc.read().unwrap();
+            if lc.version >= hbb_common::get_version_number("1.2.4")
+                && lc.get_toggle_option("privacy-mode")
+            {
+                Some(lc.get_option("privacy-mode-impl-key"))
+            } else {
+                None
+            }
+        };
+        if let Some(impl_key) = impl_key {
             if impl_key == crate::privacy_mode::PRIVACY_MODE_IMPL_WIN_VIRTUAL_DISPLAY
                 && !self.peer_info.is_support_virtual_display()
             {
@@ -1842,7 +1848,11 @@ impl<T: InvokeUiSession> Remote<T> {
                             self.handler.set_cursor_data(cd)
                         }
                         Err(err) => {
-                            log::warn!("Rejected cursor {id}: {err}");
+                            hbb_common::throttled_log!(
+                                Duration::from_secs(60),
+                                warn,
+                                "Rejected cursor {id}: {err}"
+                            );
                             // The peer shows it now: selected, the UI treats it as a shape it
                             // lacks, as it will when the peer selects it again.
                             self.handler.set_cursor_id(id.to_string());
@@ -2990,7 +3000,11 @@ impl<T: InvokeUiSession> Remote<T> {
                 self.handler.set_cursor_data(cd);
             }
             Err(err) => {
-                log::warn!("Rejected cursor {peer_id}: {err}");
+                hbb_common::throttled_log!(
+                    Duration::from_secs(60),
+                    warn,
+                    "Rejected cursor {peer_id}: {err}"
+                );
                 self.handler
                     .set_cursor_id(self.cursor_dedupe.rejected(peer_id, id).to_string());
             }

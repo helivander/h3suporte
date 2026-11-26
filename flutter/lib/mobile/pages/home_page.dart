@@ -60,6 +60,9 @@ class HomePageState extends State<HomePage> {
       _pages.addAll([ChatPage(type: ChatPageType.mobileMain), ServerPage()]);
     }
     _pages.add(SettingsPage());
+    if (_selectedIndex >= _pages.length) {
+      _selectedIndex = 0;
+    }
   }
 
   @override
@@ -90,7 +93,7 @@ class HomePageState extends State<HomePage> {
                 .toList(),
             currentIndex: _selectedIndex,
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: MyTheme.accent, //
+            selectedItemColor: H3Tokens.of(context).destaque,
             unselectedItemColor: MyTheme.darkGray,
             onTap: (index) => setState(() {
               // close chat overlay when go chat page
@@ -252,33 +255,45 @@ class WebHomePage extends StatelessWidget {
       switch (args[i]) {
         case '--connect':
         case '--play':
-          id = args[i + 1];
-          i++;
+          if (i + 1 < args.length) {
+            id = args[i + 1];
+            i++;
+          }
           break;
         case '--file-transfer':
-          isFileTransfer = true;
-          id = args[i + 1];
-          i++;
+          if (i + 1 < args.length) {
+            isFileTransfer = true;
+            id = args[i + 1];
+            i++;
+          }
           break;
         case '--view-camera':
-          isViewCamera = true;
-          id = args[i + 1];
-          i++;
+          if (i + 1 < args.length) {
+            isViewCamera = true;
+            id = args[i + 1];
+            i++;
+          }
           break;
         case '--terminal':
-          isTerminal = true;
-          id = args[i + 1];
-          i++;
+          if (i + 1 < args.length) {
+            isTerminal = true;
+            id = args[i + 1];
+            i++;
+          }
           break;
         case '--terminal-admin':
-          setEnvTerminalAdmin();
-          isTerminal = true;
-          id = args[i + 1];
-          i++;
+          if (i + 1 < args.length) {
+            setEnvTerminalAdmin();
+            isTerminal = true;
+            id = args[i + 1];
+            i++;
+          }
           break;
         case '--password':
-          password = args[i + 1];
-          i++;
+          if (i + 1 < args.length) {
+            password = args[i + 1];
+            i++;
+          }
           break;
         case '--request-approval':
           loginMethod = 'request-approval';

@@ -271,15 +271,26 @@ pub fn is_installed_daemon(prompt: bool) -> bool {
             Err(e) => {
                 log::error!("run osascript failed: {}", e);
             }
-            _ => {
+            Ok(status) => {
+                if !status.success() {
+                    log::warn!("install osascript exited with status: {}", status);
+                }
                 let installed = std::path::Path::new(&agent_plist_file).exists();
                 log::info!("Agent file {} installed: {}", agent_plist_file, installed);
                 if installed {
                     log::info!("launch server");
-                    std::process::Command::new("launchctl")
+                    match std::process::Command::new("launchctl")
                         .args(&["load", "-w", &agent_plist_file])
                         .status()
-                        .ok();
+                    {
+                        Ok(st) if !st.success() => {
+                            log::warn!("launchctl load exited with status: {}", st);
+                        }
+                        Err(e) => {
+                            log::error!("launchctl load failed: {}", e);
+                        }
+                        _ => {}
+                    }
                 }
             }
         }
@@ -443,7 +454,10 @@ pub fn uninstall_service(show_new_window: bool, sync: bool) -> bool {
             Err(e) => {
                 log::error!("run osascript failed: {}", e);
             }
-            _ => {
+            Ok(status) => {
+                if !status.success() {
+                    log::warn!("uninstall osascript exited with status: {}", status);
+                }
                 let agent = format!("{}_server.plist", crate::get_full_name());
                 let agent_plist_file = format!("/Library/LaunchAgents/{}", agent);
                 let uninstalled = !std::path::Path::new(&agent_plist_file).exists();
@@ -459,10 +473,18 @@ pub fn uninstall_service(show_new_window: bool, sync: bool) -> bool {
                         std::thread::sleep(std::time::Duration::from_millis(300));
                     }
                     crate::ipc::set_option("stop-service", "Y");
-                    std::process::Command::new("launchctl")
+                    match std::process::Command::new("launchctl")
                         .args(&["remove", &format!("{}_server", crate::get_full_name())])
                         .status()
-                        .ok();
+                    {
+                        Ok(st) if !st.success() => {
+                            log::warn!("launchctl remove exited with status: {}", st);
+                        }
+                        Err(e) => {
+                            log::error!("launchctl remove failed: {}", e);
+                        }
+                        _ => {}
+                    }
                     if show_new_window {
                         std::process::Command::new("open")
                             .arg("-n")
@@ -838,9 +860,11 @@ pub fn is_root() -> bool {
 pub fn run_as_user(arg: Vec<&str>) -> ResultType<Option<std::process::Child>> {
     let uid = get_active_userid();
     let cmd = std::env::current_exe()?;
-    let mut args = vec!["asuser", &uid, cmd.to_str().unwrap_or("")];
-    args.append(&mut arg.clone());
-    let task = std::process::Command::new("launchctl").args(args).spawn()?;
+    let task = std::process::Command::new("launchctl")
+        .args(["asuser", &uid])
+        .arg(&cmd)
+        .args(&arg)
+        .spawn()?;
     Ok(Some(task))
 }
 

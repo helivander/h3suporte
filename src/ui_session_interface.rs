@@ -2061,7 +2061,7 @@ pub async fn io_loop<T: InvokeUiSession>(handler: Session<T>, round: u32) {
                             s.send(d.clone()).ok();
                         }
                     }
-                    _ => {}
+                    None => break,
                 }
             }
         } else {
@@ -2071,6 +2071,7 @@ pub async fn io_loop<T: InvokeUiSession>(handler: Session<T>, round: u32) {
                 || port <= 0
             {
                 handler.on_error("Invalid arguments, usage:<br><br> rustdesk --port-forward remote-id listen-port remote-host remote-port");
+                return;
             }
             let remote_host = handler.args[1].clone();
             let remote_port = handler.args[2].parse::<i32>().unwrap_or(0);

@@ -275,19 +275,38 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
               children: [
                 _menu(compacto),
                 Expanded(
-                  child: Obx(() => IndexedStack(
-                        index: _aba.value,
-                        children: [
-                          _visaoGeral(),
-                          _aba.value == 1
-                              ? const H3MeusDispositivosPage()
-                              : const SizedBox.shrink(),
-                          _relatorios(),
-                          _aba.value == 3
-                              ? _permissoes()
-                              : const SizedBox.shrink(),
-                        ],
-                      )),
+                  child: Obx(() {
+                    final aba = _aba.value;
+                    final Widget pagina;
+                    switch (aba) {
+                      case 1:
+                        pagina = const H3MeusDispositivosPage();
+                        break;
+                      case 2:
+                        pagina = _relatorios();
+                        break;
+                      case 3:
+                        pagina = _permissoes();
+                        break;
+                      case 0:
+                      default:
+                        pagina = _visaoGeral();
+                        break;
+                    }
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 165),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animacao) => FadeTransition(
+                        opacity: animacao,
+                        child: child,
+                      ),
+                      child: KeyedSubtree(
+                        key: ValueKey(aba),
+                        child: pagina,
+                      ),
+                    );
+                  }),
                 ),
               ],
             );
@@ -308,49 +327,14 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           decoration: BoxDecoration(
               shape: BoxShape.circle, color: H3Cores.aviso),
         );
-        final botao = InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: onTap,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                  horizontal: compacto ? 0 : 12, vertical: 11),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                gradient: ativo
-                    ? LinearGradient(colors: [
-                        H3Cores.destaque.withOpacity(0.22),
-                        H3Cores.destaque.withOpacity(0.06),
-                      ])
-                    : null,
-              ),
-              child: Row(
-                mainAxisAlignment: compacto
-                    ? MainAxisAlignment.center
-                    : MainAxisAlignment.start,
-                children: [
-                  Stack(clipBehavior: Clip.none, children: [
-                    Icon(icone,
-                        size: 20,
-                        color: ativo ? H3Cores.destaque : H3Cores.apagado),
-                    if (pendente && compacto)
-                      Positioned(right: -2, top: -2, child: ponto),
-                  ]),
-                  if (!compacto) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(rotulo,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color:
-                                  ativo ? H3Cores.texto : H3Cores.apagado)),
-                    ),
-                    if (pendente) ponto,
-                  ],
-                ],
-              ),
-            ),
+        final botao = _MenuLateralItem(
+          icone: icone,
+          rotulo: rotulo,
+          compacto: compacto,
+          ativo: ativo,
+          pendente: pendente,
+          ponto: ponto,
+          onTap: onTap,
         );
         return compacto ? Tooltip(message: rotulo, child: botao) : botao;
       });
@@ -983,6 +967,108 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
             ),
           ]),
         ]),
+      ),
+    );
+  }
+}
+
+class _MenuLateralItem extends StatefulWidget {
+  final IconData icone;
+  final String rotulo;
+  final bool compacto;
+  final bool ativo;
+  final bool pendente;
+  final Widget ponto;
+  final VoidCallback onTap;
+
+  const _MenuLateralItem({
+    required this.icone,
+    required this.rotulo,
+    required this.compacto,
+    required this.ativo,
+    required this.pendente,
+    required this.ponto,
+    required this.onTap,
+  });
+
+  @override
+  State<_MenuLateralItem> createState() => _MenuLateralItemState();
+}
+
+class _MenuLateralItemState extends State<_MenuLateralItem> {
+  bool _hover = false;
+  bool _foco = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ativo = widget.ativo;
+    final realce = _hover || _foco;
+    final corBorda = _foco
+        ? H3Cores.destaque.withOpacity(0.65)
+        : ativo
+            ? H3Cores.destaque.withOpacity(0.24)
+            : (_hover ? H3Cores.linha2 : Colors.transparent);
+
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(H3Raios.md),
+        hoverColor: H3Cores.destaque.withOpacity(0.08),
+        focusColor: H3Cores.destaque.withOpacity(0.14),
+        splashColor: H3Cores.destaque.withOpacity(0.12),
+        highlightColor: H3Cores.destaque.withOpacity(0.06),
+        onHover: (v) => setState(() => _hover = v),
+        onFocusChange: (v) => setState(() => _foco = v),
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.symmetric(
+              horizontal: widget.compacto ? 0 : H3Raios.md, vertical: 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(H3Raios.md),
+            border: Border.all(color: corBorda),
+            gradient: ativo
+                ? LinearGradient(colors: [
+                    H3Cores.destaque.withOpacity(_hover ? 0.28 : 0.22),
+                    H3Cores.destaque.withOpacity(_hover ? 0.10 : 0.06),
+                  ])
+                : null,
+            color: !ativo && realce
+                ? H3Cores.destaque.withOpacity(_foco ? 0.10 : 0.06)
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: widget.compacto
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
+            children: [
+              Stack(clipBehavior: Clip.none, children: [
+                Icon(widget.icone,
+                    size: 20,
+                    color: ativo
+                        ? H3Cores.destaque
+                        : (realce ? H3Cores.texto : H3Cores.apagado)),
+                if (widget.pendente && widget.compacto)
+                  Positioned(right: -2, top: -2, child: widget.ponto),
+              ]),
+              if (!widget.compacto) ...[
+                const SizedBox(width: H3Raios.md),
+                Expanded(
+                  child: Text(widget.rotulo,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: ativo ? FontWeight.w600 : FontWeight.w500,
+                          color: (ativo || realce)
+                              ? H3Cores.texto
+                              : H3Cores.apagado)),
+                ),
+                if (widget.pendente) widget.ponto,
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

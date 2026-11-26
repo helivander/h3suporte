@@ -13,6 +13,7 @@ import '../../common/widgets/overlay.dart';
 import '../../common/widgets/remote_input.dart';
 import '../../common.dart';
 import '../../common/widgets/dialog.dart';
+import '../../common/widgets/h3_estilo.dart';
 import '../../common/widgets/toolbar.dart';
 import '../../models/model.dart';
 import '../../models/input_model.dart';
@@ -731,11 +732,26 @@ class _RemotePageState extends State<RemotePage>
           setRemoteState: setState,
         );
 
-    bodyWidget() {
+    final t = H3Tokens.of(context);
+    bodyWidget(bool imageReady) {
       return Stack(
         children: [
-          Container(
-              color: kColorCanvas,
+          AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              decoration: imageReady
+                  ? const BoxDecoration(color: kColorCanvas)
+                  : BoxDecoration(
+                      color: t.fundo,
+                      gradient: RadialGradient(
+                        center: Alignment.center,
+                        radius: 0.95,
+                        colors: [
+                          Color.lerp(t.painel2, t.destaque, 0.06) ?? t.painel2,
+                          t.fundo,
+                        ],
+                      ),
+                    ),
               child: RawKeyFocusScope(
                   focusNode: _rawKeyFocusNode,
                   onFocusChange: (bool imageFocused) {
@@ -800,7 +816,7 @@ class _RemotePageState extends State<RemotePage>
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: t.fundo,
       body: Obx(() {
         final imageReady = _ffi.ffiModel.pi.isSet.isTrue &&
             _ffi.ffiModel.waitForFirstImage.isFalse;
@@ -818,13 +834,13 @@ class _RemotePageState extends State<RemotePage>
           }
           // Block the whole `bodyWidget()` when dialog shows.
           return BlockableOverlay(
-            underlying: bodyWidget(),
+            underlying: bodyWidget(true),
             state: _blockableOverlayState,
           );
         } else {
           // `_blockableOverlayState` is not recreated here.
           // The toolbar's block state won't work properly when reconnecting, but that's okay.
-          return bodyWidget();
+          return bodyWidget(false);
         }
       }),
     );
@@ -1411,10 +1427,11 @@ class _ImagePaintState extends State<ImagePaint> {
         ],
       );
     }
+    final scrollbarColor = H3Tokens.of(context).apagado.withOpacity(0.45);
     if (layoutSize.width < size.width) {
       widget = RawScrollbar(
         thickness: kScrollbarThickness,
-        thumbColor: Colors.grey,
+        thumbColor: scrollbarColor,
         controller: horizontal,
         thumbVisibility: false,
         trackVisibility: false,
@@ -1427,7 +1444,7 @@ class _ImagePaintState extends State<ImagePaint> {
     if (layoutSize.height < size.height) {
       widget = RawScrollbar(
         thickness: kScrollbarThickness,
-        thumbColor: Colors.grey,
+        thumbColor: scrollbarColor,
         controller: vertical,
         thumbVisibility: false,
         trackVisibility: false,

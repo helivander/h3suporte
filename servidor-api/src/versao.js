@@ -19,6 +19,7 @@ export function criarVersao({ repo, token = "", buscar = fetch, relogio = Date.n
     if (resp.status === 404) return null;
     if (!resp.ok) throw new Error(`GitHub respondeu ${resp.status}`);
     const release = await resp.json();
+    if (!release || typeof release !== "object") return null;
     const nomes = new Set((release.assets ?? []).map((a) => a.name));
     const pronto =
       !release.draft &&

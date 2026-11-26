@@ -1,13 +1,21 @@
 const numero = (valor, padrao) => {
+  if (valor === undefined || String(valor).trim() === "") return padrao;
   const n = Number(valor);
-  return valor !== undefined && valor !== "" && Number.isFinite(n) && n >= 0 ? n : padrao;
+  return Number.isFinite(n) && n >= 0 ? n : padrao;
 };
 
 /** Chave AES-256 das senhas dos dispositivos: 64 caracteres hex ou 32 bytes em base64. Vazia = recurso desligado. */
 function lerChave(valor) {
   const v = (valor ?? "").trim();
   if (!v) return null;
-  const chave = /^[0-9a-fA-F]{64}$/.test(v) ? Buffer.from(v, "hex") : Buffer.from(v, "base64");
+  let chave;
+  if (/^[0-9a-fA-F]{64}$/.test(v)) {
+    chave = Buffer.from(v, "hex");
+  } else if (/^[A-Za-z0-9+/]+={0,2}$/.test(v)) {
+    chave = Buffer.from(v, "base64");
+  } else {
+    throw new Error("CHAVE_DISPOSITIVOS precisa ter 32 bytes (64 caracteres hex ou base64).");
+  }
   if (chave.length !== 32) throw new Error("CHAVE_DISPOSITIVOS precisa ter 32 bytes (64 caracteres hex ou base64).");
   return chave;
 }
@@ -16,7 +24,13 @@ export function lerConfig(env = process.env) {
   const central = (env.CENTRAL_URL ?? "").trim().replace(/\/+$/, "");
   const credencial = (env.CENTRAL_CREDENCIAL ?? "").trim();
   if (!central) throw new Error("Defina CENTRAL_URL (veja .env.example).");
-  if (!central.startsWith("https://") && env.PERMITIR_HTTP !== "1") {
+  let urlCentral;
+  try {
+    urlCentral = new URL(central);
+  } catch {
+    throw new Error("CENTRAL_URL inválida.");
+  }
+  if (urlCentral.protocol !== "https:" && !(env.PERMITIR_HTTP === "1" && urlCentral.protocol === "http:")) {
     throw new Error("CENTRAL_URL precisa ser https:// (PERMITIR_HTTP=1 só em desenvolvimento).");
   }
   return {

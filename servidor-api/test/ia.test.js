@@ -63,6 +63,25 @@ test("extrai só os instaladores -ia de dentro do zip", () => {
   assert.deepEqual(achados.get("h3suporte-1.5.4-x86_64-ia.msi"), EXE);
 });
 
+test("rejeita zips malformados ou truncados sem RangeError", () => {
+  const valido = zip({ "h3suporte-1.5.4-x86_64-ia.exe": EXE });
+  const fim = valido.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+
+  const cdFora = Buffer.from(valido);
+  cdFora.writeUInt32LE(valido.length + 100, fim + 16);
+
+  const localFora = Buffer.from(valido);
+  const cdOffset = valido.readUInt32LE(fim + 16);
+  localFora.writeUInt32LE(valido.length + 100, cdOffset + 42);
+
+  const dadosTruncados = Buffer.from(valido);
+  dadosTruncados.writeUInt32LE(valido.length + 100, cdOffset + 20);
+
+  for (const ruim of [Buffer.alloc(0), Buffer.alloc(10), valido.subarray(0, fim + 10), cdFora, localFora, dadosTruncados]) {
+    assert.throws(() => extrairInstaladores(ruim), (err) => !(err instanceof RangeError) && /zip inválido/.test(err.message));
+  }
+});
+
 test("baixa o artefato mais recente, extrai para o disco e não baixa de novo", async () => {
   const baixados = [];
   const ia = criarIa({ repo: "h3/app", token: "tk", dir: await mkdtemp(join(tmpdir(), "ia-")), buscar: github(baixados) });

@@ -463,7 +463,12 @@ impl RendezvousMediator {
                             if let Ok(msg) = Message::parse_from_bytes(&bytes) {
                                 rz.handle_resp(msg.union, Sink::Framed(&mut socket, &addr), &server, &mut update_latency).await?;
                             } else {
-                                log::debug!("Non-protobuf message bytes received: {:?}", bytes);
+                                hbb_common::throttled_log!(
+                                    PUNCH_LOG_INTERVAL,
+                                    debug,
+                                    "Non-protobuf message bytes received: {:?}",
+                                    bytes
+                                );
                             }
                         },
                         Some(Err(e)) => bail!("Failed to receive next: {}", e),  // maybe socks5 tcp disconnected
@@ -669,7 +674,7 @@ impl RendezvousMediator {
                         break;
                     }
                     // https://www.emqx.com/en/blog/mqtt-keep-alive
-                    if last_recv_msg.elapsed().as_millis() as u64 > rz.keep_alive as u64 * 3 / 2 {
+                    if last_recv_msg.elapsed().as_millis() as u64 > rz.keep_alive.max(0) as u64 * 3 / 2 {
                         bail!("Rendezvous connection is timeout");
                     }
                     if (!Config::get_key_confirmed() ||

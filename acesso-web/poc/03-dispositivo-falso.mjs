@@ -16,7 +16,11 @@ import { blake2b } from 'blakejs';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 
-const PORTA = Number(process.env.PORTA ?? 21120);
+const PORTA = Number(process.env.PORTA || 21120);
+if (!Number.isInteger(PORTA) || PORTA <= 0 || PORTA > 65535) {
+  console.error('PORTA inválida:', process.env.PORTA);
+  process.exit(1);
+}
 const ID = process.env.ID ?? '999000111';
 const SENHA = process.env.SENHA ?? 'teste-123';
 const QUADROS = fileURLToPath(new URL('./quadros-teste.json', import.meta.url));
@@ -71,9 +75,16 @@ const http_ = http.createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/gerar') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return res.end(PAGINA); }
   if (req.method === 'POST' && req.url === '/quadros') {
     let corpo = ''; for await (const p of req) corpo += p;
-    fs.writeFileSync(QUADROS, corpo); quadros = JSON.parse(corpo);
-    log('vídeo de teste recebido:', quadros.length, 'quadros');
-    res.writeHead(200); return res.end('ok, salvo em quadros-teste.json');
+    try {
+      const recebidos = JSON.parse(corpo);
+      if (!Array.isArray(recebidos)) throw new Error('esperava um array de quadros');
+      fs.writeFileSync(QUADROS, corpo);
+      quadros = recebidos;
+      log('vídeo de teste recebido:', quadros.length, 'quadros');
+      res.writeHead(200); return res.end('ok, salvo em quadros-teste.json');
+    } catch (e) {
+      res.writeHead(400); return res.end('erro: ' + e.message);
+    }
   }
   res.writeHead(404); res.end();
 });
@@ -86,22 +97,27 @@ http_.on('upgrade', (req, socket, head) => {
 });
 
 function rendezvous(ws) {
+  ws.on('error', (e) => log('rendezvous: erro no socket:', e.message));
   ws.on('message', (d) => {
-    const m = RMsg.toObject(RMsg.decode(d), { defaults: false, longs: Number });
-    if (m.punchHoleRequest) {
-      const q = m.punchHoleRequest;
-      log('rendezvous: punch_hole_request id', q.id, 'forceRelay', q.forceRelay);
-      let resp;
-      if (q.licenceKey !== CHAVE_SERVIDOR) resp = { failure: 3 };
-      else if (q.id !== ID) resp = { failure: 0 };
-      else {
-        const idpk = enc(IdPk, { id: ID, pk: Buffer.from(dispositivoAssina.publicKey) });
-        resp = { pk: Buffer.from(nacl.sign(idpk, servidor.secretKey)), relayServer: `localhost:${PORTA}` };
+    try {
+      const m = RMsg.toObject(RMsg.decode(d), { defaults: false, longs: Number });
+      if (m.punchHoleRequest) {
+        const q = m.punchHoleRequest;
+        log('rendezvous: punch_hole_request id', q.id, 'forceRelay', q.forceRelay);
+        let resp;
+        if (q.licenceKey !== CHAVE_SERVIDOR) resp = { failure: 3 };
+        else if (q.id !== ID) resp = { failure: 0 };
+        else {
+          const idpk = enc(IdPk, { id: ID, pk: Buffer.from(dispositivoAssina.publicKey) });
+          resp = { pk: Buffer.from(nacl.sign(idpk, servidor.secretKey)), relayServer: `localhost:${PORTA}` };
+        }
+        ws.send(enc(RMsg, { punchHoleResponse: resp }));
+      } else if (m.requestRelay) {
+        log('rendezvous: request_relay uuid', m.requestRelay.uuid);
+        ws.send(enc(RMsg, { relayResponse: { uuid: m.requestRelay.uuid, relayServer: `localhost:${PORTA}` } }));
       }
-      ws.send(enc(RMsg, { punchHoleResponse: resp }));
-    } else if (m.requestRelay) {
-      log('rendezvous: request_relay uuid', m.requestRelay.uuid);
-      ws.send(enc(RMsg, { relayResponse: { uuid: m.requestRelay.uuid, relayServer: `localhost:${PORTA}` } }));
+    } catch (e) {
+      log('ERRO no rendezvous:', e.message);
     }
   });
 }
@@ -109,12 +125,19 @@ function rendezvous(ws) {
 function relay(ws) {
   let estado = 'pedido'; let kEnv, kRec, nEnv = 0, nRec = 0; let anunciada = 1;
   const nonce = (n) => { const b = Buffer.alloc(24); b.writeBigUInt64LE(BigInt(n)); return b; };
-  const enviar = (obj) => ws.send(Buffer.from(nacl.secretbox(enc(Msg, obj), nonce(++nEnv), kEnv)));
+  const enviar = (obj) => {
+    if (ws.readyState !== ws.OPEN) return;
+    ws.send(Buffer.from(nacl.secretbox(enc(Msg, obj), nonce(++nEnv), kEnv)));
+  };
   const desafio = { salt: 'sal-de-teste', challenge: crypto.randomBytes(8).toString('hex') };
-  let timer = null; let indice = 0; let forcarChave = false; let tela = 0;
+  let timer = null; let delayTimer = null; let indice = 0; let forcarChave = false; let tela = 0;
 
-  const parar = () => { if (timer) clearInterval(timer); timer = null; };
+  const parar = () => {
+    if (timer) { clearInterval(timer); timer = null; }
+    if (delayTimer) { clearInterval(delayTimer); delayTimer = null; }
+  };
   ws.on('close', () => { parar(); log('dispositivo: conexão encerrada'); });
+  ws.on('error', (e) => { parar(); log('dispositivo: erro no socket:', e.message); });
 
   function iniciarVideo() {
     if (!quadros) { log('AVISO: sem vídeo de teste. Abra http://localhost:' + PORTA + '/gerar no navegador.'); return; }
@@ -165,7 +188,8 @@ function relay(ws) {
         if (!ok) return enviar({ loginResponse: { error: 'Wrong Password' } });
         enviar({ loginResponse: { peerInfo: { username: 'teste', hostname: 'PC-DE-TESTE', platform: 'Windows', displays: [{ x: 0, y: 0, width: 1280, height: 720, name: 'Tela 1', online: true, cursorEmbedded: true }, { x: 1280, y: 0, width: 1280, height: 720, name: 'Tela 2', online: true, cursorEmbedded: true }], currentDisplay: 0, sasEnabled: true, version: '1.5.3' } } });
         iniciarVideo();
-        setInterval(() => enviar({ testDelay: { time: Date.now(), fromClient: false } }), 3000).unref();
+        delayTimer = setInterval(() => enviar({ testDelay: { time: Date.now(), fromClient: false } }), 3000);
+        delayTimer.unref();
       } else if (m.mouseEvent) {
         const tipo = ['mover', 'descer', 'subir', 'roda'][m.mouseEvent.mask & 7]; const botao = m.mouseEvent.mask >> 3;
         if (tipo !== 'mover') log('mouse', tipo, 'botão', botao, 'x', m.mouseEvent.x, 'y', m.mouseEvent.y, 'mod', m.mouseEvent.modifiers ?? []);
@@ -181,6 +205,7 @@ function relay(ws) {
   });
 }
 
+http_.on('error', (e) => { log('ERRO no servidor HTTP:', e.message); process.exit(1); });
 http_.listen(PORTA, () => {
   log(`dispositivo falso em ws://localhost:${PORTA}/ws/id e /ws/relay`);
   log('ID do dispositivo:', ID, '| senha:', SENHA);

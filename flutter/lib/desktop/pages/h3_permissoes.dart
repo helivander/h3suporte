@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -128,12 +129,12 @@ class _H3PermissoesState extends State<H3Permissoes> {
       const SizedBox(height: 4),
       Text('O que o H3 Suporte precisa para funcionar neste computador.',
           style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
-      const SizedBox(height: 16),
+      const SizedBox(height: H3Raios.lg),
       Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(H3Raios.lg),
         decoration: BoxDecoration(
           color: H3Cores.painel2,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(H3Raios.lg),
           border: Border.all(color: H3Cores.linha),
         ),
         child: Row(children: [
@@ -150,9 +151,9 @@ class _H3PermissoesState extends State<H3Permissoes> {
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                       color: H3Cores.texto)),
-              const SizedBox(height: 8),
+              const SizedBox(height: H3Raios.sm),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(H3Raios.xs),
                 child: LinearProgressIndicator(
                     minHeight: 6,
                     value: lista.isEmpty ? 1 : ok / lista.length,
@@ -164,13 +165,13 @@ class _H3PermissoesState extends State<H3Permissoes> {
           ),
         ]),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: H3Raios.lg),
       if (lista.isEmpty)
         Text('Nenhuma permissão é necessária neste sistema.',
             style: TextStyle(color: H3Cores.apagado))
       else
         LayoutBuilder(builder: (context, c) {
-          const gap = 16.0;
+          const gap = H3Raios.lg;
           final cols = ((c.maxWidth + gap) / (270 + gap)).floor().clamp(1, 4);
           final linhas = <Widget>[];
           for (var i = 0; i < lista.length; i += cols) {
@@ -207,7 +208,7 @@ class _H3PermissoesState extends State<H3Permissoes> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [H3Cores.painel2, H3Cores.painel]),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(H3Raios.lg),
         border: Border.all(color: p.ok ? H3Cores.linha : cor.withOpacity(0.45)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -216,7 +217,7 @@ class _H3PermissoesState extends State<H3Permissoes> {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(H3Raios.md),
               gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -229,76 +230,117 @@ class _H3PermissoesState extends State<H3Permissoes> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
                 color: cor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(20)),
+                borderRadius: BorderRadius.circular(H3Raios.full)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(
                   width: 7,
                   height: 7,
                   decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
-              const SizedBox(width: 6),
+              const SizedBox(width: H3Raios.xs),
               Text(p.ok ? 'Concedida' : 'Pendente',
                   style: TextStyle(
                       fontSize: 11.5, fontWeight: FontWeight.w700, color: cor)),
             ]),
           ),
         ]),
-        const SizedBox(height: 16),
+        const SizedBox(height: H3Raios.lg),
         Text(p.titulo,
             style: TextStyle(
                 fontSize: 15.5,
                 fontWeight: FontWeight.w700,
                 color: H3Cores.texto)),
-        const SizedBox(height: 6),
+        const SizedBox(height: H3Raios.xs),
         Text(p.descricao,
             style: TextStyle(fontSize: 12.5, height: 1.45, color: H3Cores.apagado)),
         const Spacer(),
-        const SizedBox(height: 18),
+        const SizedBox(height: H3Raios.lg),
         Divider(height: 1, color: H3Cores.linha),
         const SizedBox(height: 14),
         if (temAcao)
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: p.onAcao,
-            child: Container(
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(colors: [
-                  H3Cores.destaque,
-                  H3Cores.destaque.withOpacity(0.78)
-                ]),
-                boxShadow: [
-                  BoxShadow(
-                      color: H3Cores.destaque.withOpacity(0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4))
-                ],
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(p.acao,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13.5,
-                        color: H3Cores.destaqueTinta)),
-                const SizedBox(width: 8),
-                Icon(Icons.arrow_forward_rounded,
-                    size: 17, color: H3Cores.destaqueTinta),
-              ]),
-            ),
-          )
+          _BotaoPermissao(rotulo: p.acao, onTap: p.onAcao!)
         else
           SizedBox(
-            height: 42,
+            height: 44,
             child: Row(children: [
               Icon(p.ok ? Icons.check_circle_outline : Icons.info_outline,
                   size: 18, color: p.ok ? H3Cores.ok : H3Cores.apagado),
-              const SizedBox(width: 8),
-              Text(p.ok ? 'Nenhuma ação necessária' : 'Ajuste nas configurações do sistema',
-                  style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
+              const SizedBox(width: H3Raios.sm),
+              Expanded(
+                child: Text(
+                    p.ok
+                        ? 'Nenhuma ação necessária'
+                        : 'Ajuste nas configurações do sistema',
+                    style: TextStyle(fontSize: 12.5, color: H3Cores.apagado)),
+              ),
             ]),
           ),
       ]),
+    );
+  }
+}
+
+class _BotaoPermissao extends StatefulWidget {
+  final String rotulo;
+  final VoidCallback onTap;
+
+  const _BotaoPermissao({required this.rotulo, required this.onTap});
+
+  @override
+  State<_BotaoPermissao> createState() => _BotaoPermissaoState();
+}
+
+class _BotaoPermissaoState extends State<_BotaoPermissao> {
+  bool _hover = false;
+  bool _foco = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ativo = _hover || _foco;
+    return Material(
+      type: MaterialType.transparency,
+      child: Ink(
+        height: 44,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(H3Raios.md),
+          gradient: LinearGradient(colors: [
+            H3Cores.destaque,
+            H3Cores.destaque.withOpacity(ativo ? 0.92 : 0.78),
+          ]),
+          border: Border.all(
+            color: _foco
+                ? H3Cores.texto.withOpacity(0.75)
+                : Colors.transparent,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+                color: H3Cores.destaque.withOpacity(ativo ? 0.38 : 0.24),
+                blurRadius: ativo ? 16 : 12,
+                offset: const Offset(0, 4))
+          ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(H3Raios.md),
+          hoverColor: H3Cores.destaqueTinta.withOpacity(0.08),
+          focusColor: H3Cores.destaqueTinta.withOpacity(0.14),
+          splashColor: H3Cores.destaqueTinta.withOpacity(0.18),
+          onHover: (v) => setState(() => _hover = v),
+          onFocusChange: (v) => setState(() => _foco = v),
+          onTap: widget.onTap,
+          child: Center(
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(widget.rotulo,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.5,
+                      color: H3Cores.destaqueTinta)),
+              const SizedBox(width: H3Raios.sm),
+              Icon(Icons.arrow_forward_rounded,
+                  size: 17, color: H3Cores.destaqueTinta),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 }

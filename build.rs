@@ -29,8 +29,7 @@ fn build_mac() {
 
 #[cfg(all(windows, feature = "inline"))]
 fn build_manifest() {
-    use std::io::Write;
-    if std::env::var("PROFILE").unwrap() == "release" {
+    if std::env::var("PROFILE").as_deref() == Ok("release") {
         let mut res = winres::WindowsResource::new();
         res.set_icon("res/icon.ico")
             .set_language(winapi::um::winnt::MAKELANGID(
@@ -38,12 +37,9 @@ fn build_manifest() {
                 winapi::um::winnt::SUBLANG_ENGLISH_US,
             ))
             .set_manifest_file("res/manifest.xml");
-        match res.compile() {
-            Err(e) => {
-                write!(std::io::stderr(), "{}", e).unwrap();
-                std::process::exit(1);
-            }
-            Ok(_) => {}
+        if let Err(e) = res.compile() {
+            eprintln!("winres compile failed: {}", e);
+            std::process::exit(1);
         }
     }
 }
@@ -58,11 +54,12 @@ fn build_android_ifaddrs() {
 }
 
 fn install_android_deps() {
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     if target_os != "android" {
         return;
     }
-    let mut target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    let mut target_arch = std::env::var("CARGO_CFG_TARGET_ARCH")
+        .expect("CARGO_CFG_TARGET_ARCH must be set for Android builds");
     if target_arch == "x86_64" {
         target_arch = "x64".to_owned();
     } else if target_arch == "x86" {
@@ -73,7 +70,8 @@ fn install_android_deps() {
         target_arch = "arm".to_owned();
     }
     let target = format!("{}-android", target_arch);
-    let vcpkg_root = std::env::var("VCPKG_ROOT").unwrap();
+    let vcpkg_root =
+        std::env::var("VCPKG_ROOT").expect("VCPKG_ROOT must be set for Android builds");
     let mut path: std::path::PathBuf = vcpkg_root.into();
     if let Ok(vcpkg_root) = std::env::var("VCPKG_INSTALLED_ROOT") {
         path = vcpkg_root.into();
@@ -81,10 +79,7 @@ fn install_android_deps() {
         path.push("installed");
     }
     path.push(target);
-    println!(
-        "cargo:rustc-link-search={}",
-        path.join("lib").to_str().unwrap()
-    );
+    println!("cargo:rustc-link-search={}", path.join("lib").display());
     println!("cargo:rustc-link-lib=ndk_compat");
     println!("cargo:rustc-link-lib=c++");
     println!("cargo:rustc-link-lib=OpenSLES");
@@ -97,7 +92,7 @@ fn main() {
     build_manifest();
     #[cfg(windows)]
     build_windows();
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     if target_os == "macos" {
         #[cfg(target_os = "macos")]
         build_mac();
@@ -110,4 +105,20 @@ fn main() {
     // H3 Suporte: rebuild when the client direction changes (incoming-only client).
     println!("cargo:rerun-if-env-changed=CONN_TYPE");
     println!("cargo:rerun-if-env-changed=H3_IA");
+    if let Ok(conn_type) = std::env::var("CONN_TYPE") {
+        if !conn_type.is_empty() && conn_type != "incoming" && conn_type != "outgoing" {
+            panic!(
+                "Invalid CONN_TYPE={:?}: expected \"incoming\", \"outgoing\", or empty",
+                conn_type
+            );
+        }
+    }
+    if let Ok(h3_ia) = std::env::var("H3_IA") {
+        if !h3_ia.is_empty() && h3_ia != "true" && h3_ia != "false" {
+            panic!(
+                "Invalid H3_IA={:?}: expected \"true\", \"false\", or empty",
+                h3_ia
+            );
+        }
+    }
 }

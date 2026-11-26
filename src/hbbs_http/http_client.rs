@@ -16,7 +16,11 @@ macro_rules! configure_http_client {
     ($builder:expr, $tls_type:expr, $danger_accept_invalid_cert:expr, $Client: ty) => {{
         // https://github.com/rustdesk/rustdesk/issues/11569
         // https://docs.rs/reqwest/latest/reqwest/struct.ClientBuilder.html#method.no_proxy
-        let mut builder = $builder.no_proxy();
+        let mut builder = $builder
+            .no_proxy()
+            .connect_timeout(std::time::Duration::from_millis(
+                hbb_common::config::CONNECT_TIMEOUT,
+            ));
 
         match $tls_type {
             TlsType::Plain => {}
@@ -177,7 +181,13 @@ fn create_http_client_with_url_(
     if is_tls_type_cached && original_danger_accept_invalid_cert.is_some() {
         return client;
     }
-    if let Err(e) = client.head(url).send() {
+    if let Err(e) = client
+        .head(url)
+        .timeout(std::time::Duration::from_millis(
+            hbb_common::config::CONNECT_TIMEOUT,
+        ))
+        .send()
+    {
         if e.is_request() {
             match (tls_type, is_tls_type_cached, danger_accept_invalid_cert) {
                 (TlsType::Rustls, _, None) => {
@@ -316,7 +326,14 @@ async fn create_http_client_async_with_url_(
     if is_tls_type_cached && original_danger_accept_invalid_cert.is_some() {
         return client;
     }
-    if let Err(e) = client.head(url).send().await {
+    if let Err(e) = client
+        .head(url)
+        .timeout(std::time::Duration::from_millis(
+            hbb_common::config::CONNECT_TIMEOUT,
+        ))
+        .send()
+        .await
+    {
         match (tls_type, is_tls_type_cached, danger_accept_invalid_cert) {
             (TlsType::Rustls, _, None) => {
                 log::warn!(

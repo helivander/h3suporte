@@ -19,6 +19,7 @@ export function abrirBanco(caminho) {
       criada_em INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS sessao_conta ON sessao (conta_id);
+    CREATE INDEX IF NOT EXISTS sessao_validada ON sessao (validada_em);
     CREATE TABLE IF NOT EXISTS catalogo (
       conta_id TEXT PRIMARY KEY,
       dados TEXT NOT NULL,
@@ -35,6 +36,7 @@ export function abrirBanco(caminho) {
       visto_em INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS dispositivo_assinatura ON dispositivo (assinatura_id);
+    CREATE INDEX IF NOT EXISTS dispositivo_orfao_visto ON dispositivo (visto_em) WHERE conta_id IS NULL;
     CREATE TABLE IF NOT EXISTS dispositivo_conta (
       conta_id TEXT NOT NULL,
       id TEXT NOT NULL,
@@ -53,6 +55,7 @@ export function abrirBanco(caminho) {
       dados TEXT NOT NULL,
       criado_em INTEGER NOT NULL
     );
+    CREATE INDEX IF NOT EXISTS auditoria_criado ON auditoria (criado_em);
   `);
 
   const q = (sql) => db.prepare(sql);

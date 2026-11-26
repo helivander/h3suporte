@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-18T01:36:07.496Z",
+        "reason": "Tipografia da marca do app, igual ao protótipo da tela principal; decisão do projeto, não do usuário nesta sessão"
+      },
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-11-18T01:36:07.511Z",
+        "reason": "Fonte de títulos já usada no tema H3 do app (prototipo-tela-acesso.html)"
+      }
+    ]
+  }
+}

@@ -3210,7 +3210,12 @@ impl Connection {
                     }
                     #[cfg(any(target_os = "android", target_os = "ios"))]
                     if let Err(e) = call_main_service_pointer_input("mouse", me.mask, me.x, me.y) {
-                        log::debug!("call_main_service_pointer_input fail:{}", e);
+                        hbb_common::throttled_log!(
+                            std::time::Duration::from_secs(5),
+                            debug,
+                            "call_main_service_pointer_input fail:{}",
+                            e
+                        );
                     }
                     #[cfg(not(any(target_os = "android", target_os = "ios")))]
                     if self.peer_keyboard_enabled() {
@@ -3278,7 +3283,12 @@ impl Connection {
                         },
                         _ => Ok(()),
                     } {
-                        log::debug!("call_main_service_pointer_input fail:{}", e);
+                        hbb_common::throttled_log!(
+                            std::time::Duration::from_secs(5),
+                            debug,
+                            "call_main_service_pointer_input fail:{}",
+                            e
+                        );
                     }
                     #[cfg(not(any(target_os = "android", target_os = "ios")))]
                     if self.peer_keyboard_enabled() {
@@ -3339,11 +3349,21 @@ impl Connection {
                         Ok(data) => {
                             let result = call_main_service_key_event(&data);
                             if let Err(e) = result {
-                                log::debug!("call_main_service_key_event fail: {}", e);
+                                hbb_common::throttled_log!(
+                                    std::time::Duration::from_secs(5),
+                                    debug,
+                                    "call_main_service_key_event fail: {}",
+                                    e
+                                );
                             }
                         }
                         Err(e) => {
-                            log::debug!("encode key event fail: {}", e);
+                            hbb_common::throttled_log!(
+                                std::time::Duration::from_secs(5),
+                                debug,
+                                "encode key event fail: {}",
+                                e
+                            );
                         }
                     }
                 }
@@ -4114,10 +4134,8 @@ impl Connection {
                 }
                 Some(message::Union::VoiceCallRequest(request)) => {
                     if request.is_connect {
-                        self.voice_call_request_timestamp = Some(
-                            NonZeroI64::new(request.req_timestamp)
-                                .unwrap_or(NonZeroI64::new(get_time()).unwrap()),
-                        );
+                        self.voice_call_request_timestamp = NonZeroI64::new(request.req_timestamp)
+                            .or_else(|| NonZeroI64::new(get_time()));
                         // Notify the connection manager.
                         self.send_to_cm(Data::VoiceCallIncoming);
                     } else {
@@ -5438,7 +5456,7 @@ impl Connection {
     ) {
         // Check if the job is still valid (not cancelled)
         if !self.cm_read_job_ids.contains(&id) {
-            log::debug!(
+            log::trace!(
                 "Dropping file block for cancelled/unknown job id={}, file_num={}",
                 id,
                 file_num
@@ -5880,7 +5898,7 @@ impl Connection {
                 message
             );
         } else {
-            log::debug!(
+            log::trace!(
                 "Received repeated out-of-scope message in {} session: {}",
                 conn_type,
                 message

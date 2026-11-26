@@ -15,25 +15,33 @@ const LIMITE_ARQUIVO = 600 * 1024 * 1024;
 
 /** Instaladores (nome → conteúdo) de dentro de um zip de artefato; ignora pastas e qualquer outro arquivo. */
 export function extrairInstaladores(zip) {
+  if (!Buffer.isBuffer(zip) || zip.length < 22) throw new Error("zip inválido");
   const fim = zip.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]), zip.length - 22);
-  if (fim < 0) throw new Error("zip inválido");
+  if (fim < 0 || fim + 22 > zip.length) throw new Error("zip inválido");
   const total = zip.readUInt16LE(fim + 10);
   let p = zip.readUInt32LE(fim + 16);
   const arquivos = new Map();
   for (let i = 0; i < total; i++) {
+    if (p + 46 > zip.length) throw new Error("zip inválido");
     if (zip.readUInt32LE(p) !== 0x02014b50) throw new Error("zip inválido");
     const metodo = zip.readUInt16LE(p + 10);
     const comprimido = zip.readUInt32LE(p + 20);
     const tamanho = zip.readUInt32LE(p + 24);
-    const nome = zip.toString("utf8", p + 46, p + 46 + zip.readUInt16LE(p + 28));
+    const tamNome = zip.readUInt16LE(p + 28);
+    const tamExtra = zip.readUInt16LE(p + 30);
+    const tamComent = zip.readUInt16LE(p + 32);
+    if (p + 46 + tamNome + tamExtra + tamComent > zip.length) throw new Error("zip inválido");
+    const nome = zip.toString("utf8", p + 46, p + 46 + tamNome);
     const local = zip.readUInt32LE(p + 42);
-    p += 46 + zip.readUInt16LE(p + 28) + zip.readUInt16LE(p + 30) + zip.readUInt16LE(p + 32);
+    p += 46 + tamNome + tamExtra + tamComent;
     if (!INSTALADOR_IA.test(nome)) continue;
     if (tamanho > LIMITE_ARQUIVO) throw new Error(`${nome} grande demais`);
+    if (local + 30 > zip.length) throw new Error("zip inválido");
     if (zip.readUInt32LE(local) !== 0x04034b50) throw new Error("zip inválido");
     const inicio = local + 30 + zip.readUInt16LE(local + 26) + zip.readUInt16LE(local + 28);
+    if (inicio + comprimido > zip.length) throw new Error("zip inválido");
     const dados = zip.subarray(inicio, inicio + comprimido);
-    const conteudo = metodo === 0 ? dados : metodo === 8 ? inflateRawSync(dados) : null;
+    const conteudo = metodo === 0 ? dados : metodo === 8 ? inflateRawSync(dados, { maxOutputLength: LIMITE_ARQUIVO }) : null;
     if (!conteudo || conteudo.length !== tamanho) throw new Error(`não foi possível ler ${nome}`);
     arquivos.set(nome, conteudo);
   }

@@ -100,6 +100,7 @@ class RustdeskImpl {
     js.context.callMethod('getCursorShape', [
       id,
       (int hotx, int hoty, int width, int height, Uint8List? colors) {
+        if (completer.isCompleted) return;
         completer.complete(colors == null
             ? null
             : CursorShape(
@@ -421,14 +422,17 @@ class RustdeskImpl {
 
   Future<Int32List?> sessionGetCustomImageQuality(
       {required UuidValue sessionId, dynamic hint}) {
-    try {
-      return Future(() => Int32List.fromList([
-            int.parse(js.context.callMethod(
-                'getByName', ['option:session', 'custom_image_quality']))
-          ]));
-    } catch (e) {
-      return Future.value(null);
-    }
+    return Future(() {
+      try {
+        final raw = js.context
+            .callMethod('getByName', ['option:session', 'custom_image_quality']);
+        final parsed = int.tryParse(raw?.toString() ?? '');
+        if (parsed == null) return null;
+        return Int32List.fromList([parsed]);
+      } catch (e) {
+        return null;
+      }
+    });
   }
 
   bool sessionIsKeyboardModeSupported(
@@ -1328,12 +1332,16 @@ class RustdeskImpl {
     Future<String> timeoutFuture = completer.future.timeout(
       Duration(seconds: 2),
       onTimeout: () {
-        completer.completeError(TimeoutException('Load ab timed out'));
+        if (!completer.isCompleted) {
+          completer.completeError(TimeoutException('Load ab timed out'));
+        }
         return 'Timeout';
       },
     );
     js.context["onLoadAbFinished"] = (String s) {
-      completer.complete(s);
+      if (!completer.isCompleted) {
+        completer.complete(s);
+      }
     };
     js.context.callMethod('setByName', ['load_ab']);
     return timeoutFuture;
@@ -1353,12 +1361,16 @@ class RustdeskImpl {
     Future<String> timeoutFuture = completer.future.timeout(
       Duration(seconds: 2),
       onTimeout: () {
-        completer.completeError(TimeoutException('Load group timed out'));
+        if (!completer.isCompleted) {
+          completer.completeError(TimeoutException('Load group timed out'));
+        }
         return 'Timeout';
       },
     );
     js.context["onLoadGroupFinished"] = (String s) {
-      completer.complete(s);
+      if (!completer.isCompleted) {
+        completer.complete(s);
+      }
     };
     js.context.callMethod('setByName', ['load_group']);
     return timeoutFuture;

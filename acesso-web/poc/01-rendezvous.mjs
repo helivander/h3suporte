@@ -3,7 +3,7 @@
 import protobuf from 'protobufjs';
 import WebSocket from 'ws';
 
-const SERVIDOR = process.env.HBBS ?? 'ws://hbbsserver.h3info.com:21118';
+const SERVIDOR = process.env.HBBS || 'ws://hbbsserver.h3info.com:21118';
 const id = process.argv[2] ?? '999999999';
 
 const root = await protobuf.load(new URL('../../libs/hbb_common/protos/rendezvous.proto', import.meta.url).pathname);
@@ -11,7 +11,8 @@ const Msg = root.lookupType('hbb.RendezvousMessage');
 
 const ws = new WebSocket(SERVIDOR);
 ws.binaryType = 'nodebuffer';
-const fim = setTimeout(() => { console.log('sem resposta em 8 s'); process.exit(2); }, 8000);
+let respondeu = false;
+const fim = setTimeout(() => { console.error('sem resposta em 8 s'); ws.terminate(); process.exit(2); }, 8000);
 
 ws.on('open', () => {
   console.log('conectado em', SERVIDOR);
@@ -21,8 +22,23 @@ ws.on('open', () => {
   ws.send(Msg.encode(pedido).finish());
 });
 ws.on('message', (dados) => {
-  const m = Msg.decode(dados);
-  console.log('resposta:', JSON.stringify(Msg.toObject(m, { enums: String, bytes: String, longs: String })));
-  clearTimeout(fim); ws.close();
+  respondeu = true;
+  clearTimeout(fim);
+  try {
+    const m = Msg.decode(dados);
+    console.log('resposta:', JSON.stringify(Msg.toObject(m, { enums: String, bytes: String, longs: String })));
+  } catch (e) {
+    console.error('erro ao decodificar resposta:', e.message);
+    ws.close();
+    process.exit(1);
+  }
+  ws.close();
 });
-ws.on('error', (e) => { console.log('erro:', e.message); process.exit(1); });
+ws.on('close', () => {
+  if (!respondeu) {
+    clearTimeout(fim);
+    console.error('conexão encerrada antes da resposta');
+    process.exit(1);
+  }
+});
+ws.on('error', (e) => { clearTimeout(fim); console.error('erro:', e.message); process.exit(1); });

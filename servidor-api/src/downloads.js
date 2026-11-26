@@ -25,7 +25,8 @@ export function criarDownloads({ repo, token = "", buscar = fetch, relogio = Dat
     const instaladores = (release) =>
       (release.assets ?? []).filter((a) => INSTALADOR.test(a.name) && !COM_IA.test(a.name) && a.browser_download_url);
     // A API lista do mais novo para o mais antigo.
-    const release = (await resp.json()).find(
+    const lista = await resp.json();
+    const release = (Array.isArray(lista) ? lista : []).find(
       (r) => !r.draft && TAG_VERSAO.test(r.tag_name ?? "") && instaladores(r).length > 0,
     );
     if (!release) return null;

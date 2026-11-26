@@ -11,6 +11,7 @@ export class ErroCentral extends Error {
 
 /** Cliente das rotas `/api-servico/contas/*` (docs/central-contas-assinante.md). */
 export function criarCentral({ url, credencial, timeoutMs = 8000, fetch: buscar = fetch }) {
+  const base = url?.replace(/\/+$/, "");
   async function chamar(rota, corpo, ipCliente) {
     const cabecalhos = {
       authorization: `Bearer ${credencial}`,
@@ -20,7 +21,7 @@ export function criarCentral({ url, credencial, timeoutMs = 8000, fetch: buscar 
     if (ipCliente) cabecalhos["x-cliente-ip"] = ipCliente;
     let resp;
     try {
-      resp = await buscar(`${url}/api-servico/contas/${rota}`, {
+      resp = await buscar(`${base}/api-servico/contas/${rota}`, {
         method: "POST",
         headers: cabecalhos,
         body: JSON.stringify(corpo),

@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../common.dart';
 import '../../consts.dart';
 import './dialog.dart';
+import './h3_estilo.dart';
 import './oidc_auth_status.dart';
 
 const kOpSvgList = [
@@ -546,7 +547,7 @@ class _WidgetOPState extends State<WidgetOP> {
                             horizontal: 8.0, vertical: 6.0),
                         decoration: BoxDecoration(
                           color: bgColor,
-                          borderRadius: BorderRadius.circular(4.0),
+                          borderRadius: BorderRadius.circular(H3Raios.xs),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -902,7 +903,7 @@ Future<bool?> _openLoginDialog() async {
                   ),
                 TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: H3Tokens.of(context).destaque,
                   ),
                   onPressed: inProgress ? null : fetchLoginOptions,
                   child: Text(translate('Retry')),
@@ -910,7 +911,10 @@ Future<bool?> _openLoginDialog() async {
                 if (!inProgress)
                   SelectableText(
                     error.toString(),
-                    style: const TextStyle(fontSize: 11, color: Colors.red),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: H3Tokens.of(context).perigo,
+                    ),
                     textAlign: TextAlign.center,
                   ),
               ],
@@ -970,12 +974,16 @@ Future<bool?> _openLoginDialog() async {
           );
         });
 
+    final t = H3Tokens.of(context);
+    final tema = Theme.of(context);
+
     final title = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           translate('Login'),
+          style: TextStyle(color: t.texto, fontWeight: FontWeight.w700),
         ).marginOnly(top: MyTheme.dialogPadding),
         MouseRegion(
           onEnter: (_) => setState(() => isCloseHovered = true),
@@ -984,19 +992,11 @@ Future<bool?> _openLoginDialog() async {
             child: Icon(
               Icons.close,
               size: 25,
-              // No need to handle the branch of null.
-              // Because we can ensure the color is not null when debug.
-              color: isCloseHovered
-                  ? Colors.white
-                  : Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.color
-                      ?.withOpacity(0.55),
+              color: isCloseHovered ? t.perigoTinta : t.apagado,
             ),
             onTap: onDialogCancel,
-            hoverColor: Colors.red,
-            borderRadius: BorderRadius.circular(5),
+            hoverColor: t.perigo,
+            borderRadius: BorderRadius.circular(H3Raios.xs),
           ),
         ).marginOnly(top: 10, right: 15),
       ],
@@ -1007,26 +1007,59 @@ Future<bool?> _openLoginDialog() async {
       title: title,
       titlePadding: titlePadding,
       contentBoxConstraints: BoxConstraints(minWidth: 400),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(
-            height: 8.0,
+      content: Theme(
+        data: tema.copyWith(
+          dialogBackgroundColor: t.painel,
+          colorScheme: tema.colorScheme.copyWith(
+            primary: t.destaque,
+            secondary: t.destaque,
+            onPrimary: t.destaqueTinta,
+            error: t.perigo,
           ),
-          if (!hideAccountPasswordLogin)
-            LoginWidgetUserPass(
-              username: username,
-              pass: password,
-              usernameMsg: usernameMsg,
-              passMsg: passwordMsg,
-              isInProgress: isInProgress,
-              curOP: curOP,
-              onLogin: onLogin,
-              userFocusNode: userFocusNode,
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: t.destaque,
+              foregroundColor: t.destaqueTinta,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(H3Raios.sm),
+              ),
             ),
-          if (!hideAccountPasswordLogin) const _H3ContaCentralLinks(),
-          thirdAuthWidget(),
-        ],
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: t.destaque,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(H3Raios.sm),
+              ),
+            ),
+          ),
+          progressIndicatorTheme: ProgressIndicatorThemeData(
+            color: t.destaque,
+            linearTrackColor: t.linha,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(
+              height: 8.0,
+            ),
+            if (!hideAccountPasswordLogin)
+              LoginWidgetUserPass(
+                username: username,
+                pass: password,
+                usernameMsg: usernameMsg,
+                passMsg: passwordMsg,
+                isInProgress: isInProgress,
+                curOP: curOP,
+                onLogin: onLogin,
+                userFocusNode: userFocusNode,
+              ),
+            if (!hideAccountPasswordLogin) const _H3ContaCentralLinks(),
+            thirdAuthWidget(),
+          ],
+        ),
       ),
       onCancel: onDialogCancel,
       onSubmit: hideAccountPasswordLogin ? null : onLogin,

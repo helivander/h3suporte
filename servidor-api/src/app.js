@@ -12,6 +12,17 @@ const ACESSO_VALIDADE_MS = 150_000;
 const MAX_DISPOSITIVOS_CONTA = 200;
 // O app manda heartbeat a cada poucos segundos, mas o servidor só grava o "visto" a cada VISTO_INTERVALO_MS.
 const ONLINE_MS = 3 * 60_000;
+const MAX_LIMITE_ENTRADAS = 50_000;
+const MAX_EQUIPES = 10_000;
+const MAX_VISTOS = 100_000;
+const MAX_ACESSOS = 50_000;
+const MAX_RECUSADAS_WEB = 10_000;
+const CABECALHOS_SEGURANCA = {
+  "cache-control": "no-store",
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "referrer-policy": "no-referrer",
+};
 /** Token da sessão que a Central abre para a aba "Acesso remoto" do portal. */
 const SESSAO_WEB = /^cw_[A-Za-z0-9_-]{20,128}$/;
 
@@ -38,16 +49,28 @@ class ErroHttp extends Error {
   }
 }
 
+/** Remove entradas expiradas de um Map limitado e, se ainda passar do teto, descarta as mais antigas. */
+export function limparExpirados(mapa, limite, expirado) {
+  if (mapa.size < limite) return;
+  for (const [k, v] of mapa) {
+    if (expirado(v)) mapa.delete(k);
+  }
+  while (mapa.size >= limite) {
+    const maisAntigo = mapa.keys().next().value;
+    if (maisAntigo === undefined) break;
+    mapa.delete(maisAntigo);
+  }
+}
+
 /** Janela fixa em memória: `consumir(chave)` devolve false quando passou do limite. */
-function criarLimite(maximo, janelaMs) {
+export function criarLimite(maximo, janelaMs, limite = MAX_LIMITE_ENTRADAS) {
   const contagem = new Map();
   return {
     consumir(chave, agora) {
       const atual = contagem.get(chave);
       if (!atual || atual.ate <= agora) {
-        if (contagem.size > 50_000) {
-          for (const [k, v] of contagem) if (v.ate <= agora) contagem.delete(k);
-        }
+        if (atual) contagem.delete(chave);
+        limparExpirados(contagem, limite, (v) => v.ate <= agora);
         contagem.set(chave, { n: 1, ate: agora + janelaMs });
         return true;
       }
@@ -61,17 +84,28 @@ function lerCorpo(req, limite) {
   return new Promise((resolve, reject) => {
     const partes = [];
     let tamanho = 0;
+    let finalizado = false;
     req.on("data", (parte) => {
+      if (finalizado) return;
       tamanho += parte.length;
       if (tamanho > limite) {
+        finalizado = true;
+        req.pause();
         reject(new ErroHttp(413, "Requisição grande demais."));
-        req.destroy();
         return;
       }
       partes.push(parte);
     });
-    req.on("end", () => resolve(Buffer.concat(partes).toString("utf8")));
-    req.on("error", reject);
+    req.on("end", () => {
+      if (finalizado) return;
+      finalizado = true;
+      resolve(Buffer.concat(partes).toString("utf8"));
+    });
+    req.on("error", (err) => {
+      if (finalizado) return;
+      finalizado = true;
+      reject(err);
+    });
   });
 }
 
@@ -90,7 +124,8 @@ function enviar(res, status, corpo) {
   const texto = typeof corpo === "string" ? corpo : JSON.stringify(corpo);
   res.writeHead(status, {
     "content-type": typeof corpo === "string" ? "text/plain; charset=utf-8" : "application/json; charset=utf-8",
-    "cache-control": "no-store",
+    ...(status === 413 ? { connection: "close" } : {}),
+    ...CABECALHOS_SEGURANCA,
   });
   res.end(texto);
 }
@@ -132,8 +167,10 @@ const resumoAssinatura = (a) => ({
 });
 
 function paginar(url, lista) {
-  const atual = Math.max(1, Number(url.searchParams.get("current")) || 1);
-  const tamanho = Math.min(100, Math.max(1, Number(url.searchParams.get("pageSize")) || 100));
+  const c = Number(url.searchParams.get("current"));
+  const p = Number(url.searchParams.get("pageSize"));
+  const atual = Number.isFinite(c) && c >= 1 ? Math.trunc(c) : 1;
+  const tamanho = Number.isFinite(p) && p >= 1 ? Math.min(100, Math.trunc(p)) : 100;
   return { total: lista.length, data: lista.slice((atual - 1) * tamanho, atual * tamanho) };
 }
 
@@ -147,11 +184,16 @@ function cifrar(chave, senha, contexto) {
 }
 
 function decifrar(chave, guardado, contexto) {
-  const [versao, iv, tag, dados] = guardado.split(":");
+  const partes = guardado.split(":");
+  if (partes.length !== 4) throw new Error("formato de senha desconhecido");
+  const [versao, iv, tag, dados] = partes;
   if (versao !== "v1" || !iv || !tag || !dados) throw new Error("formato de senha desconhecido");
-  const d = createDecipheriv("aes-256-gcm", chave, Buffer.from(iv, "base64"));
+  const ivBuf = Buffer.from(iv, "base64");
+  const tagBuf = Buffer.from(tag, "base64");
+  if (ivBuf.length !== 12 || tagBuf.length !== 16) throw new Error("formato de senha desconhecido");
+  const d = createDecipheriv("aes-256-gcm", chave, ivBuf);
   d.setAAD(Buffer.from(contexto));
-  d.setAuthTag(Buffer.from(tag, "base64"));
+  d.setAuthTag(tagBuf);
   return Buffer.concat([d.update(Buffer.from(dados, "base64")), d.final()]).toString("utf8");
 }
 
@@ -177,7 +219,10 @@ export function criarApp({ config, banco, central, versao = async () => null, do
   const ipDe = (req) => {
     if (config.confiarProxy) {
       const encaminhado = req.headers["x-forwarded-for"];
-      if (typeof encaminhado === "string" && encaminhado.trim()) return encaminhado.split(",")[0].trim();
+      if (typeof encaminhado === "string") {
+        const primeiro = encaminhado.split(",")[0].trim();
+        if (primeiro) return primeiro;
+      }
     }
     return req.socket.remoteAddress ?? "";
   };
@@ -215,8 +260,11 @@ export function criarApp({ config, banco, central, versao = async () => null, do
   async function adotarSessaoWeb(token, tokenHash) {
     if (!SESSAO_WEB.test(token)) return null;
     const agora = relogio();
-    if ((recusadasWeb.get(tokenHash) ?? 0) > agora) return null;
-    if (recusadasWeb.size > 10_000) recusadasWeb.clear();
+    const recusadaAte = recusadasWeb.get(tokenHash);
+    if (recusadaAte !== undefined) {
+      if (recusadaAte > agora) return null;
+      recusadasWeb.delete(tokenHash);
+    }
     let r;
     try {
       r = await central.validar(token);
@@ -225,6 +273,7 @@ export function criarApp({ config, banco, central, versao = async () => null, do
       return null;
     }
     if (r?.valida !== true || !r.conta || !r.assinatura) {
+      limparExpirados(recusadasWeb, MAX_RECUSADAS_WEB, (ate) => ate <= agora);
       recusadasWeb.set(tokenHash, agora + 5 * 60_000);
       return null;
     }
@@ -291,11 +340,12 @@ export function criarApp({ config, banco, central, versao = async () => null, do
     };
     const codigo = texto(corpo.tfaCode, 32) ?? texto(corpo.verificationCode, 32);
     const email = texto(corpo.username, 254)?.toLowerCase();
+    const secret = texto(corpo.secret, 512);
     let pedido;
-    if (texto(corpo.secret, 512) && codigo) {
-      pedido = { ...base, desafio: corpo.secret.trim(), codigoTotp: codigo };
+    if (secret && codigo) {
+      pedido = { ...base, desafio: secret, codigoTotp: codigo };
     } else {
-      if (!email || typeof corpo.password !== "string" || !corpo.password) {
+      if (!email || typeof corpo.password !== "string" || !corpo.password || corpo.password.length > 1024) {
         return erro(res, 400, "Informe e-mail e senha.");
       }
       pedido = { ...base, email, senha: corpo.password };
@@ -333,7 +383,10 @@ export function criarApp({ config, banco, central, versao = async () => null, do
   function acessosDa(assinaturaId, agora) {
     let abertos = acessos.get(assinaturaId);
     if (!abertos) {
-      if (acessos.size > 50_000) acessos.clear();
+      limparExpirados(acessos, MAX_ACESSOS, (mapa) => {
+        for (const [id, a] of mapa) if (a.ate <= agora) mapa.delete(id);
+        return mapa.size === 0;
+      });
       abertos = new Map();
       acessos.set(assinaturaId, abertos);
     }
@@ -349,7 +402,7 @@ export function criarApp({ config, banco, central, versao = async () => null, do
     const corpo = await lerJson(req);
     const sessao = await autenticar(req, { segundoPlano: true });
     const id = texto(corpo.id, 64);
-    const peer =texto(corpo.peer, 64);
+    const peer = texto(corpo.peer, 64);
     if (!id || !peer) return erro(res, 400, "Acesso sem identificação. Atualize o H3 Suporte.");
     const agora = relogio();
     const abertos = acessosDa(sessao.assinatura.id, agora);
@@ -427,12 +480,16 @@ ${id}`;
 
   async function equipe(sessao) {
     const id = sessao.assinatura.id;
+    const agora = relogio();
     const cache = equipes.get(id);
-    if (cache && cache.ate > relogio()) return cache.contas;
+    if (cache && cache.ate > agora) return cache.contas;
     try {
       const r = await central.equipe(sessao.token);
       const contas = Array.isArray(r?.contas) ? r.contas : [sessao.conta];
-      equipes.set(id, { contas, ate: relogio() + EQUIPE_CACHE_MS });
+      const atualizadoEm = relogio();
+      equipes.delete(id);
+      limparExpirados(equipes, MAX_EQUIPES, (v) => v.ate <= atualizadoEm);
+      equipes.set(id, { contas, ate: atualizadoEm + EQUIPE_CACHE_MS });
       return contas;
     } catch {
       return cache?.contas ?? [sessao.conta];
@@ -476,6 +533,9 @@ ${id}`;
     } catch {
       return erro(res, 404, "Não encontrado.");
     }
+    if (!artefato || !nome || artefato === "." || artefato === ".." || nome === "." || nome === ".." || /[/\\\0]/.test(artefato) || /[/\\\0]/.test(nome)) {
+      return erro(res, 404, "Não encontrado.");
+    }
     const arquivo = await ia.arquivo(artefato, nome);
     if (!arquivo) return erro(res, 404, "Não encontrado.");
     if (!limiteIa.consumir(sessao.conta.id, relogio())) return erro(res, 429, MENSAGENS.MUITAS_TENTATIVAS);
@@ -483,17 +543,23 @@ ${id}`;
       { tipo: "download_ia", dados: JSON.stringify({ conta: sessao.conta.id, arquivo: arquivo.nome, versao: arquivo.versao }) },
       relogio(),
     );
+    const nomeSeguro = String(arquivo.nome).replace(/["\r\n\\]/g, "_");
     res.writeHead(200, {
       "content-type": "application/octet-stream",
       "content-length": arquivo.tamanho,
-      "content-disposition": `attachment; filename="${arquivo.nome}"`,
-      "cache-control": "no-store",
+      "content-disposition": `attachment; filename="${nomeSeguro}"`,
+      ...CABECALHOS_SEGURANCA,
     });
     await pipeline(ia.abrir(arquivo.caminho), res);
   }
 
   async function rotear(req, res) {
-    const url = new URL(req.url ?? "/", "http://local");
+    let url;
+    try {
+      url = new URL(req.url ?? "/", "http://local");
+    } catch {
+      throw new ErroHttp(400, "URL inválida.");
+    }
     const rota = `${req.method} ${url.pathname.replace(/\/+$/, "")}`;
     const agora = relogio();
 
@@ -544,14 +610,21 @@ ${id}`;
         const corpo = await lerJson(req);
         const sessao = await autenticar(req);
         const id = texto(corpo.id, 64);
-        if (id) acessos.get(sessao.assinatura.id)?.delete(id);
+        if (id) {
+          const abertos = acessos.get(sessao.assinatura.id);
+          if (abertos) {
+            abertos.delete(id);
+            if (abertos.size === 0) acessos.delete(sessao.assinatura.id);
+          }
+        }
         return enviar(res, 200, {});
       }
       case "POST /api/heartbeat": {
         const corpo = await lerJson(req);
         const id = texto(corpo.id, 64);
         if (id && (vistos.get(id) ?? 0) + VISTO_INTERVALO_MS <= agora) {
-          if (vistos.size > 100_000) vistos.clear();
+          vistos.delete(id);
+          limparExpirados(vistos, MAX_VISTOS, (vistoEm) => vistoEm + VISTO_INTERVALO_MS <= agora);
           vistos.set(id, agora);
           banco.marcarVisto(id, agora);
         }

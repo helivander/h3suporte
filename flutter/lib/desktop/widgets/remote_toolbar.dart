@@ -3,7 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart' show H3Cores;
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart' show H3Tokens;
 import 'package:flutter_hbb/common/widgets/audio_input.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/common/widgets/keyboard_shortcuts/display.dart';
@@ -327,21 +327,32 @@ class ToolbarState {
 }
 
 class _ToolbarTheme {
-  static Color get blueColor => H3Cores.escuro
-      ? const Color(0xFF14675F)
-      : const Color(0xFF0B9A8F);
-  static Color get hoverBlueColor => H3Cores.escuro
-      ? const Color(0xFF1FA89B)
-      : const Color(0xFF0A7F76);
-  static Color get inactiveColor => H3Cores.linha;
-  static Color get hoverInactiveColor => H3Cores.linha2;
+  static Color blueColor(BuildContext context) {
+    final t = H3Tokens.of(context);
+    return Theme.of(context).brightness == Brightness.dark
+        ? Color.lerp(t.destaque, t.painel, 0.35)!
+        : t.destaque;
+  }
 
-  static Color get redColor => H3Cores.escuro
-      ? const Color(0xFFE0485A)
-      : const Color(0xFFC6283A);
-  static Color get hoverRedColor => H3Cores.escuro
-      ? const Color(0xFFFF5D6C)
-      : const Color(0xFFA81F30);
+  static Color hoverBlueColor(BuildContext context) {
+    final t = H3Tokens.of(context);
+    return Theme.of(context).brightness == Brightness.dark
+        ? t.destaque
+        : Color.lerp(t.destaque, Colors.black, 0.12)!;
+  }
+
+  static Color inactiveColor(BuildContext context) =>
+      H3Tokens.of(context).linha;
+  static Color hoverInactiveColor(BuildContext context) =>
+      H3Tokens.of(context).linha2;
+
+  static Color redColor(BuildContext context) => H3Tokens.of(context).perigo;
+  static Color hoverRedColor(BuildContext context) {
+    final t = H3Tokens.of(context);
+    return Theme.of(context).brightness == Brightness.dark
+        ? Color.lerp(t.perigo, t.perigoTinta, 0.16)!
+        : Color.lerp(t.perigo, Colors.black, 0.14)!;
+  }
   // kMinInteractiveDimension
   static const double height = 20.0;
   static const double dividerHeight = 12.0;
@@ -360,7 +371,7 @@ class _ToolbarTheme {
       : EdgeInsets.fromLTRB(6, 14, 6, 14);
   static const double menuButtonBorderRadius = 8.0;
 
-  static Color borderColor(BuildContext context) => H3Cores.linha2;
+  static Color borderColor(BuildContext context) => H3Tokens.of(context).linha2;
 
   static Color? dividerColor(BuildContext context) =>
       MyTheme.color(context).divider;
@@ -869,8 +880,8 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
             child: const Icon(Icons.smart_toy_outlined,
                 color: Colors.white, size: 20)),
         tooltip: 'AI assistant',
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.blueColor(context),
+        hoverColor: _ToolbarTheme.hoverBlueColor(context),
         onPressed: widget.ffi.aiAgentModel.togglePanel,
       ));
     }
@@ -879,7 +890,6 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     }
     if (!isWeb) toolbarItems.add(_RecordMenu());
     toolbarItems.add(_CloseMenu(id: widget.id, ffi: widget.ffi));
-    H3Cores.escuro = Theme.of(context).brightness == Brightness.dark;
     final toolbarBorderRadius = BorderRadius.all(Radius.circular(18.0));
     // innerAxis: how the toolbar icons themselves flow.
     // outerAxis: how the toolbar block and the handle stack against each other
@@ -893,7 +903,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       elevation: _ToolbarTheme.elevation,
       shadowColor: MyTheme.color(context).shadow,
       borderRadius: toolbarBorderRadius,
-      color: H3Cores.painel,
+      color: H3Tokens.of(context).painel,
       child: SingleChildScrollView(
         scrollDirection: innerAxis,
         child: Theme(
@@ -949,7 +959,9 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
         padding: MaterialStatePropertyAll(EdgeInsets.zero),
         elevation: MaterialStatePropertyAll(0),
         shape: MaterialStatePropertyAll(BeveledRectangleBorder()),
-      ).copyWith(backgroundColor: MaterialStatePropertyAll(H3Cores.painel))),
+      ).copyWith(
+          backgroundColor:
+              MaterialStatePropertyAll(H3Tokens.of(context).painel))),
     );
   }
 }
@@ -965,11 +977,12 @@ class _PinMenu extends StatelessWidget {
         assetName: state.pin ? "assets/pinned.svg" : "assets/unpinned.svg",
         tooltip: state.pin ? 'Unpin Toolbar' : 'Pin Toolbar',
         onPressed: state.switchPin,
-        color:
-            state.pin ? _ToolbarTheme.blueColor : _ToolbarTheme.inactiveColor,
+        color: state.pin
+            ? _ToolbarTheme.blueColor(context)
+            : _ToolbarTheme.inactiveColor(context),
         hoverColor: state.pin
-            ? _ToolbarTheme.hoverBlueColor
-            : _ToolbarTheme.hoverInactiveColor,
+            ? _ToolbarTheme.hoverBlueColor(context)
+            : _ToolbarTheme.hoverInactiveColor(context),
       ),
     );
   }
@@ -988,11 +1001,11 @@ class _MobileActionMenu extends StatelessWidget {
           onPressed: () => ffi.dialogManager.setMobileActionsOverlayVisible(
               !ffi.dialogManager.mobileActionsOverlayVisible.value),
           color: ffi.dialogManager.mobileActionsOverlayVisible.isTrue
-              ? _ToolbarTheme.blueColor
-              : _ToolbarTheme.inactiveColor,
+              ? _ToolbarTheme.blueColor(context)
+              : _ToolbarTheme.inactiveColor(context),
           hoverColor: ffi.dialogManager.mobileActionsOverlayVisible.isTrue
-              ? _ToolbarTheme.hoverBlueColor
-              : _ToolbarTheme.hoverInactiveColor,
+              ? _ToolbarTheme.hoverBlueColor(context)
+              : _ToolbarTheme.hoverInactiveColor(context),
         ));
   }
 }
@@ -1045,8 +1058,8 @@ class _MainMonitorSwitchButton extends StatelessWidget {
 
       return _IconMenuButton(
         tooltip: cycle.tooltip,
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.blueColor(context),
+        hoverColor: _ToolbarTheme.hoverBlueColor(context),
         onPressed: cycle.next,
         icon: SizedBox(
           width: _ToolbarTheme.buttonSize,
@@ -1120,8 +1133,8 @@ class _MonitorMenu extends StatelessWidget {
         icon: monitorsIcon,
         ffi: ffi,
         width: width.value,
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.blueColor(context),
+        hoverColor: _ToolbarTheme.hoverBlueColor(context),
         menuStyle: MenuStyle(
             padding:
                 MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 6))),
@@ -1158,12 +1171,12 @@ class _MonitorMenu extends StatelessWidget {
         child: Text(translate('Show displays as individual windows')));
   }
 
-  buildOneMonitorButton(i, curDisplay) => Text(
+  buildOneMonitorButton(BuildContext context, i, curDisplay) => Text(
         '${i + 1}',
         style: TextStyle(
           color: i == curDisplay
-              ? _ToolbarTheme.blueColor
-              : _ToolbarTheme.inactiveColor,
+              ? _ToolbarTheme.blueColor(context)
+              : _ToolbarTheme.inactiveColor(context),
           fontSize: 12,
           fontWeight: FontWeight.bold,
         ),
@@ -1181,7 +1194,7 @@ class _MonitorMenu extends StatelessWidget {
           Widget? monitorsIcon;
           if (isAllMonitors) {
             monitorsIcon = globalMonitorsWidget(
-                width, Colors.white, _ToolbarTheme.blueColor);
+                width, Colors.white, _ToolbarTheme.blueColor(context));
           }
           return _IconMenuButton(
             tooltip: isMulti
@@ -1193,11 +1206,11 @@ class _MonitorMenu extends StatelessWidget {
             vMargin: isMulti ? null : 12,
             topLevel: false,
             color: i == display.value
-                ? _ToolbarTheme.blueColor
-                : _ToolbarTheme.inactiveColor,
+                ? _ToolbarTheme.blueColor(context)
+                : _ToolbarTheme.inactiveColor(context),
             hoverColor: i == display.value
-                ? _ToolbarTheme.hoverBlueColor
-                : _ToolbarTheme.hoverInactiveColor,
+                ? _ToolbarTheme.hoverBlueColor(context)
+                : _ToolbarTheme.hoverInactiveColor(context),
             width: isAllMonitors ? width.value : null,
             icon: isAllMonitors
                 ? monitorsIcon
@@ -1213,7 +1226,8 @@ class _MonitorMenu extends StatelessWidget {
                           colorFilter:
                               ColorFilter.mode(Colors.white, BlendMode.srcIn),
                         ),
-                        Obx(() => buildOneMonitorButton(i, display.value)),
+                        Obx(() => buildOneMonitorButton(
+                            context, i, display.value)),
                       ],
                     ),
                   ),
@@ -1269,14 +1283,16 @@ class _MonitorMenu extends StatelessWidget {
               color: display.value == i ? activeBgColor : Colors.white,
             ),
             child: Center(
-                child: Text(
-              '${i + 1}',
-              style: TextStyle(
-                color: display.value == i
-                    ? activeTextColor
-                    : _ToolbarTheme.inactiveColor,
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
+                child: Builder(
+              builder: (context) => Text(
+                '${i + 1}',
+                style: TextStyle(
+                  color: display.value == i
+                      ? activeTextColor
+                      : _ToolbarTheme.inactiveColor(context),
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             )),
           ),
@@ -1334,8 +1350,8 @@ class _ControlMenu extends StatelessWidget {
     return _IconSubmenuButton(
         tooltip: 'Control Actions',
         svg: "assets/actions.svg",
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.blueColor(context),
+        hoverColor: _ToolbarTheme.hoverBlueColor(context),
         ffi: ffi,
         menuChildrenGetter: (_) => toolbarControls(context, id, ffi).map((e) {
               if (e.divider) {
@@ -1838,8 +1854,8 @@ class _DisplayMenuState extends State<_DisplayMenu> {
       tooltip: 'Display Settings',
       svg: "assets/display.svg",
       ffi: widget.ffi,
-      color: _ToolbarTheme.blueColor,
-      hoverColor: _ToolbarTheme.hoverBlueColor,
+      color: _ToolbarTheme.blueColor(context),
+      hoverColor: _ToolbarTheme.hoverBlueColor(context),
       menuChildrenGetter: menuChildrenGetter,
     );
   }
@@ -2599,8 +2615,8 @@ class _KeyboardMenu extends StatelessWidget {
         tooltip: 'Keyboard Settings',
         svg: "assets/keyboard_mouse.svg",
         ffi: ffi,
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.blueColor(context),
+        hoverColor: _ToolbarTheme.hoverBlueColor(context),
         menuChildrenGetter: (_) => [
               keyboardMode(),
               localKeyboardType(),
@@ -2853,8 +2869,8 @@ class _QuickCommandsMenu extends StatelessWidget {
       final ok = await ffi.dialogManager.show<bool>((setState, close, context) =>
           CustomAlertDialog(
             title: Row(children: [
-              const Icon(Icons.warning_rounded,
-                  color: Colors.redAccent, size: 28),
+              Icon(Icons.warning_rounded,
+                  color: H3Tokens.of(context).perigo, size: 28),
               Flexible(child: Text(c.titulo).paddingOnly(left: 10)),
             ]),
             content: Text(
@@ -2888,8 +2904,8 @@ class _QuickCommandsMenu extends StatelessWidget {
             width: _ToolbarTheme.buttonSize,
             height: _ToolbarTheme.buttonSize,
             child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 22)),
-        color: _ToolbarTheme.blueColor,
-        hoverColor: _ToolbarTheme.hoverBlueColor,
+        color: _ToolbarTheme.blueColor(context),
+        hoverColor: _ToolbarTheme.hoverBlueColor(context),
         ffi: ffi,
         menuChildrenGetter: (_) => [
               for (final g in grupos)
@@ -2934,8 +2950,8 @@ class _ChatMenuState extends State<_ChatMenu> {
           key: chatButtonKey,
           svg: 'assets/chat.svg',
           ffi: widget.ffi,
-          color: _ToolbarTheme.blueColor,
-          hoverColor: _ToolbarTheme.hoverBlueColor,
+          color: _ToolbarTheme.blueColor(context),
+          hoverColor: _ToolbarTheme.hoverBlueColor(context),
           menuChildrenGetter: (_) => [textChat(), voiceCall()]);
     }
   }
@@ -2946,8 +2962,8 @@ class _ChatMenuState extends State<_ChatMenu> {
       tooltip: 'Text chat',
       key: chatButtonKey,
       onPressed: _textChatOnPressed,
-      color: _ToolbarTheme.blueColor,
-      hoverColor: _ToolbarTheme.hoverBlueColor,
+      color: _ToolbarTheme.blueColor(context),
+      hoverColor: _ToolbarTheme.hoverBlueColor(context),
     );
   }
 
@@ -3038,8 +3054,8 @@ class _VoiceCallMenu extends StatelessWidget {
             return _IconSubmenuButton(
               tooltip: 'Voice call',
               svg: 'assets/voice_call.svg',
-              color: _ToolbarTheme.blueColor,
-              hoverColor: _ToolbarTheme.hoverBlueColor,
+              color: _ToolbarTheme.blueColor(context),
+              hoverColor: _ToolbarTheme.hoverBlueColor(context),
               menuChildrenGetter: menuChildrenGetter,
               ffi: ffi,
             );
@@ -3055,8 +3071,8 @@ class _VoiceCallMenu extends StatelessWidget {
       assetName: "assets/call_wait.svg",
       tooltip: "Waiting",
       onPressed: () => bind.sessionCloseVoiceCall(sessionId: ffi.sessionId),
-      color: _ToolbarTheme.redColor,
-      hoverColor: _ToolbarTheme.hoverRedColor,
+      color: _ToolbarTheme.redColor(context),
+      hoverColor: _ToolbarTheme.hoverRedColor(context),
     );
   }
 }
@@ -3080,11 +3096,11 @@ class _RecordMenu extends StatelessWidget {
           : 'Start session recording',
       onPressed: () => recordingModel.toggle(),
       color: recordingModel.start
-          ? _ToolbarTheme.redColor
-          : _ToolbarTheme.blueColor,
+          ? _ToolbarTheme.redColor(context)
+          : _ToolbarTheme.blueColor(context),
       hoverColor: recordingModel.start
-          ? _ToolbarTheme.hoverRedColor
-          : _ToolbarTheme.hoverBlueColor,
+          ? _ToolbarTheme.hoverRedColor(context)
+          : _ToolbarTheme.hoverBlueColor(context),
     );
   }
 }
@@ -3106,8 +3122,8 @@ class _CloseMenu extends StatelessWidget {
         }
         closeConnection(id: id);
       },
-      color: _ToolbarTheme.redColor,
-      hoverColor: _ToolbarTheme.hoverRedColor,
+      color: _ToolbarTheme.redColor(context),
+      hoverColor: _ToolbarTheme.hoverRedColor(context),
     );
   }
 }
@@ -3168,15 +3184,29 @@ class _IconMenuButtonState extends State<_IconMenuButton> {
           onPressed: widget.onPressed,
           child: Tooltip(
             message: translate(widget.tooltip),
-            child: Material(
-                type: MaterialType.transparency,
-                child: Ink(
-                    decoration: BoxDecoration(
-                      borderRadius:
-                          BorderRadius.circular(_ToolbarTheme.iconRadius),
-                      color: hover ? widget.hoverColor : widget.color,
-                    ),
-                    child: icon)),
+            child: AnimatedScale(
+              scale: hover ? 1.06 : 1.0,
+              duration: const Duration(milliseconds: 140),
+              curve: Curves.easeOutCubic,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
+                  color: hover ? widget.hoverColor : widget.color,
+                  boxShadow: hover
+                      ? [
+                          BoxShadow(
+                            color: widget.hoverColor.withOpacity(0.32),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: icon,
+              ),
+            ),
           )),
     ).marginSymmetric(
         horizontal: widget.hMargin ?? _ToolbarTheme.buttonHMargin,
@@ -3251,13 +3281,26 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
                 }),
             child: Tooltip(
                 message: translate(widget.tooltip),
-                child: Material(
-                    type: MaterialType.transparency,
-                    child: Ink(
+                child: AnimatedScale(
+                    scale: hover ? 1.06 : 1.0,
+                    duration: const Duration(milliseconds: 140),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 140),
+                        curve: Curves.easeOutCubic,
                         decoration: BoxDecoration(
                           borderRadius:
                               BorderRadius.circular(_ToolbarTheme.iconRadius),
                           color: hover ? widget.hoverColor : widget.color,
+                          boxShadow: hover
+                              ? [
+                                  BoxShadow(
+                                    color: widget.hoverColor.withOpacity(0.32),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: icon))),
             menuChildren: widget
@@ -3655,12 +3698,15 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
 
     buttonWrapper(VoidCallback? onPressed, Widget child,
         {Color? hoverColor}) {
-      hoverColor ??= _ToolbarTheme.blueColor;
+      hoverColor ??= _ToolbarTheme.blueColor(context);
       final bgColor = buttonStyle.backgroundColor?.resolve({});
       return TextButton(
         onPressed: onPressed,
         child: child,
         style: buttonStyle.copyWith(
+          animationDuration: const Duration(milliseconds: 140),
+          shape: MaterialStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
           backgroundColor: MaterialStateProperty.resolveWith((states) {
             if (states.contains(MaterialState.hovered)) {
               return (bgColor ?? hoverColor)!.withOpacity(0.15);
@@ -3734,10 +3780,10 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
                   child: Icon(
                     Icons.close,
                     size: iconSize,
-                    color: _ToolbarTheme.redColor,
+                    color: _ToolbarTheme.redColor(context),
                   ),
                 ),
-                hoverColor: _ToolbarTheme.redColor,
+                hoverColor: _ToolbarTheme.redColor(context),
               ).paddingOnly(left: iconSize / 2);
             }
           })
@@ -3747,7 +3793,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
       data: TextButtonThemeData(style: buttonStyle),
       child: Container(
         decoration: BoxDecoration(
-          color: H3Cores.painel,
+          color: H3Tokens.of(context).painel,
           border: Border.all(
             color: _ToolbarTheme.borderColor(context),
             width: 1,
@@ -3875,7 +3921,7 @@ class _MinimizedMonitorSwitchButton extends StatelessWidget {
             padding: MaterialStateProperty.all(EdgeInsets.zero),
             backgroundColor: MaterialStateProperty.resolveWith((states) {
               if (states.contains(MaterialState.hovered)) {
-                return _ToolbarTheme.blueColor.withOpacity(0.15);
+                return _ToolbarTheme.blueColor(context).withOpacity(0.15);
               }
               return null;
             }),
@@ -3885,8 +3931,8 @@ class _MinimizedMonitorSwitchButton extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 'assets/display_switcher.svg',
-                colorFilter:
-                    ColorFilter.mode(_ToolbarTheme.blueColor, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                    _ToolbarTheme.blueColor(context), BlendMode.srcIn),
                 width: iconSize,
                 height: iconSize,
               ),

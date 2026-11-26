@@ -369,9 +369,8 @@ Recommends: libayatana-appindicator3-1
 Description: A remote control software.
 
 """ % (version, get_deb_arch(), get_deb_extra_depends())
-    file = open(control_file_path, "w")
-    file.write(content)
-    file.close()
+    with open(control_file_path, "w", encoding="utf-8") as file:
+        file.write(content)
 
 
 def ffi_bindgen_function_refactor():
@@ -739,7 +738,7 @@ def build_flutter_deb(version, features):
         system2(f'cargo build --locked --features {features} --lib --release')
         ffi_bindgen_function_refactor()
     os.chdir('flutter')
-    system2('flutter build linux --release')
+    system2('flutter build linux --release' + h3_dart_define())
     system2('mkdir -p tmpdeb/usr/bin/')
     system2('mkdir -p tmpdeb/usr/share/rustdesk')
     system2('mkdir -p tmpdeb/usr/share/rustdesk/files/systemd/')
@@ -964,7 +963,7 @@ def build_flutter_arch_manjaro(version, features):
         system2(f'cargo build --locked --features {features} --lib --release')
     ffi_bindgen_function_refactor()
     os.chdir('flutter')
-    system2('flutter build linux --release')
+    system2('flutter build linux --release' + h3_dart_define())
     system2(f'strip {flutter_build_dir}/lib/librustdesk.so')
     os.chdir('../res')
     system2('HBB=`pwd`/.. FLUTTER=1 makepkg -f')
@@ -974,12 +973,25 @@ def h3_dart_define():
     return ' --dart-define=H3_IA=true' if os.environ.get('H3_IA') == 'true' else ''
 
 
+def validate_h3_env():
+    conn_type = os.environ.get('CONN_TYPE', '')
+    if conn_type and conn_type not in ('incoming', 'outgoing'):
+        raise ValueError(
+            f"Invalid CONN_TYPE={conn_type!r}: expected 'incoming', 'outgoing', or empty"
+        )
+    h3_ia = os.environ.get('H3_IA', '')
+    if h3_ia and h3_ia not in ('true', 'false'):
+        raise ValueError(
+            f"Invalid H3_IA={h3_ia!r}: expected 'true', 'false', or empty"
+        )
+
+
 def build_flutter_windows(version, features, skip_portable_pack):
     if not skip_cargo:
         system2(f'cargo build --locked --features {features} --lib --release')
         if not os.path.exists("target/release/librustdesk.dll"):
-            print("cargo build failed, please check rust source code.")
-            exit(-1)
+            sys.stderr.write("cargo build failed, please check rust source code.\n")
+            sys.exit(-1)
     os.chdir('flutter')
     system2('flutter build windows --release' + h3_dart_define())
     os.chdir('..')
@@ -1022,6 +1034,8 @@ def main():
             feats = ','.join(get_features(args))
         print(feats)
         return
+
+    validate_h3_env()
 
     if os.path.exists(exe_path):
         os.unlink(exe_path)
@@ -1183,7 +1197,8 @@ def main():
 
 
 def md5_file(fn):
-    md5 = hashlib.md5(open('tmpdeb/' + fn, 'rb').read()).hexdigest()
+    with open('tmpdeb/' + fn, 'rb') as f:
+        md5 = hashlib.md5(f.read()).hexdigest()
     system2('echo "%s  /%s" >> tmpdeb/DEBIAN/md5sums' % (md5, fn))
 
 def md5_file_folder(base_dir):

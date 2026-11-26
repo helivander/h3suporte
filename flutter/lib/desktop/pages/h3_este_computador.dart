@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
@@ -34,7 +35,7 @@ class H3EsteComputador extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: H3Raios.md),
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: model.serverPasswd,
               builder: (_, senha, __) => _bloco(
@@ -79,18 +80,8 @@ class H3EsteComputador extends StatelessWidget {
     showToast(translate('Copied'));
   }
 
-  Widget _acao(IconData icone, String dica, VoidCallback onTap) => Tooltip(
-        message: dica,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          hoverColor: H3Cores.painel2,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(9),
-            child: Icon(icone, size: 18, color: H3Cores.apagado),
-          ),
-        ),
-      );
+  Widget _acao(IconData icone, String dica, VoidCallback onTap) =>
+      _AcaoBotao(icone: icone, dica: dica, onTap: onTap);
 
   Widget _bloco({
     required String rotulo,
@@ -101,10 +92,11 @@ class H3EsteComputador extends StatelessWidget {
     required List<Widget> acoes,
   }) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+      padding: const EdgeInsets.fromLTRB(
+          H3Raios.md + 2, H3Raios.md, H3Raios.sm, H3Raios.md),
       decoration: BoxDecoration(
         color: H3Cores.painel2,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(H3Raios.md),
         border: Border.all(color: H3Cores.linha),
       ),
       child: Row(children: [
@@ -113,11 +105,11 @@ class H3EsteComputador extends StatelessWidget {
           height: 38,
           decoration: BoxDecoration(
             color: H3Cores.destaque.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(H3Raios.sm),
           ),
           child: Icon(icone, size: 20, color: H3Cores.destaque),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: H3Raios.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,6 +134,65 @@ class H3EsteComputador extends StatelessWidget {
         ),
         ...acoes,
       ]),
+    );
+  }
+}
+
+class _AcaoBotao extends StatefulWidget {
+  final IconData icone;
+  final String dica;
+  final VoidCallback onTap;
+
+  const _AcaoBotao({
+    required this.icone,
+    required this.dica,
+    required this.onTap,
+  });
+
+  @override
+  State<_AcaoBotao> createState() => _AcaoBotaoState();
+}
+
+class _AcaoBotaoState extends State<_AcaoBotao> {
+  bool _hover = false;
+  bool _foco = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ativo = _hover || _foco;
+    return Tooltip(
+      message: widget.dica,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(H3Raios.sm),
+          hoverColor: H3Cores.destaque.withOpacity(0.12),
+          focusColor: H3Cores.destaque.withOpacity(0.18),
+          splashColor: H3Cores.destaque.withOpacity(0.16),
+          highlightColor: H3Cores.destaque.withOpacity(0.08),
+          onHover: (v) => setState(() => _hover = v),
+          onFocusChange: (v) => setState(() => _foco = v),
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(H3Raios.sm),
+              border: Border.all(
+                color: _foco
+                    ? H3Cores.destaque.withOpacity(0.55)
+                    : Colors.transparent,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              widget.icone,
+              size: 18,
+              color: ativo ? H3Cores.destaque : H3Cores.apagado,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/shared_state.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/common/widgets/toolbar.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/mobile/widgets/floating_mouse.dart';
@@ -514,7 +515,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                         : Icons.expand_less,
                     color: Colors.white,
                   ),
-                  backgroundColor: MyTheme.accent,
+                  backgroundColor: H3Tokens.of(context).destaque,
                   onPressed: () {
                     setState(() {
                       if (keyboardIsVisible) {
@@ -606,7 +607,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
     final ffiModel = Provider.of<FfiModel>(context);
     return BottomAppBar(
       elevation: 10,
-      color: MyTheme.accent,
+      color: H3Tokens.of(context).destaque,
       child: Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -900,7 +901,9 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
       VoiceCallStatus.connected
     ].contains(gFFI.chatModel.voiceCallStatus.value);
     final menus = [
-      makeTextMenu('Text chat', Icon(Icons.message, color: MyTheme.accent),
+      makeTextMenu(
+          'Text chat',
+          Icon(Icons.message, color: H3Tokens.of(context).destaque),
           () => onPressedTextChat(widget.id)),
       isInVoice
           ? makeTextMenu(
@@ -916,7 +919,8 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
               'Voice call',
               SvgPicture.asset(
                 'assets/call_wait.svg',
-                colorFilter: ColorFilter.mode(MyTheme.accent, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                    H3Tokens.of(context).destaque, BlendMode.srcIn),
               ),
               onPressVoiceCall),
     ];
@@ -1015,7 +1019,9 @@ class _KeyHelpToolsState extends State<KeyHelpTools> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5.0),
           ),
-          backgroundColor: active == true ? MyTheme.accent80 : null,
+          backgroundColor: active == true
+              ? H3Tokens.of(context).destaque.withOpacity(0.8)
+              : null,
         ),
         child: icon != null
             ? Icon(icon, size: 14, color: Colors.white)

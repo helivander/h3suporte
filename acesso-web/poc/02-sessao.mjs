@@ -51,7 +51,7 @@ rz_enviar(rend, { punchHoleRequest: { id, natType: 1, licenceKey: CHAVE_SERVIDOR
 const ph = (await rz_receber(rend)).punchHoleResponse;
 rend.fechar();
 if (!ph?.pk?.length) { log('dispositivo não encontrado ou offline:', JSON.stringify(ph)); process.exit(2); }
-const servidorRelay = ph.relayServer || `${HOST}:21117`;
+const servidorRelay = ph.relayServer || `${HOST}:21119`;
 log('1. dispositivo encontrado; relay:', servidorRelay);
 
 // ---------- 2. pede o relay ----------

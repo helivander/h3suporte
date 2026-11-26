@@ -13,6 +13,7 @@ test("só anuncia release estável que tem a lista assinada", async () => {
   assert.equal(await ok(), "https://github.com/h3/app/releases/tag/v1.5.4");
 
   for (const release of [
+    null,
     { tag_name: "v1.5.4", assets: [{ name: "rustdesk-update.json" }] },
     { tag_name: "v1.5.3-2", assets: assinados },
     { tag_name: "v1.5.4", prerelease: true, assets: assinados },

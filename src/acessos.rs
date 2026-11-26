@@ -16,6 +16,11 @@ use hbb_common::{
 const RENOVACAO: Duration = Duration::from_secs(60);
 const ESPERA: Duration = Duration::from_secs(3);
 
+fn endpoint(servidor: &str, acao: &str) -> String {
+    let base = servidor.trim().trim_end_matches('/');
+    format!("{base}/api/acessos/{acao}")
+}
+
 /// Vaga de um acesso aberto; ao sair de escopo, devolve a vaga ao servidor.
 pub struct Acesso {
     servidor: String,
@@ -27,7 +32,7 @@ pub struct Acesso {
 impl Drop for Acesso {
     fn drop(&mut self) {
         self.renovacao.abort();
-        let url = format!("{}/api/acessos/fechar", self.servidor);
+        let url = endpoint(&self.servidor, "fechar");
         let corpo = std::mem::take(&mut self.corpo);
         let cabecalho = std::mem::take(&mut self.cabecalho);
         std::thread::spawn(move || {
@@ -45,7 +50,13 @@ fn recusa(status: u16, corpo: &str) -> Option<String> {
     }
     let motivo = serde_json::from_str::<serde_json::Value>(corpo)
         .ok()
-        .and_then(|v| v.get("error")?.as_str().map(str::to_owned));
+        .and_then(|v| {
+            v.get("error")?
+                .as_str()
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+        });
     Some(motivo.unwrap_or_else(|| {
         if status == 401 {
             "Entre de novo com sua conta H3 Suporte para fazer acessos remotos.".to_owned()
@@ -59,10 +70,11 @@ fn recusa(status: u16, corpo: &str) -> Option<String> {
 /// servidor de API ou login (o bloqueio por falta de login é de `crate::plano`).
 pub async fn abrir(peer: &str, token: &str) -> Result<Option<Acesso>, String> {
     let servidor = crate::ui_interface::get_api_server();
-    if servidor.is_empty() || token.is_empty() {
+    let servidor = servidor.trim().trim_end_matches('/').to_owned();
+    if servidor.is_empty() || token.trim().is_empty() {
         return Ok(None);
     }
-    let url = format!("{servidor}/api/acessos/abrir");
+    let url = endpoint(&servidor, "abrir");
     let corpo = serde_json::json!({ "id": uuid::Uuid::new_v4().to_string(), "peer": peer }).to_string();
     let cabecalho = format!("Authorization: Bearer {token}");
     match timeout(
@@ -120,5 +132,27 @@ mod tests {
         assert_eq!(recusa(200, r#"{"limite":null,"em_uso":1}"#), None);
         assert_eq!(recusa(404, r#"{"error":"Não encontrado."}"#), None);
         assert_eq!(recusa(503, ""), None);
+    }
+
+    #[test]
+    fn recusa_usa_mensagem_padrao_quando_error_vazio_ou_invalido() {
+        for corpo in ["", "lixo", r#"{"error":""}"#, r#"{"error":"   "}"#, r#"{"error":123}"#] {
+            let msg_401 = recusa(401, corpo).unwrap();
+            assert!(msg_401.contains("Entre de novo"));
+            let msg_409 = recusa(409, corpo).unwrap();
+            assert!(msg_409.contains("limite de acessos"));
+        }
+    }
+
+    #[test]
+    fn endpoint_normaliza_barra_final_e_espacos() {
+        assert_eq!(
+            endpoint(" https://api.exemplo.com/ ", "abrir"),
+            "https://api.exemplo.com/api/acessos/abrir"
+        );
+        assert_eq!(
+            endpoint("https://api.exemplo.com///", "fechar"),
+            "https://api.exemplo.com/api/acessos/fechar"
+        );
     }
 }

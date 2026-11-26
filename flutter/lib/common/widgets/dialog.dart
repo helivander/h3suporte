@@ -5,6 +5,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/shared_state.dart';
+import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
@@ -1120,7 +1121,7 @@ _connectDialog(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.password_rounded, color: MyTheme.accent),
+          Icon(Icons.password_rounded, color: H3Tokens.of(context).destaque),
           Text(translate('Password Required')).paddingOnly(left: 10),
         ],
       ),
@@ -1482,7 +1483,7 @@ showSetOSPassword(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.password_rounded, color: MyTheme.accent),
+          Icon(Icons.password_rounded, color: H3Tokens.of(context).destaque),
           Text(translate('OS Password')).paddingOnly(left: 10),
         ],
       ),
@@ -2186,7 +2187,7 @@ void renameDialog(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.edit_rounded, color: MyTheme.accent),
+          Icon(Icons.edit_rounded, color: H3Tokens.of(context).destaque),
           Text(translate('Rename')).paddingOnly(left: 10),
         ],
       ),
@@ -2540,7 +2541,7 @@ void addPeersToAbDialog(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(IconFont.addressBook, color: MyTheme.accent),
+          Icon(IconFont.addressBook, color: H3Tokens.of(context).destaque),
           Text(translate('Add to address book')).paddingOnly(left: 10),
         ],
       ),
@@ -2615,7 +2616,7 @@ void setSharedAbPasswordDialog(String abName, Peer peer) {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.key, color: MyTheme.accent),
+          Icon(Icons.key, color: H3Tokens.of(context).destaque),
           Text(translate(peer.password.isEmpty
                   ? 'Set shared password'
                   : 'Change Password'))

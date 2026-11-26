@@ -684,11 +684,20 @@ fn send_f32(data: &[f32], encoder: &mut AudioEncoder, sp: &GenericService) {
                         });
                         sp.send(msg_out);
                     }
-                    Err(error) => log::warn!("Failed to encode audio frame: {error:?}"),
+                    Err(error) => hbb_common::throttled_log!(
+                        std::time::Duration::from_secs(5),
+                        warn,
+                        "Failed to encode audio frame: {error:?}"
+                    ),
                 }
             }
         } else {
-            log::debug!("invalid audio data size:{} ", input_size);
+            hbb_common::throttled_log!(
+                std::time::Duration::from_secs(5),
+                debug,
+                "invalid audio data size:{} ",
+                input_size
+            );
             return;
         }
     }
@@ -703,6 +712,10 @@ fn send_f32(data: &[f32], encoder: &mut AudioEncoder, sp: &GenericService) {
             });
             sp.send(msg_out);
         }
-        Err(error) => log::warn!("Failed to encode audio frame: {error:?}"),
+        Err(error) => hbb_common::throttled_log!(
+            std::time::Duration::from_secs(5),
+            warn,
+            "Failed to encode audio frame: {error:?}"
+        ),
     }
 }
