@@ -292,17 +292,26 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
           _barraSuperior(),
           const SizedBox(height: 10),
           Expanded(
-            child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(width: 220, child: _cartao(_lateral())),
-                  const SizedBox(width: 10),
-                  Expanded(child: _cartao(_centro())),
-                  if (_detalhes && MediaQuery.of(context).size.width > 900) ...[
-                    const SizedBox(width: 10),
-                    SizedBox(width: 280, child: _cartao(Obx(_painelDetalhe))),
-                  ],
-                ]),
+            child: LayoutBuilder(builder: (context, c) {
+              final mostrarLateral = c.maxWidth >= 680;
+              final larguraLateral = c.maxWidth < 960 ? 196.0 : 220.0;
+              final mostrarDetalhes = _detalhes && c.maxWidth >= 960;
+              return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (mostrarLateral) ...[
+                      SizedBox(
+                          width: larguraLateral, child: _cartao(_lateral())),
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(child: _cartao(_centro())),
+                    if (mostrarDetalhes) ...[
+                      const SizedBox(width: 10),
+                      SizedBox(
+                          width: 268, child: _cartao(Obx(_painelDetalhe))),
+                    ],
+                  ]);
+            }),
           ),
           const SizedBox(height: 10),
           _cartao(_barraTransferencias()),
@@ -331,50 +340,88 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
       );
 
   Widget _barraSuperior() {
-    return Row(children: [
-      _cartao(Row(children: [
+    final nav = _cartao(Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         _icone(Icons.arrow_back, 'Voltar', _voltar),
         _icone(Icons.arrow_forward, 'Avançar',
             _avancar.isEmpty ? null : _seguir),
         _icone(Icons.arrow_upward, 'Pasta acima', _subir),
-      ])),
-      const SizedBox(width: 8),
-      Expanded(flex: 3, child: _cartao(SizedBox(height: 40, child: _trilha()))),
-      const SizedBox(width: 8),
-      Expanded(
-        flex: 2,
-        child: SizedBox(
-          height: 40,
-          child: TextField(
-            controller: _filtro,
-            focusNode: _filtroFoco,
-            onChanged: (_) => setState(_limparSelecao),
-            style: TextStyle(color: _t.texto, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Filtrar nesta pasta…',
-              prefixIcon: Icon(Icons.search, size: 18, color: _t.apagado),
-              contentPadding: EdgeInsets.zero,
-              filled: true,
-              fillColor: _t.painel,
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
+      ],
+    ));
+    final trilha = _cartao(SizedBox(height: 40, child: _trilha()));
+    final filtro = SizedBox(
+      height: 40,
+      child: TextField(
+        controller: _filtro,
+        focusNode: _filtroFoco,
+        onChanged: (_) => setState(_limparSelecao),
+        style: TextStyle(color: _t.texto, fontSize: 13),
+        decoration: InputDecoration(
+          hintText: 'Filtrar nesta pasta…',
+          hintStyle: TextStyle(color: _t.apagado, fontSize: 13),
+          prefixIcon: Icon(Icons.search, size: 18, color: _t.apagado),
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          filled: true,
+          fillColor: _t.painel,
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _t.linha)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _t.linha)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _t.destaque)),
         ),
       ),
-      _icone(
-          _remoto.options.value.showHidden
-              ? Icons.visibility
-              : Icons.visibility_off,
-          'Mostrar arquivos ocultos', () {
-        _remoto.toggleShowHidden();
-        setState(() {});
-      }, ativo: _remoto.options.value.showHidden),
-      _icone(Icons.refresh, 'Atualizar', _remoto.refresh),
-      _icone(Icons.view_sidebar, 'Painel de detalhes',
-          () => setState(() => _detalhes = !_detalhes),
-          ativo: _detalhes),
-    ]);
+    );
+    final acoes = _cartao(Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _icone(
+            _remoto.options.value.showHidden
+                ? Icons.visibility
+                : Icons.visibility_off,
+            'Mostrar arquivos ocultos', () {
+          _remoto.toggleShowHidden();
+          setState(() {});
+        }, ativo: _remoto.options.value.showHidden),
+        _icone(Icons.refresh, 'Atualizar', _remoto.refresh),
+        _icone(Icons.view_sidebar, 'Painel de detalhes',
+            () => setState(() => _detalhes = !_detalhes),
+            ativo: _detalhes),
+      ],
+    ));
+    return LayoutBuilder(builder: (context, c) {
+      if (c.maxWidth < 760) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              nav,
+              const SizedBox(width: 8),
+              Expanded(child: trilha),
+              const SizedBox(width: 8),
+              acoes,
+            ]),
+            const SizedBox(height: 8),
+            filtro,
+          ],
+        );
+      }
+      return Row(children: [
+        nav,
+        const SizedBox(width: 8),
+        Expanded(flex: 3, child: trilha),
+        const SizedBox(width: 8),
+        Expanded(flex: 2, child: filtro),
+        const SizedBox(width: 8),
+        acoes,
+      ]);
+    });
   }
 
   Widget _trilha() {
@@ -425,7 +472,6 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
       }),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        reverse: true,
         child: Row(children: trilha),
       ),
     );
@@ -479,6 +525,11 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
       Row(children: [
         Expanded(child: _titulo('Pastas salvas')),
         TextButton(
+          style: TextButton.styleFrom(
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           onPressed:
               _pasta.isEmpty || _pasta == '/' || _salvas.contains(_pasta)
                   ? null
@@ -488,10 +539,17 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
       ]),
       for (final s in _salvas)
         _atalho(Icons.bookmark, s, s,
-            trailing: InkWell(
-              onTap: () =>
-                  _gravarSalvas(_salvas.where((x) => x != s).toList()),
-              child: Icon(Icons.close, size: 14, color: _t.apagado),
+            trailing: Tooltip(
+              message: 'Remover',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () =>
+                    _gravarSalvas(_salvas.where((x) => x != s).toList()),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(Icons.close, size: 14, color: _t.apagado),
+                ),
+              ),
             )),
       if (home.isNotEmpty) ...[
         _titulo('Usuário logado'),
@@ -520,15 +578,19 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
   }
 
   Widget _acao(IconData icone, String rotulo, VoidCallback? onPressed) =>
-      OutlinedButton.icon(
-        icon: Icon(icone, size: 16),
-        label: Text(rotulo),
-        style: OutlinedButton.styleFrom(
-            foregroundColor: _t.texto,
-            side: BorderSide(color: _t.linha2),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8))),
-        onPressed: onPressed,
+      SizedBox(
+        height: 34,
+        child: OutlinedButton.icon(
+          icon: Icon(icone, size: 16),
+          label: Text(rotulo),
+          style: OutlinedButton.styleFrom(
+              foregroundColor: _t.texto,
+              side: BorderSide(color: _t.linha2),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8))),
+          onPressed: onPressed,
+        ),
       );
 
   Widget _barraAcoes() => Padding(
@@ -546,8 +608,8 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
                 PopupMenuItem(value: true, child: Text('Pasta…')),
               ],
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                height: 34,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                     color: _t.destaque,
                     borderRadius: BorderRadius.circular(8)),
@@ -581,7 +643,11 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
         }),
       );
 
-  Widget _cabecalho(String rotulo, SortBy ordem, {int? flex, double? largura}) {
+  Widget _cabecalho(String rotulo, SortBy ordem,
+      {int? flex,
+      double? largura,
+      EdgeInsetsGeometry padding = EdgeInsets.zero,
+      bool alinharDireita = false}) {
     final ativo = _remoto.sortBy.value == ordem;
     final w = InkWell(
       onTap: () {
@@ -589,16 +655,27 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
             ascending: ativo ? !_remoto.sortAscending : true);
         setState(() {});
       },
-      child: Row(children: [
-        Text(rotulo,
-            style: TextStyle(
-                color: _t.apagado, fontSize: 12, fontWeight: FontWeight.w600)),
-        if (ativo)
-          Icon(
-              _remoto.sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-              size: 12,
-              color: _t.apagado),
-      ]),
+      child: Padding(
+        padding: padding,
+        child: Row(
+            mainAxisAlignment: alinharDireita
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            children: [
+              Text(rotulo,
+                  style: TextStyle(
+                      color: _t.apagado,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+              if (ativo)
+                Icon(
+                    _remoto.sortAscending
+                        ? Icons.arrow_upward
+                        : Icons.arrow_downward,
+                    size: 12,
+                    color: _t.apagado),
+            ]),
+      ),
     );
     return largura == null
         ? Expanded(flex: flex ?? 1, child: w)
@@ -626,85 +703,99 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
 
   Widget _centro() {
     final lista = _visiveis();
+    final selecionaveis = lista.where((e) => !e.isDrive).toList();
     return DropTarget(
       onDragDone: (d) => _enviarCaminhos(d.files.map((f) => f.path)),
-      child: Column(children: [
-        _barraAcoes(),
-        Divider(height: 1, color: _t.linha),
-        SizedBox(
-          height: 34,
-          child: Row(children: [
-            SizedBox(
-              width: 44,
-              child: Obx(() => Checkbox(
-                    value: lista.isNotEmpty && _sel.items.length == lista.length,
-                    onChanged: (v) {
-                      _sel.clear();
-                      if (v == true) {
-                        for (final e in lista) {
-                          _sel.add(e);
+      child: LayoutBuilder(builder: (context, c) {
+        final mostrarTipo = c.maxWidth >= 560;
+        final mostrarData = c.maxWidth >= 430;
+        return Column(children: [
+          _barraAcoes(),
+          Divider(height: 1, color: _t.linha),
+          SizedBox(
+            height: 34,
+            child: Row(children: [
+              SizedBox(
+                width: 44,
+                child: Obx(() => Checkbox(
+                      value: selecionaveis.isNotEmpty &&
+                          _sel.items.length == selecionaveis.length,
+                      onChanged: (v) {
+                        _sel.clear();
+                        if (v == true) {
+                          for (final e in selecionaveis) {
+                            _sel.add(e);
+                          }
                         }
-                      }
-                    },
-                  )),
-            ),
-            _cabecalho('Nome', SortBy.name, flex: 3),
-            _cabecalho('Modificado', SortBy.modified, largura: 130),
-            _cabecalho('Tipo', SortBy.type, largura: 110),
-            _cabecalho('Tamanho', SortBy.size, largura: 90),
-          ]),
-        ),
-        Divider(height: 1, color: _t.linha),
-        Expanded(
-          child: CallbackShortcuts(
-            bindings: {
-              const SingleActivator(LogicalKeyboardKey.enter): () {
-                if (_sel.items.length == 1 && _sel.items.first.isDirectory) {
-                  _abrir(_sel.items.first.path);
-                }
+                      },
+                    )),
+              ),
+              _cabecalho('Nome', SortBy.name,
+                  flex: 3, padding: const EdgeInsets.only(left: 28)),
+              if (mostrarData)
+                _cabecalho('Modificado', SortBy.modified, largura: 130),
+              if (mostrarTipo) _cabecalho('Tipo', SortBy.type, largura: 110),
+              _cabecalho('Tamanho', SortBy.size,
+                  largura: 96,
+                  padding: const EdgeInsets.only(right: 14),
+                  alinharDireita: true),
+            ]),
+          ),
+          Divider(height: 1, color: _t.linha),
+          Expanded(
+            child: CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.enter): () {
+                  if (_sel.items.length == 1 && _sel.items.first.isDirectory) {
+                    _abrir(_sel.items.first.path);
+                  }
+                },
+                const SingleActivator(LogicalKeyboardKey.backspace): _voltar,
+                const SingleActivator(LogicalKeyboardKey.f2): _renomear,
+                const SingleActivator(LogicalKeyboardKey.delete): _apagar,
+                const SingleActivator(LogicalKeyboardKey.keyA, control: true):
+                    () => _sel.selectAll(selecionaveis),
+                const SingleActivator(LogicalKeyboardKey.keyA, meta: true):
+                    () => _sel.selectAll(selecionaveis),
               },
-              const SingleActivator(LogicalKeyboardKey.backspace): _voltar,
-              const SingleActivator(LogicalKeyboardKey.f2): _renomear,
-              const SingleActivator(LogicalKeyboardKey.delete): _apagar,
-              const SingleActivator(LogicalKeyboardKey.keyA, control: true):
-                  () => _sel.selectAll(lista.where((e) => !e.isDrive).toList()),
-              const SingleActivator(LogicalKeyboardKey.keyA, meta: true): () =>
-                  _sel.selectAll(lista.where((e) => !e.isDrive).toList()),
-            },
-            child: Focus(
-              focusNode: _listaFoco,
-              autofocus: true,
-              child: lista.isEmpty
-                  ? Center(
-                      child: Text(
-                          _pasta.isEmpty
-                              ? translate('Connecting...')
-                              : 'Nada para mostrar',
-                          style: TextStyle(color: _t.apagado)))
-                  : ListView.builder(
-                      itemCount: lista.length,
-                      itemExtent: 36,
-                      itemBuilder: (_, i) => _linha(lista[i], lista),
-                    ),
+              child: Focus(
+                focusNode: _listaFoco,
+                autofocus: true,
+                child: lista.isEmpty
+                    ? Center(
+                        child: Text(
+                            _pasta.isEmpty
+                                ? translate('Connecting...')
+                                : 'Nada para mostrar',
+                            style: TextStyle(color: _t.apagado)))
+                    : ListView.builder(
+                        itemCount: lista.length,
+                        itemExtent: 36,
+                        itemBuilder: (_, i) => _linha(lista[i], lista,
+                            mostrarData: mostrarData,
+                            mostrarTipo: mostrarTipo),
+                      ),
+              ),
             ),
           ),
-        ),
-        Divider(height: 1, color: _t.linha),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Obx(() => Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                    '${lista.length} itens'
-                    '${_sel.items.isEmpty ? '' : ' · ${_sel.items.length} selecionado(s)'}',
-                    style: TextStyle(color: _t.apagado, fontSize: 12)),
-              )),
-        ),
-      ]),
+          Divider(height: 1, color: _t.linha),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Obx(() => Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                      '${lista.length} itens'
+                      '${_sel.items.isEmpty ? '' : ' · ${_sel.items.length} selecionado(s)'}',
+                      style: TextStyle(color: _t.apagado, fontSize: 12)),
+                )),
+          ),
+        ]);
+      }),
     );
   }
 
-  Widget _linha(Entry e, List<Entry> lista) {
+  Widget _linha(Entry e, List<Entry> lista,
+      {bool mostrarData = true, bool mostrarTipo = true}) {
     final apagado = TextStyle(color: _t.apagado, fontSize: 12);
     return Obx(() {
       final marcado = _sel.items.contains(e);
@@ -737,16 +828,22 @@ class _H3ArquivosViewState extends State<H3ArquivosView> {
                 ),
               ]),
             ),
-            SizedBox(width: 130, child: Text(_data(e), style: apagado)),
+            if (mostrarData)
+              SizedBox(width: 130, child: Text(_data(e), style: apagado)),
+            if (mostrarTipo)
+              SizedBox(
+                  width: 110,
+                  child: Text(_tipo(e),
+                      overflow: TextOverflow.ellipsis, style: apagado)),
             SizedBox(
-                width: 110,
-                child: Text(_tipo(e),
-                    overflow: TextOverflow.ellipsis, style: apagado)),
-            SizedBox(
-                width: 90,
-                child: Text(
-                    e.isFile ? readableFileSize(e.size.toDouble()) : '—',
-                    style: apagado)),
+                width: 96,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: Text(
+                      e.isFile ? readableFileSize(e.size.toDouble()) : '—',
+                      textAlign: TextAlign.right,
+                      style: apagado),
+                )),
           ]),
         ),
       );
