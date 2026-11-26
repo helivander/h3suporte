@@ -235,17 +235,32 @@ class _ContaConteudoState extends State<ContaConteudo> {
             () => launchUrl(Uri.parse(_portal),
                 mode: LaunchMode.externalApplication)),
         const SizedBox(height: 12),
-        Row(children: [
-          Expanded(
-              child: _botaoSecundario(t, Icons.tune,
-                  'Configurações deste computador', widget.onConfigLocal)),
-          const SizedBox(width: 12),
-          Expanded(
-              child: _botaoSecundario(t, Icons.logout, 'Sair da conta', () async {
+        if (largo)
+          IntrinsicHeight(
+            child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                      child: _botaoSecundario(t, Icons.tune,
+                          'Configurações deste computador', widget.onConfigLocal)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: _botaoSecundario(t, Icons.logout, 'Sair da conta',
+                          () async {
+                    await gFFI.userModel.logOut();
+                    widget.onLogout?.call();
+                  }, cor: t.perigo)),
+                ]),
+          )
+        else ...[
+          _botaoSecundario(t, Icons.tune, 'Configurações deste computador',
+              widget.onConfigLocal),
+          const SizedBox(height: 10),
+          _botaoSecundario(t, Icons.logout, 'Sair da conta', () async {
             await gFFI.userModel.logOut();
             widget.onLogout?.call();
-          }, cor: t.perigo)),
-        ]),
+          }, cor: t.perigo),
+        ],
       ]);
     });
   }
@@ -326,13 +341,18 @@ class _ContaConteudoState extends State<ContaConteudo> {
   Widget _linha(H3Tokens t, String r, String v, {Color? cor}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(children: [
-          Text(r, style: TextStyle(fontSize: 13, color: t.apagado)),
-          const Spacer(),
-          Text(v,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: cor ?? t.texto)),
+          Expanded(
+              child: Text(r,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: t.apagado))),
+          const SizedBox(width: 8),
+          Flexible(
+              child: Text(v,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: cor ?? t.texto))),
         ]),
       );
 
@@ -348,13 +368,21 @@ class _ContaConteudoState extends State<ContaConteudo> {
         Row(children: [
           Icon(icone, size: 16, color: t.apagado),
           const SizedBox(width: 8),
-          Text(rotulo, style: TextStyle(fontSize: 13, color: t.texto)),
-          const Spacer(),
-          Text(n == null ? '…' : (max == null ? '$n (sem limite)' : '$n de $max'),
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: cheio ? t.aviso : t.apagado)),
+          Expanded(
+              child: Text(rotulo,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: t.texto))),
+          const SizedBox(width: 8),
+          Flexible(
+              child: Text(
+                  n == null
+                      ? '…'
+                      : (max == null ? '$n (sem limite)' : '$n de $max'),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: cheio ? t.aviso : t.apagado))),
         ]),
         const SizedBox(height: 5),
         ClipRRect(

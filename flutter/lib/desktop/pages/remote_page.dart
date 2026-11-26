@@ -735,9 +735,15 @@ class _RemotePageState extends State<RemotePage>
 
     final t = H3Tokens.of(context);
     bodyWidget(bool imageReady) {
-      return Stack(
-        children: [
-          AnimatedContainer(
+      return LayoutBuilder(builder: (context, constraints) {
+        final larguraPainel = (constraints.maxWidth * 0.26).clamp(280.0, 380.0);
+        return Stack(
+          children: [
+            Obx(() => Positioned.fill(
+                  right: _ffi.h3PainelAberto.isTrue ? larguraPainel : 0,
+                  child: Stack(
+                    children: [
+                      AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
               decoration: imageReady
@@ -809,17 +815,23 @@ class _RemotePageState extends State<RemotePage>
                           OverlayEntry(builder: remoteToolbar)
                         ])
                       : remoteToolbar(context)),
-              _ffi.ffiModel.pi.isSet.isFalse ? emptyOverlay() : Offstage(),
-            ],
-          ),
-          Positioned(
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: 340,
-              child: H3PainelSessao(id: widget.id, ffi: _ffi)),
-        ],
-      );
+                      _ffi.ffiModel.pi.isSet.isFalse
+                          ? emptyOverlay()
+                          : Offstage(),
+                    ],
+                  ),
+                    ],
+                  ),
+                )),
+            Positioned(
+                top: 0,
+                bottom: 0,
+                right: 0,
+                width: larguraPainel,
+                child: H3PainelSessao(id: widget.id, ffi: _ffi)),
+          ],
+        );
+      });
     }
 
     return Scaffold(

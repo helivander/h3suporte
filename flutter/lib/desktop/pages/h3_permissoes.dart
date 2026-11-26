@@ -122,80 +122,100 @@ class _H3PermissoesState extends State<H3Permissoes> {
     final lista = _lista();
     final ok = lista.where((p) => p.ok).length;
     final tudo = ok == lista.length;
-    return ListView(padding: const EdgeInsets.all(20), children: [
-      Text('Permissões',
-          style: TextStyle(
-              fontSize: 22, fontWeight: FontWeight.w600, color: H3Cores.texto)),
-      const SizedBox(height: 4),
-      Text('O que o H3 Suporte precisa para funcionar neste computador.',
-          style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
-      const SizedBox(height: H3Raios.lg),
-      Container(
-        padding: const EdgeInsets.all(H3Raios.lg),
-        decoration: BoxDecoration(
-          color: H3Cores.painel2,
-          borderRadius: BorderRadius.circular(H3Raios.lg),
-          border: Border.all(color: H3Cores.linha),
-        ),
-        child: Row(children: [
-          Icon(tudo ? Icons.verified_user : Icons.gpp_maybe_outlined,
-              size: 30, color: tudo ? H3Cores.ok : H3Cores.aviso),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(
-                  tudo
-                      ? 'Tudo certo'
-                      : '$ok de ${lista.length} permissões concedidas',
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1360),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Permissões',
                   style: TextStyle(
+                      fontSize: 22,
                       fontWeight: FontWeight.w600,
-                      fontSize: 15,
                       color: H3Cores.texto)),
-              const SizedBox(height: H3Raios.sm),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(H3Raios.xs),
-                child: LinearProgressIndicator(
-                    minHeight: 6,
-                    value: lista.isEmpty ? 1 : ok / lista.length,
-                    backgroundColor: H3Cores.linha,
-                    valueColor: AlwaysStoppedAnimation(
-                        tudo ? H3Cores.ok : H3Cores.aviso)),
+              const SizedBox(height: 4),
+              Text(
+                  'O que o H3 Suporte precisa para funcionar neste computador.',
+                  style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+              const SizedBox(height: H3Raios.lg),
+              Container(
+                padding: const EdgeInsets.all(H3Raios.lg),
+                decoration: BoxDecoration(
+                  color: H3Cores.painel2,
+                  borderRadius: BorderRadius.circular(H3Raios.lg),
+                  border: Border.all(color: H3Cores.linha),
+                ),
+                child: Row(children: [
+                  Icon(tudo ? Icons.verified_user : Icons.gpp_maybe_outlined,
+                      size: 30, color: tudo ? H3Cores.ok : H3Cores.aviso),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              tudo
+                                  ? 'Tudo certo'
+                                  : '$ok de ${lista.length} permissões concedidas',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: H3Cores.texto)),
+                          const SizedBox(height: H3Raios.sm),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(H3Raios.xs),
+                            child: LinearProgressIndicator(
+                                minHeight: 6,
+                                value: lista.isEmpty ? 1 : ok / lista.length,
+                                backgroundColor: H3Cores.linha,
+                                valueColor: AlwaysStoppedAnimation(
+                                    tudo ? H3Cores.ok : H3Cores.aviso)),
+                          ),
+                        ]),
+                  ),
+                ]),
               ),
-            ]),
+              const SizedBox(height: H3Raios.lg),
+              if (lista.isEmpty)
+                Text('Nenhuma permissão é necessária neste sistema.',
+                    style: TextStyle(color: H3Cores.apagado))
+              else
+                LayoutBuilder(builder: (context, c) {
+                  const gap = H3Raios.lg;
+                  final maxCols = lista.length.clamp(1, 4);
+                  var cols = ((c.maxWidth + gap) / (270 + gap))
+                      .floor()
+                      .clamp(1, maxCols);
+                  if (lista.length == 4 && cols == 3) cols = 2;
+                  final linhas = <Widget>[];
+                  for (var i = 0; i < lista.length; i += cols) {
+                    final fatia = lista.skip(i).take(cols).toList();
+                    linhas.add(Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+                      child: IntrinsicHeight(
+                        child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (var j = 0; j < cols; j++) ...[
+                                if (j > 0) const SizedBox(width: gap),
+                                Expanded(
+                                    child: j < fatia.length
+                                        ? _cartao(fatia[j])
+                                        : const SizedBox.shrink()),
+                              ],
+                            ]),
+                      ),
+                    ));
+                  }
+                  return Column(children: linhas);
+                }),
+            ],
           ),
-        ]),
+        ),
       ),
-      const SizedBox(height: H3Raios.lg),
-      if (lista.isEmpty)
-        Text('Nenhuma permissão é necessária neste sistema.',
-            style: TextStyle(color: H3Cores.apagado))
-      else
-        LayoutBuilder(builder: (context, c) {
-          const gap = H3Raios.lg;
-          final cols = ((c.maxWidth + gap) / (270 + gap)).floor().clamp(1, 4);
-          final linhas = <Widget>[];
-          for (var i = 0; i < lista.length; i += cols) {
-            final fatia = lista.skip(i).take(cols).toList();
-            linhas.add(Padding(
-              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
-              child: IntrinsicHeight(
-                child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var j = 0; j < cols; j++) ...[
-                        if (j > 0) const SizedBox(width: gap),
-                        Expanded(
-                            child: j < fatia.length
-                                ? _cartao(fatia[j])
-                                : const SizedBox.shrink()),
-                      ],
-                    ]),
-              ),
-            ));
-          }
-          return Column(children: linhas);
-        }),
-    ]);
+    );
   }
 
   Widget _cartao(_Perm p) {
@@ -259,8 +279,8 @@ class _H3PermissoesState extends State<H3Permissoes> {
         if (temAcao)
           _BotaoPermissao(rotulo: p.acao, onTap: p.onAcao!)
         else
-          SizedBox(
-            height: 44,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 44),
             child: Row(children: [
               Icon(p.ok ? Icons.check_circle_outline : Icons.info_outline,
                   size: 18, color: p.ok ? H3Cores.ok : H3Cores.apagado),

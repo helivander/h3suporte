@@ -132,14 +132,18 @@ class H3PainelSessao extends StatelessWidget {
                 ),
             ],
             _titulo(t, 'Controle remoto'),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              children: blocos,
-            ),
+            LayoutBuilder(builder: (context, c) {
+              final cols = c.maxWidth < 260 ? 2 : 3;
+              return GridView.count(
+                crossAxisCount: cols,
+                childAspectRatio: 1.15,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                children: blocos,
+              );
+            }),
             ...travas,
             _titulo(t, 'Arquivos'),
             _item(
@@ -275,19 +279,23 @@ class H3PainelSessao extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: acao,
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icone, color: t.destaque, size: 22),
-                const SizedBox(height: 6),
-                Text(rotulo,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    style: TextStyle(
-                        color: t.texto,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600)),
-              ]),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icone, color: t.destaque, size: 22),
+                  const SizedBox(height: 6),
+                  Text(rotulo,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: t.texto,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                ]),
+          ),
         ),
       );
 

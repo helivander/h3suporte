@@ -367,16 +367,19 @@ class _ToolbarTheme {
 
   static double menuBorderRadius = 14.0;
   static EdgeInsets menuPadding = isWindows
-      ? EdgeInsets.fromLTRB(4, 12, 4, 12)
-      : EdgeInsets.fromLTRB(6, 14, 6, 14);
+      ? EdgeInsets.fromLTRB(6, 6, 6, 6)
+      : EdgeInsets.fromLTRB(6, 6, 6, 6);
   static const double menuButtonBorderRadius = 8.0;
 
   static Color borderColor(BuildContext context) => H3Tokens.of(context).linha2;
 
   static Color? dividerColor(BuildContext context) =>
-      MyTheme.color(context).divider;
+      H3Tokens.of(context).linha;
 
   static MenuStyle defaultMenuStyle(BuildContext context) => MenuStyle(
+        backgroundColor:
+            MaterialStatePropertyAll(H3Tokens.of(context).painel),
+        surfaceTintColor: const MaterialStatePropertyAll(Colors.transparent),
         side: MaterialStateProperty.all(BorderSide(
           width: 1,
           color: borderColor(context),
@@ -870,33 +873,49 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       toolbarItems.add(_QuickCommandsMenu(id: widget.id, ffi: widget.ffi));
     }
     if (widget.ffi.connType == ConnType.defaultConn) {
-      toolbarItems.add(_IconMenuButton(
-        icon: SizedBox(
-            width: _ToolbarTheme.buttonSize,
-            height: _ToolbarTheme.buttonSize,
-            child: const Icon(Icons.view_sidebar_rounded,
-                color: Colors.white, size: 20)),
-        tooltip: 'Menu lateral',
-        color: _ToolbarTheme.blueColor(context),
-        hoverColor: _ToolbarTheme.hoverBlueColor(context),
-        onPressed: () => widget.ffi.h3PainelAberto.toggle(),
-      ));
+      toolbarItems.add(Obx(() {
+        final ativo = widget.ffi.h3PainelAberto.isTrue;
+        final t = H3Tokens.of(context);
+        return _IconMenuButton(
+          icon: SizedBox(
+              width: _ToolbarTheme.buttonSize,
+              height: _ToolbarTheme.buttonSize,
+              child: Icon(Icons.view_sidebar_rounded,
+                  color: ativo ? t.destaqueTinta : t.texto, size: 20)),
+          tooltip: 'Menu lateral',
+          color: ativo
+              ? _ToolbarTheme.blueColor(context)
+              : _ToolbarTheme.inactiveColor(context),
+          hoverColor: ativo
+              ? _ToolbarTheme.hoverBlueColor(context)
+              : _ToolbarTheme.hoverInactiveColor(context),
+          onPressed: () => widget.ffi.h3PainelAberto.toggle(),
+        );
+      }));
     }
     toolbarItems.add(_ChatMenu(id: widget.id, ffi: widget.ffi));
     if (kH3IaBuild &&
         !isWeb &&
         widget.ffi.connType == ConnType.defaultConn) {
-      toolbarItems.add(_IconMenuButton(
-        icon: SizedBox(
-            width: _ToolbarTheme.buttonSize,
-            height: _ToolbarTheme.buttonSize,
-            child: const Icon(Icons.smart_toy_outlined,
-                color: Colors.white, size: 20)),
-        tooltip: 'AI assistant',
-        color: _ToolbarTheme.blueColor(context),
-        hoverColor: _ToolbarTheme.hoverBlueColor(context),
-        onPressed: widget.ffi.aiAgentModel.togglePanel,
-      ));
+      toolbarItems.add(Obx(() {
+        final ativo = widget.ffi.aiAgentModel.panelVisible.isTrue;
+        final t = H3Tokens.of(context);
+        return _IconMenuButton(
+          icon: SizedBox(
+              width: _ToolbarTheme.buttonSize,
+              height: _ToolbarTheme.buttonSize,
+              child: Icon(Icons.smart_toy_outlined,
+                  color: ativo ? t.destaqueTinta : t.texto, size: 20)),
+          tooltip: 'AI assistant',
+          color: ativo
+              ? _ToolbarTheme.blueColor(context)
+              : _ToolbarTheme.inactiveColor(context),
+          hoverColor: ativo
+              ? _ToolbarTheme.hoverBlueColor(context)
+              : _ToolbarTheme.hoverInactiveColor(context),
+          onPressed: widget.ffi.aiAgentModel.togglePanel,
+        );
+      }));
     }
     if (!isWeb) {
       toolbarItems.add(_VoiceCallMenu(id: widget.id, ffi: widget.ffi));
@@ -1376,24 +1395,19 @@ class _ControlMenu extends StatelessWidget {
                 final child = hint == null
                     ? e.child
                     : Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Flexible(child: e.child),
-                          Flexible(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                hint,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context).hintColor,
-                                    ),
-                              ),
-                            ),
+                          Expanded(child: e.child),
+                          const SizedBox(width: 24),
+                          Text(
+                            hint,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).hintColor,
+                                ),
                           ),
                         ],
                       );
@@ -2520,16 +2534,19 @@ class _ResolutionsMenuState extends State<_ResolutionsMenu> {
         onChanged: (String? value) => _onChanged(value),
         ffi: widget.ffi,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text('${translate('resolution_custom_tip')} '),
             SizedBox(
-              width: _kCustomResolutionEditingWidth,
-              child: _resolutionInput(_customWidth),
+              width: 56,
+              height: 28,
+              child: _resolutionInput(context, _customWidth),
             ),
-            Text(' x '),
+            const Text(' × '),
             SizedBox(
-              width: _kCustomResolutionEditingWidth,
-              child: _resolutionInput(_customHeight),
+              width: 56,
+              height: 28,
+              child: _resolutionInput(context, _customHeight),
             ),
           ],
         ),
@@ -2537,12 +2554,29 @@ class _ResolutionsMenuState extends State<_ResolutionsMenu> {
     );
   }
 
-  Widget _resolutionInput(TextEditingController controller) {
+  Widget _resolutionInput(
+      BuildContext context, TextEditingController controller) {
+    final t = H3Tokens.of(context);
     return TextField(
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 13, color: t.texto),
       decoration: InputDecoration(
-        border: InputBorder.none,
+        filled: true,
+        fillColor: t.fundo,
         isDense: true,
-        contentPadding: EdgeInsets.fromLTRB(3, 3, 3, 3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(color: t.linha2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(color: t.linha2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(color: t.destaque),
+        ),
       ),
       keyboardType: TextInputType.number,
       inputFormatters: <TextInputFormatter>[
@@ -3195,30 +3229,27 @@ class _IconMenuButtonState extends State<_IconMenuButton> {
                 hover = value;
               }),
           onPressed: widget.onPressed,
-          child: Tooltip(
-            message: translate(widget.tooltip),
-            child: AnimatedScale(
-              scale: hover ? 1.06 : 1.0,
+          child: AnimatedScale(
+            scale: hover ? 1.06 : 1.0,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
+            child: AnimatedContainer(
               duration: const Duration(milliseconds: 140),
               curve: Curves.easeOutCubic,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 140),
-                curve: Curves.easeOutCubic,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
-                  color: hover ? widget.hoverColor : widget.color,
-                  boxShadow: hover
-                      ? [
-                          BoxShadow(
-                            color: widget.hoverColor.withOpacity(0.32),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: icon,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_ToolbarTheme.iconRadius),
+                color: hover ? widget.hoverColor : widget.color,
+                boxShadow: hover
+                    ? [
+                        BoxShadow(
+                          color: widget.hoverColor.withOpacity(0.32),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
+              child: icon,
             ),
           )),
     ).marginSymmetric(
@@ -3814,8 +3845,8 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
           borderRadius: widget.borderRadius,
         ),
         child: SizedBox(
-          height: widget.isHorizontal ? 20 : null,
-          width: widget.isHorizontal ? null : 20,
+          height: widget.isHorizontal ? 24 : null,
+          width: widget.isHorizontal ? null : 24,
           child: child,
         ),
       ),

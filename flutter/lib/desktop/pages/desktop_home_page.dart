@@ -201,105 +201,116 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           color: H3Cores.painel,
           child: Column(
             children: [
-              SingleChildScrollView(
-                controller: _leftPaneScrollController,
-                child: Column(
-                  key: _childKey,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    buildPresetPasswordWarning(),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          loadIcon(30),
-                          const SizedBox(width: 10),
-                          Text('H3 Suporte',
-                              style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w600,
-                                  color: H3Cores.texto)),
-                        ],
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _leftPaneScrollController,
+                  child: Column(
+                    key: _childKey,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      buildPresetPasswordWarning(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            loadIcon(30),
+                            const SizedBox(width: 10),
+                            Text('H3 Suporte',
+                                style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w600,
+                                    color: H3Cores.texto)),
+                          ],
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
-                      child: Text(
-                        'Seu computador pode ser acessado com este ID e senha.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 12.5, color: H3Cores.apagado),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+                        child: Text(
+                          'Seu computador pode ser acessado com este ID e senha.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 12.5, color: H3Cores.apagado),
+                        ),
                       ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: H3EsteComputador(),
-                    ),
-                    FutureBuilder<Widget>(
-                      future: Future.value(Obx(
-                          () => buildHelpCards(stateGlobal.updateUrl.value))),
-                      builder: (_, data) {
-                        if (data.hasData) {
-                          if (isInHomePage()) {
-                            Future.delayed(const Duration(milliseconds: 300),
-                                () => _updateWindowSize());
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: H3EsteComputador(),
+                      ),
+                      FutureBuilder<Widget>(
+                        future: Future.value(Obx(
+                            () => buildHelpCards(stateGlobal.updateUrl.value))),
+                        builder: (_, data) {
+                          if (data.hasData) {
+                            if (isInHomePage()) {
+                              Future.delayed(const Duration(milliseconds: 300),
+                                  () => _updateWindowSize());
+                            }
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: data.data!,
+                            );
                           }
-                          return Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 4),
-                            child: data.data!,
-                          );
-                        }
-                        return const Offstage();
-                      },
-                    ),
-                    H3OfertaAgente(
-                      onFechar: () => Future.delayed(
-                          const Duration(milliseconds: 300),
-                          () => _updateWindowSize()),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: H3Cores.painel2,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: H3Cores.linha),
+                          return const Offstage();
+                        },
+                      ),
+                      H3OfertaAgente(
+                        onFechar: () => Future.delayed(
+                            const Duration(milliseconds: 300),
+                            () => _updateWindowSize()),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: H3Cores.painel2,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: H3Cores.linha),
+                                  ),
+                                  child: OnlineStatusWidget(
+                                    onSvcStatusChanged: () {
+                                      if (isInHomePage()) {
+                                        Future.delayed(
+                                            const Duration(milliseconds: 300),
+                                            () => _updateWindowSize());
+                                      }
+                                    },
+                                  ),
+                                ),
                               ),
-                              child: OnlineStatusWidget(
-                                onSvcStatusChanged: () {
-                                  if (isInHomePage()) {
-                                    Future.delayed(
-                                        const Duration(milliseconds: 300),
-                                        () => _updateWindowSize());
+                              const SizedBox(width: 8),
+                              OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: H3Cores.linha2),
+                                  foregroundColor: H3Cores.texto,
+                                  backgroundColor: H3Cores.painel2,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: () {
+                                  SystemNavigator.pop();
+                                  if (isWindows) {
+                                    exit(0);
                                   }
                                 },
+                                child: Text(_textoSair()),
                               ),
-                            ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          OutlinedButton(
-                            onPressed: () {
-                              SystemNavigator.pop();
-                              if (isWindows) {
-                                exit(0);
-                              }
-                            },
-                            child: Text(_textoSair()),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              Expanded(child: Container()),
             ],
           ),
         ),
@@ -720,103 +731,90 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       }
     }
 
-    return Stack(
-      children: [
-        Container(
-          margin: EdgeInsets.fromLTRB(
-              0, marginTop, 0, bind.isIncomingOnly() ? marginTop : 0),
-          child: Container(
-              decoration: !bind.isIncomingOnly()
-                  ? BoxDecoration(
-                      color: H3Cores.painel2,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: H3Cores.linha2))
-                  : BoxDecoration(
-                      gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Color.fromARGB(255, 226, 66, 188),
-                  Color.fromARGB(255, 244, 114, 124),
-                ],
-              )),
-              padding: EdgeInsets.all(20),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: (title.isNotEmpty
-                          ? <Widget>[
-                              Center(
-                                  child: Text(
-                                translate(title),
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15),
-                              ).marginOnly(bottom: 6)),
-                            ]
-                          : <Widget>[]) +
-                      <Widget>[
-                        if (content.isNotEmpty)
-                          Text(
-                            translate(content),
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+          bind.isIncomingOnly() ? 16 : 0,
+          marginTop,
+          bind.isIncomingOnly() ? 16 : 0,
+          bind.isIncomingOnly() ? marginTop : 0),
+      decoration: BoxDecoration(
+          color: H3Cores.painel2,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: H3Cores.linha2)),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title.isNotEmpty || (closeButton ?? false))
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: title.isNotEmpty
+                        ? Text(
+                            translate(title),
                             style: TextStyle(
-                                height: 1.5,
-                                color: Colors.white,
-                                fontWeight: FontWeight.normal,
-                                fontSize: 13),
-                          ).marginOnly(bottom: 20)
-                      ] +
-                      (btnText.isNotEmpty
-                          ? <Widget>[
-                              Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    FixedWidthButton(
-                                      width: 150,
-                                      padding: 8,
-                                      isOutline: true,
-                                      text: translate(btnText),
-                                      textColor: Colors.white,
-                                      borderColor: Colors.white,
-                                      textSize: 20,
-                                      radius: 10,
-                                      onTap: onPressed,
-                                    )
-                                  ])
-                            ]
-                          : <Widget>[]) +
-                      (help != null
-                          ? <Widget>[
-                              Center(
-                                  child: InkWell(
-                                      onTap: () async =>
-                                          await launchUrl(Uri.parse(link!)),
-                                      child: Text(
-                                        translate(help),
-                                        style: TextStyle(
-                                            decoration:
-                                                TextDecoration.underline,
-                                            color: Colors.white,
-                                            fontSize: 12),
-                                      )).marginOnly(top: 6)),
-                            ]
-                          : <Widget>[]))),
-        ),
-        if (closeButton != null && closeButton == true)
-          Positioned(
-            top: 18,
-            right: 0,
-            child: IconButton(
-              icon: Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 20,
+                                color: H3Cores.texto,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14.5),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                  if (closeButton == true)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 28, minHeight: 28),
+                      icon: Icon(
+                        Icons.close,
+                        color: H3Cores.apagado,
+                        size: 18,
+                      ),
+                      onPressed: closeCard,
+                    ),
+                ],
               ),
-              onPressed: closeCard,
-            ),
-          ),
-      ],
+            if (title.isNotEmpty && content.isNotEmpty)
+              const SizedBox(height: 6),
+            if (content.isNotEmpty)
+              Text(
+                translate(content),
+                style: TextStyle(
+                    height: 1.45,
+                    color: H3Cores.apagado,
+                    fontWeight: FontWeight.normal,
+                    fontSize: 12.5),
+              ).marginOnly(bottom: btnText.isNotEmpty || help != null ? 14 : 0),
+            if (btnText.isNotEmpty)
+              Center(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: H3Cores.destaque,
+                    side: BorderSide(color: H3Cores.destaque),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                  ),
+                  onPressed: onPressed,
+                  child: Text(translate(btnText),
+                      style: const TextStyle(
+                          fontSize: 13.5, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            if (help != null)
+              Center(
+                  child: InkWell(
+                      onTap: () async => await launchUrl(Uri.parse(link!)),
+                      child: Text(
+                        translate(help),
+                        style: TextStyle(
+                            decoration: TextDecoration.underline,
+                            color: H3Cores.destaque,
+                            fontSize: 12),
+                      )).marginOnly(top: 8)),
+          ]),
     );
   }
 

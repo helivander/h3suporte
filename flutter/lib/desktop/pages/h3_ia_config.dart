@@ -423,12 +423,16 @@ class _IaConfigState extends State<IaConfig> {
                   'Entrar com a sua conta'),
             ];
             if (c.maxWidth >= 720) {
-              return Row(children: [
-                for (var i = 0; i < cartoes.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 12),
-                  Expanded(child: cartoes[i]),
-                ]
-              ]);
+              return IntrinsicHeight(
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < cartoes.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 12),
+                        Expanded(child: cartoes[i]),
+                      ]
+                    ]),
+              );
             }
             return Column(children: [
               for (var i = 0; i < cartoes.length; i++) ...[
@@ -608,7 +612,7 @@ class _IaConfigState extends State<IaConfig> {
       final esquerda = [status, provedor, conexao];
       final direita = [comport, privacidade, salvar];
       return ListView(
-          padding: const EdgeInsets.fromLTRB(15, 6, 15, 20),
+          padding: const EdgeInsets.fromLTRB(15, 6, 1, 20),
           children: [
             if (largo)
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

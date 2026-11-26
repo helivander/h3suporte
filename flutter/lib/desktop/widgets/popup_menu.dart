@@ -107,7 +107,10 @@ class MyPopupMenuItemState<T, W extends PopupMenuChildrenItem<T>>
             return ExcludeFocus(
               child: TextButton(
                 onPressed: onPressed,
-                child: TextButton(onPressed: onPressed, child: child),
+                style: const ButtonStyle(
+                  padding: MaterialStatePropertyAll(EdgeInsets.zero),
+                ),
+                child: child,
               ),
             );
           }),
@@ -266,18 +269,17 @@ class MenuEntryRadios<T> extends MenuEntryBase<T> {
                   child: Transform.scale(
                     scale: MenuConfig.iconScale,
                     child: Obx(() => opt.value == curOption.value
-                        ? IconButton(
+                        ? Padding(
                             padding:
-                                const EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 0.0),
-                            hoverColor: Colors.transparent,
-                            focusColor: Colors.transparent,
-                            onPressed: () {},
-                            icon: Icon(
+                                const EdgeInsets.symmetric(horizontal: 6.0),
+                            child: Icon(
                               Icons.check,
+                              size: 16,
                               color: (opt.enabled ?? true.obs).isTrue
                                   ? conf.commonColor
                                   : Colors.grey,
-                            ))
+                            ),
+                          )
                         : const SizedBox.shrink()),
                   ))),
         ],
@@ -383,15 +385,15 @@ class MenuEntrySubRadios<T> extends MenuEntryBase<T> {
                     child: Transform.scale(
                         scale: MenuConfig.iconScale,
                         child: Obx(() => opt.value == curOption.value
-                            ? IconButton(
-                                padding: EdgeInsets.zero,
-                                hoverColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                onPressed: () {},
-                                icon: Icon(
+                            ? Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6.0),
+                                child: Icon(
                                   Icons.check,
+                                  size: 16,
                                   color: conf.commonColor,
-                                ))
+                                ),
+                              )
                             : const SizedBox.shrink())),
                   )),
                 ],
@@ -421,7 +423,6 @@ class MenuEntrySubRadios<T> extends MenuEntryBase<T> {
         itemBuilder: (BuildContext context) =>
             options.map((opt) => _buildSecondMenu(context, conf, opt)).toList(),
         child: Row(children: [
-          const SizedBox(width: MenuConfig.midPadding),
           Text(
             text,
             style: TextStyle(
@@ -913,18 +914,11 @@ class _PopupSubMenuItemState<T> extends State<_PopupSubMenuItem<T>> {
             ),
             // Retain the old spacing, with one focus stop and one hover highlight.
             child: ExcludeFocus(
-              child: TextButton(
-                onPressed: widget.enabled.value ? _openSubmenu : null,
-                style: const ButtonStyle(
-                  overlayColor: MaterialStatePropertyAll(Colors.transparent),
-                  splashFactory: NoSplash.splashFactory,
-                ),
-                child: Container(
-                  alignment: AlignmentDirectional.centerStart,
-                  height: widget.height,
-                  padding: widget.padding,
-                  child: widget.child,
-                ),
+              child: Container(
+                alignment: AlignmentDirectional.centerStart,
+                height: widget.height,
+                padding: widget.padding,
+                child: widget.child,
               ),
             ),
           ),
@@ -1056,7 +1050,6 @@ class _MenuEntryButtonItemState<T>
 
 class CustomPopupMenuTheme {
   static const Color commonColor = MyTheme.accent;
-  // kMinInteractiveDimension
-  static const double height = 20.0;
+  static const double height = 34.0;
   static const double dividerHeight = 3.0;
 }

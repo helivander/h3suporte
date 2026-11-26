@@ -364,28 +364,35 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _marca(compacto),
-          item(Icons.home_outlined, 'Visão geral', () => _aba.value = 0,
-              aba: 0),
-          const SizedBox(height: 2),
-          item(Icons.devices_outlined, 'Meus dispositivos',
-              () => _aba.value = 1,
-              aba: 1),
-          const SizedBox(height: 2),
-          item(Icons.insights_outlined, 'Relatórios', () => _aba.value = 2,
-              aba: 2),
-          const SizedBox(height: 2),
-          item(Icons.verified_user_outlined, 'Permissões',
-              () => _aba.value = 3,
-              aba: 3, selo: true),
-          Padding(
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: Divider(height: 1, color: H3Cores.linha)),
-          item(Icons.shield_outlined, 'Segurança',
-              () => DesktopSettingPage.switch2page(SettingsTabKey.safety)),
-          const SizedBox(height: 2),
-          item(Icons.settings_outlined, 'Configurações',
-              () => DesktopTabPage.onAddSetting()),
-          const Spacer(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  item(Icons.home_outlined, 'Visão geral', () => _aba.value = 0,
+                      aba: 0),
+                  const SizedBox(height: 2),
+                  item(Icons.devices_outlined, 'Meus dispositivos',
+                      () => _aba.value = 1,
+                      aba: 1),
+                  const SizedBox(height: 2),
+                  item(Icons.insights_outlined, 'Relatórios',
+                      () => _aba.value = 2,
+                      aba: 2),
+                  const SizedBox(height: 2),
+                  item(Icons.verified_user_outlined, 'Permissões',
+                      () => _aba.value = 3,
+                      aba: 3, selo: true),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(height: 1, color: H3Cores.linha)),
+                  item(Icons.settings_outlined, 'Configurações',
+                      () => DesktopTabPage.onAddSetting()),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           _atualizacao(compacto),
           _conta(compacto),
         ],
@@ -528,7 +535,10 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       if (compacto) {
         return Tooltip(
             message: logado ? nome : 'Entrar',
-            child: InkWell(onTap: entrar, child: Center(child: avatar)));
+            child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: entrar,
+                child: Center(child: avatar)));
       }
       return InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -548,6 +558,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Conta H3 Suporte',
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: H3Cores.apagado)),
                   Text(logado ? nome : 'Entrar',
                       overflow: TextOverflow.ellipsis,
@@ -565,6 +576,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                           n == 0
                               ? 'Nenhuma sessão agora'
                               : '$n ${n == 1 ? 'sessão' : 'sessões'} agora',
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: 11,
                               color: n == 0 ? H3Cores.apagado : H3Cores.ok));
@@ -648,6 +660,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
   // ---------- Visão geral ----------
 
   Widget _visaoGeral() {
+    final mostrarEstePc = !bind.isOutgoingOnly();
     final conexoes = _cartao(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
       expandir: true,
@@ -659,50 +672,53 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       filho: widget.deviceBoard,
     );
     return LayoutBuilder(builder: (context, c) {
-      final largo = c.maxWidth >= 1000;
-      return Padding(
-        padding: const EdgeInsets.all(20),
-        child: largo
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: conexoes),
-                  const SizedBox(width: 20),
-                  SizedBox(
-                    width: 360,
-                    child: LayoutBuilder(
-                      builder: (context, caixa) => SingleChildScrollView(
-                        child: ConstrainedBox(
-                          constraints:
-                              BoxConstraints(minHeight: caixa.maxHeight),
-                          child: IntrinsicHeight(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
+      final largo = c.maxWidth >= 780;
+      final larguraDireita = (c.maxWidth * 0.35).clamp(330.0, 440.0);
+      final alturaConexoesCompacta = (c.maxHeight * 0.58).clamp(420.0, 620.0);
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1480),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: largo
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: conexoes),
+                      const SizedBox(width: 20),
+                      SizedBox(
+                        width: larguraDireita,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (mostrarEstePc) ...[
                                 esteComputador,
                                 const SizedBox(height: 16),
-                                Expanded(child: _sessaoAtual()),
                               ],
-                            ),
+                              _sessaoAtual(),
+                            ],
                           ),
                         ),
                       ),
+                    ],
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (mostrarEstePc) ...[
+                          esteComputador,
+                          const SizedBox(height: 16),
+                        ],
+                        _sessaoAtual(),
+                        const SizedBox(height: 16),
+                        SizedBox(height: alturaConexoesCompacta, child: conexoes),
+                      ],
                     ),
                   ),
-                ],
-              )
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    esteComputador,
-                    const SizedBox(height: 16),
-                    _sessaoAtual(),
-                    const SizedBox(height: 16),
-                    SizedBox(height: 560, child: conexoes),
-                  ],
-                ),
-              ),
+          ),
+        ),
       );
     });
   }
@@ -946,7 +962,9 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
   Widget _grade(List<Widget> itens, {double minimo = 230}) {
     return LayoutBuilder(builder: (context, c) {
       const gap = 16.0;
-      final cols = ((c.maxWidth + gap) / (minimo + gap)).floor().clamp(1, 4);
+      var cols = ((c.maxWidth + gap) / (minimo + gap)).floor().clamp(1, 4);
+      if (itens.length == 4 && cols == 3) cols = 2;
+      cols = cols.clamp(1, itens.length.clamp(1, 4));
       final linhas = <Widget>[];
       for (var i = 0; i < itens.length; i += cols) {
         final fatia = itens.skip(i).take(cols).toList();
@@ -968,17 +986,25 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
   }
 
   Widget _relatorios() {
-    return ListView(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
-      children: [
-        _titulo('Relatórios', 'Resumo das suas sessões, dispositivos e da segurança deste computador.'),
-        const SizedBox(height: 18),
-        _indicadores(),
-        const SizedBox(height: 26),
-        _titulo('Segurança e acesso', 'Como este computador aceita conexões. Toque para ajustar.'),
-        const SizedBox(height: 14),
-        _seguranca(),
-      ],
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1360),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _titulo('Relatórios', 'Resumo das suas sessões, dispositivos e da segurança deste computador.'),
+              const SizedBox(height: 18),
+              _indicadores(),
+              const SizedBox(height: 26),
+              _titulo('Segurança e acesso', 'Como este computador aceita conexões. Toque para ajustar.'),
+              const SizedBox(height: 14),
+              _seguranca(),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

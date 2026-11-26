@@ -91,50 +91,69 @@ class H3EsteComputador extends StatelessWidget {
     double espaco = 1.5,
     required List<Widget> acoes,
   }) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-          H3Raios.md + 2, H3Raios.md, H3Raios.sm, H3Raios.md),
-      decoration: BoxDecoration(
-        color: H3Cores.painel2,
-        borderRadius: BorderRadius.circular(H3Raios.md),
-        border: Border.all(color: H3Cores.linha),
-      ),
-      child: Row(children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: H3Cores.destaque.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(H3Raios.sm),
-          ),
-          child: Icon(icone, size: 20, color: H3Cores.destaque),
+    return LayoutBuilder(builder: (context, c) {
+      final quebrarAcoes = c.maxWidth < 320 && acoes.length > 1;
+      return Container(
+        padding: const EdgeInsets.fromLTRB(
+            H3Raios.md + 2, H3Raios.md, H3Raios.sm, H3Raios.md),
+        decoration: BoxDecoration(
+          color: H3Cores.painel2,
+          borderRadius: BorderRadius.circular(H3Raios.md),
+          border: Border.all(color: H3Cores.linha),
         ),
-        const SizedBox(width: H3Raios.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(rotulo,
-                  style: TextStyle(fontSize: 11.5, color: H3Cores.apagado)),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(valor,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: TextStyle(
-                        fontSize: tamanho,
-                        letterSpacing: espaco,
-                        fontWeight: FontWeight.w600,
-                        color: H3Cores.texto)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: H3Cores.destaque.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(H3Raios.sm),
+                ),
+                child: Icon(icone, size: 20, color: H3Cores.destaque),
+              ),
+              const SizedBox(width: H3Raios.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(rotulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 11.5, color: H3Cores.apagado)),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(valor,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                              fontSize: tamanho,
+                              letterSpacing: espaco,
+                              fontWeight: FontWeight.w600,
+                              color: H3Cores.texto)),
+                    ),
+                  ],
+                ),
+              ),
+              if (!quebrarAcoes) ...acoes,
+            ]),
+            if (quebrarAcoes) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: acoes,
               ),
             ],
-          ),
+          ],
         ),
-        ...acoes,
-      ]),
-    );
+      );
+    });
   }
 }
 

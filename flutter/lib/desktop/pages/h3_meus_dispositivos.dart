@@ -334,22 +334,31 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
   Widget build(BuildContext context) {
     return Obx(() {
       final logado = _logado;
-      return ListView(
+      return SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        children: [
-          Text('Meus dispositivos',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  color: H3Cores.texto)),
-          const SizedBox(height: 4),
-          Text('Computadores registrados na sua conta, prontos para conectar com um clique.',
-              style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
-          const SizedBox(height: 18),
-          _cartaoEste(logado),
-          const SizedBox(height: 16),
-          _cartaoLista(logado),
-        ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Meus dispositivos',
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: H3Cores.texto)),
+                const SizedBox(height: 4),
+                Text(
+                    'Computadores registrados na sua conta, prontos para conectar com um clique.',
+                    style: TextStyle(fontSize: 13, color: H3Cores.apagado)),
+                const SizedBox(height: 18),
+                _cartaoEste(logado),
+                const SizedBox(height: 16),
+                _cartaoLista(logado),
+              ],
+            ),
+          ),
+        ),
       );
     });
   }
@@ -365,57 +374,71 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
 
   Widget _cartaoEste(bool logado) {
     final registrado = _esteRegistrado;
+    final info = Row(children: [
+      Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: H3Cores.destaque.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(H3Raios.md),
+        ),
+        child: Icon(Icons.cloud_done_outlined,
+            color: H3Cores.destaque, size: 22),
+      ),
+      const SizedBox(width: 14),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Este computador',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: H3Cores.texto)),
+            Text(
+              !logado
+                  ? 'Entre na sua conta H3 Suporte para guardar o ID e a senha deste computador nela.'
+                  : registrado
+                      ? 'Registrado na sua conta. Qualquer app logado nela consegue acessá-lo.'
+                      : 'Não registrado. Registre para acessá-lo de outro app, sem digitar a senha.',
+              style: TextStyle(fontSize: 12.5, color: H3Cores.apagado),
+            ),
+          ],
+        ),
+      ),
+    ]);
+    final botao = !logado
+        ? _botaoH3(Icons.login, 'Entrar', () => loginDialog())
+        : _botaoH3(
+            registrado ? Icons.refresh : Icons.cloud_upload_outlined,
+            _registrando
+                ? 'Registrando…'
+                : registrado
+                    ? 'Gerar nova senha'
+                    : 'Registrar na conta',
+            _registrando ? null : _registrar,
+            primario: !registrado,
+            carregando: _registrando);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: _caixa,
-      child: Row(children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: H3Cores.destaque.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(H3Raios.md),
-          ),
-          child: Icon(Icons.cloud_done_outlined,
-              color: H3Cores.destaque, size: 22),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: LayoutBuilder(builder: (context, c) {
+        if (c.maxWidth < 560) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Este computador',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: H3Cores.texto)),
-              Text(
-                !logado
-                    ? 'Entre na sua conta H3 Suporte para guardar o ID e a senha deste computador nela.'
-                    : registrado
-                        ? 'Registrado na sua conta. Qualquer app logado nela consegue acessá-lo.'
-                        : 'Não registrado. Registre para acessá-lo de outro app, sem digitar a senha.',
-                style:
-                    TextStyle(fontSize: 12.5, color: H3Cores.apagado),
-              ),
+              info,
+              const SizedBox(height: 12),
+              Align(alignment: Alignment.centerRight, child: botao),
             ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        if (!logado)
-          _botaoH3(Icons.login, 'Entrar', () => loginDialog())
-        else
-          _botaoH3(
-              registrado ? Icons.refresh : Icons.cloud_upload_outlined,
-              _registrando
-                  ? 'Registrando…'
-                  : registrado
-                      ? 'Gerar nova senha'
-                      : 'Registrar na conta',
-              _registrando ? null : _registrar,
-              primario: !registrado,
-              carregando: _registrando),
-      ]),
+          );
+        }
+        return Row(children: [
+          Expanded(child: info),
+          const SizedBox(width: 12),
+          botao,
+        ]);
+      }),
     );
   }
 
@@ -576,15 +599,21 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
                 color: H3Cores.texto)),
         const SizedBox(height: 3),
         Row(children: [
-          Text(d.idFormatado,
-              style: TextStyle(
-                  fontSize: 12.5,
-                  color: H3Cores.apagado,
-                  fontFamily: 'monospace')),
+          Flexible(
+            child: Text(d.idFormatado,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    color: H3Cores.apagado,
+                    fontFamily: 'monospace')),
+          ),
           if (eu) ...[
             const SizedBox(width: 8),
-            Text('· este computador',
-                style: TextStyle(fontSize: 12, color: H3Cores.destaque)),
+            Flexible(
+              child: Text('· este computador',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: H3Cores.destaque)),
+            ),
           ],
         ]),
         const Spacer(),
@@ -598,15 +627,21 @@ class _H3MeusDispositivosPageState extends State<H3MeusDispositivosPage> {
               primario: true,
               altura: 40,
               onTap: () => _conectar(d),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.bolt, size: 18, color: H3Cores.destaqueTinta),
-                const SizedBox(width: 6),
-                Text('Conectar',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13.5,
-                        color: H3Cores.destaqueTinta)),
-              ]),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.bolt, size: 18, color: H3Cores.destaqueTinta),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text('Conectar',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                            color: H3Cores.destaqueTinta)),
+                  ),
+                ]),
+              ),
             ),
           ),
           const SizedBox(width: 8),

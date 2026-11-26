@@ -161,7 +161,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
   Widget _header(H3Tokens t) {
     final subtitle = model.provider == kAiProviderChatGpt
         ? 'ChatGPT · ${model.chatGptModel}'
-        : 'Claude · ${model.model}';
+        : model.provider == kAiProviderGemini
+            ? 'Gemini · ${model.geminiModel}'
+            : 'Claude · ${model.model}';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
       child: Row(children: [
@@ -247,11 +249,15 @@ class _AiChatPanelState extends State<AiChatPanel> {
           color: t.fundo,
           border: Border.all(color: t.linha2),
           borderRadius: BorderRadius.circular(10)),
-      child: Row(children: [
-        item(kAiProviderClaude, translate('Claude (API key)')),
-        item(kAiProviderChatGpt,
-            translate('ChatGPT (sign in with your account)')),
-      ]),
+      child: IntrinsicHeight(
+        child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              item(kAiProviderClaude, translate('Claude (API key)')),
+              item(kAiProviderChatGpt,
+                  translate('ChatGPT (sign in with your account)')),
+            ]),
+      ),
     );
   }
 

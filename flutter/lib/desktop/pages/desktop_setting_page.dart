@@ -388,9 +388,12 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
           ).marginOnly(left: 20),
         if (!isWeb)
           SizedBox(
-            height: 62,
-            child: settingsText,
-          ).marginOnly(left: 20, top: 10),
+            height: 54,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: settingsText,
+            ),
+          ).marginOnly(left: bind.isIncomingOnly() ? 20 : 26),
         const Spacer(),
       ],
     );
@@ -3280,7 +3283,7 @@ Widget _duasColunas(ScrollController c, List<Widget> itens) {
       controller: c,
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         for (final col in cols) Expanded(child: Column(children: col)),
-      ]).paddingOnly(right: 15),
+      ]),
     );
   });
 }
@@ -3371,9 +3374,12 @@ class _CartaoH3State extends State<_CartaoH3> {
                     size: 22,
                     color: hover ? H3Cores.destaque : H3Cores.apagado),
               ),
-              const SizedBox(width: 6),
             ],
-          ).marginOnly(left: _kContentHMargin, top: 14, bottom: 10),
+          ).marginOnly(
+              left: _kContentHMargin,
+              right: _kContentHMargin,
+              top: 14,
+              bottom: 10),
         ),
         ClipRect(
           child: AnimatedSize(
@@ -3384,8 +3390,10 @@ class _CartaoH3State extends State<_CartaoH3> {
                 ? Column(children: [
                     Divider(height: 1, color: H3Cores.linha)
                         .marginOnly(bottom: 6),
-                    ...widget.children.map(
-                        (e) => e.marginOnly(top: 4, right: _kContentHMargin)),
+                    ...widget.children.map((e) => e.marginOnly(
+                        top: 4,
+                        left: _kContentHMargin,
+                        right: _kContentHMargin)),
                   ])
                 : const SizedBox(width: double.infinity),
           ),
@@ -3877,7 +3885,7 @@ Widget _Button(String label, Function() onPressed,
   }
   return Row(children: [
     child,
-  ]).marginOnly(left: _kContentHMargin);
+  ]).marginOnly(left: bind.isIncomingOnly() ? _kContentHMargin : 0);
 }
 
 // ignore: non_constant_identifier_names
