@@ -202,3 +202,90 @@ fn schedule_file_removal_on_reboot(path: &Path) -> ResultType<()> {
     })?;
     Ok(())
 }
+
+const PORTABLE_EXE_ENV_KEY: &str = "H3_PORTABLE_EXE";
+const PORTABLE_UPDATE_FILE_NAME: &str = "h3suporte-atualizado.exe";
+
+/// H3: without installation, replaces the portable executable with the verified one,
+/// closes every process of this copy and starts the new version.
+pub fn update_portable_to_verified(
+    file: &str,
+    expected_sha256: &str,
+    expected_size: u64,
+) -> ResultType<()> {
+    if file::update_file_extension(file).as_deref() != Some("exe") {
+        bail!("Unsupported portable update file format: {}", file);
+    }
+    let update_file = copy_and_verify_update_file_sha256(file, expected_sha256)?;
+    if let Err(err) = update_file.verify_size(expected_size) {
+        update_file.cleanup();
+        return Err(err);
+    }
+    let target = portable_update_target(&update_file);
+    update_file.cleanup();
+    let target = target?;
+
+    let current_exe = std::env::current_exe()?;
+    let (Some(app_dir), Some(process_name)) = (
+        current_exe.parent().and_then(|dir| dir.to_str()),
+        current_exe.file_stem().and_then(|name| name.to_str()),
+    ) else {
+        bail!("Invalid current executable path: {}", current_exe.display());
+    };
+    let Some(target) = target.to_str() else {
+        bail!("Invalid portable update path: {}", target.display());
+    };
+    let quote = |value: &str| value.replace('\'', "''");
+    let script = format!(
+        "Start-Sleep -Seconds 1\n\
+         Get-Process -Name '{name}' -ErrorAction SilentlyContinue | \
+         Where-Object {{ $_.Path -and $_.Path.StartsWith('{dir}\\', [StringComparison]::OrdinalIgnoreCase) }} | \
+         Stop-Process -Force -ErrorAction SilentlyContinue\n\
+         Start-Sleep -Seconds 2\n\
+         Start-Process -FilePath '{target}'\n",
+        name = quote(process_name),
+        dir = quote(app_dir),
+        target = quote(target),
+    );
+    let encoded: Vec<u8> = script
+        .encode_utf16()
+        .flat_map(|unit| unit.to_le_bytes())
+        .collect();
+    use std::os::windows::process::CommandExt;
+    std::process::Command::new("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-WindowStyle",
+            "Hidden",
+            "-EncodedCommand",
+            &crate::encode64(encoded),
+        ])
+        .creation_flags(
+            winapi::um::winbase::CREATE_NO_WINDOW | winapi::um::winbase::CREATE_NEW_PROCESS_GROUP,
+        )
+        .spawn()?;
+    log::info!("Portable update scheduled: {}", target);
+    Ok(())
+}
+
+fn portable_update_target(update_file: &VerifiedUpdateFile) -> ResultType<std::path::PathBuf> {
+    let source = update_file.path_str()?;
+    if let Some(original) = std::env::var_os(PORTABLE_EXE_ENV_KEY).map(std::path::PathBuf::from) {
+        if original.is_file() {
+            match std::fs::copy(source, &original) {
+                Ok(_) => return Ok(original),
+                Err(err) => log::warn!(
+                    "Failed to replace portable executable {}: {}",
+                    original.display(),
+                    err
+                ),
+            }
+        }
+    }
+    let target = std::env::temp_dir().join(PORTABLE_UPDATE_FILE_NAME);
+    std::fs::copy(source, &target)?;
+    Ok(target)
+}

@@ -123,7 +123,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir artifacts
-          for f in x86_64.exe x86_64.msi aarch64.exe aarch64.msi x86-sciter.exe aarch64.dmg x86_64.dmg; do
+          for f in x86_64.exe x86_64-cliente.exe x86_64.msi aarch64.exe aarch64.msi x86-sciter.exe aarch64.dmg x86_64.dmg; do
             gh release download "$TAG" -R "$REPO" -p "h3suporte-${VERSION}-${f}" -D artifacts
           done
           ls -l artifacts
@@ -137,6 +137,7 @@ jobs:
           a="./artifacts/h3suporte-${VERSION}"
           python res/update/generate_update_metadata.py sign \
             --artifact windows x86_64 exe "$a-x86_64.exe" \
+            --artifact windows x86_64 cliente-exe "$a-x86_64-cliente.exe" \
             --artifact windows x86_64 msi "$a-x86_64.msi" \
             --artifact windows aarch64 exe "$a-aarch64.exe" \
             --artifact windows aarch64 msi "$a-aarch64.msi" \
@@ -151,7 +152,7 @@ jobs:
             --signature-out ./rustdesk-update.json.sig
           python res/update/generate_update_metadata.py verify \
             --metadata ./rustdesk-update.json --signature ./rustdesk-update.json.sig \
-            --artifact "$a-x86_64.exe" --artifact "$a-x86_64.msi" \
+            --artifact "$a-x86_64.exe" --artifact "$a-x86_64-cliente.exe" --artifact "$a-x86_64.msi" \
             --artifact "$a-aarch64.exe" --artifact "$a-aarch64.msi" \
             --artifact "$a-x86-sciter.exe" \
             --artifact "$a-aarch64.dmg" --artifact "$a-x86_64.dmg" \

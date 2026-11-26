@@ -57,6 +57,14 @@ pub fn core_main() -> Option<CoreMainAction> {
                 .unwrap()
                 .insert("conn-type".to_owned(), conn_type.to_owned());
         }
+        // H3: o cliente instalado se atualiza sozinho pelo serviço, sem pedir nada à pessoa.
+        if conn_type == "incoming" {
+            config::DEFAULT_SETTINGS
+                .write()
+                .unwrap()
+                .entry(keys::OPTION_ALLOW_AUTO_UPDATE.to_owned())
+                .or_insert_with(|| "Y".to_owned());
+        }
     }
     // H3 Suporte: o técnico conectado pode mudar as configurações (sem isso a tela fica bloqueada durante o
     // acesso). Só o padrão: quem desligar em Segurança continua desligado.

@@ -17,7 +17,19 @@ App ──► baixa rustdesk-update.json e .sig do release, confere a assinatura
 - **Quando procura:** ao abrir o app, se "Procurar atualização ao iniciar" estiver ligado, e uma vez por dia pelo
   serviço quando "Atualização automática" estiver ligada (Configurações → Geral).
 - **Windows:** baixa o `.exe` da arquitetura e instala sem perguntar, quando não há conexão remota em andamento
-  (atualização automática) ou pelo botão "Atualizar" do aviso.
+  (atualização automática) ou pelo botão "Atualizar" do aviso. O botão nunca abre o navegador: baixa dentro do app,
+  confere a assinatura e instala na hora (fecha o H3 Suporte, aplica a versão nova e abre de novo).
+- **Windows sem instalação (portátil):** o mesmo botão baixa, confere e troca o próprio `.exe` pelo novo (o caminho
+  vem da variável `H3_PORTABLE_EXE`, que o empacotador passa desde esta versão); fecha todos os processos da cópia
+  em uso e abre a nova. Se não der para sobrescrever o arquivo original (ou o portátil for de uma versão anterior),
+  roda a versão nova a partir de `%TEMP%\h3suporte-atualizado.exe`.
+- **Cliente (`-cliente`, só recebe acesso):** tem instalador próprio na lista assinada (formato `cliente-exe`), então
+  nunca vira o agente completo ao atualizar. Quando há versão nova, mostra o cartão "Atualização automática" e
+  atualiza sem nenhum clique, só quando não há acesso remoto em andamento:
+  - **instalado:** quem aplica é o serviço do Windows (como SYSTEM, sem pedir permissão de administrador). No cliente a
+    opção "Atualização automática" já vem ligada e o serviço procura versão nova de hora em hora (o agente, uma vez
+    por dia);
+  - **portátil:** a própria janela baixa e aplica (confere a cada 15 s se não há acesso em andamento).
 - **Mac:** baixa o `.dmg` e instala pelo serviço (precisa do serviço instalado). Desde o build `v1.5.3-10` o app,
   o `.dmg` e o `.pkg` saem assinados com Developer ID e notarizados: abrem sem aviso do Gatekeeper.
 - **Linux e Android:** o aviso abre a página do release para baixar.
@@ -64,6 +76,14 @@ anterior estável (quem já atualizou fica na nova; corrija lançando outra vers
 - **Vazar a privada:** gere outra chave já, lance uma versão com ela e avise os clientes para atualizarem.
 
 ## Limites conhecidos
+
+- Até a 1.5.4 o atualizador nunca funcionou: a interface não procurava versão nova (o H3 conta como "custom client"
+  e o `checkUpdate` pulava), o download recusava qualquer URL fora de `github.com/rustdesk/rustdesk` e, sem
+  instalação, a leitura do registro do MSI abortava a verificação. Quem tem a 1.5.4 ou anterior precisa instalar a
+  próxima versão uma vez à mão; dali em diante atualiza sozinho.
+- O cliente portável de versão anterior a esta não sabe onde está o próprio `.exe`; atualiza rodando a cópia em
+  `%TEMP%` e, se a pessoa abrir de novo o arquivo antigo, ele se atualiza outra vez.
+- macOS sem instalação (rodando de dentro do `.dmg`) continua abrindo o download no navegador.
 
 - Windows instalado pelo `.msi`: o código do RustDesk trata o H3 Suporte como "cliente personalizado" e atualiza pelo
   `.exe`. Teste esse caso antes de vender instalação por MSI.

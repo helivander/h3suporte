@@ -51,6 +51,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   var watchIsInputMonitoring = false;
   var watchIsCanRecordAudio = false;
   Timer? _updateTimer;
+  Worker? _h3AutoUpdateWorker;
   bool isCardClosed = false;
 
   final RxBool _editHover = false.obs;
@@ -583,8 +584,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
   Widget buildHelpCards(String updateUrl) {
     // H3: o aviso vale para o H3 Suporte (que é um "custom client" para o código do RustDesk).
+    // H3: no cliente a atualização é automática; o cartão só avisa.
+    if (updateUrl.isNotEmpty && bind.isIncomingOnly() && h3AtualizaNoApp()) {
+      return buildInstallCard(
+          'Atualização automática',
+          h3AtualizaPeloServico()
+              ? 'A versão ${bind.mainGetNewVersion()} será instalada sozinha assim que não houver acesso em andamento. O H3 Suporte fecha e abre de novo; não precisa fazer nada.'
+              : 'Instalando a versão ${bind.mainGetNewVersion()}. O H3 Suporte vai fechar e abrir de novo sozinho; não precisa fazer nada.',
+          'Atualizar agora',
+          () => handleUpdate(updateUrl));
+    }
     if (updateUrl.isNotEmpty && !isCardClosed) {
-      final isToUpdate = (isWindows || isMacOS) && bind.mainIsInstalled();
+      final isToUpdate = h3AtualizaNoApp();
       String btnText = isToUpdate ? 'Update' : 'Download';
       GestureTapCallback onPressed = () async {
         final Uri url = Uri.parse(updateUrl);
@@ -981,6 +992,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _updateWindowSize();
       });
+      _h3AutoUpdateWorker =
+          ever<String>(stateGlobal.updateUrl, h3AtualizarAutomaticamente);
+      h3AtualizarAutomaticamente(stateGlobal.updateUrl.value);
     }
     WidgetsBinding.instance.addObserver(this);
   }
@@ -1004,6 +1018,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     _uniLinksSubscription?.cancel();
     Get.delete<RxBool>(tag: 'stop-service');
     _updateTimer?.cancel();
+    _h3AutoUpdateWorker?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

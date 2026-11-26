@@ -2872,8 +2872,10 @@ fn push_update_me_error(error: String) {
 fn verified_update_artifact_for_release_page_url(
     release_page_url: &str,
 ) -> ResultType<crate::update_metadata::VerifiedUpdateArtifact> {
+    // H3: sem instalação (portátil) a chave do registro não existe; não é MSI.
     #[cfg(target_os = "windows")]
-    let update_msi = crate::platform::windows::is_msi_installed()? && !crate::is_custom_client();
+    let update_msi = crate::platform::windows::is_msi_installed().unwrap_or(false)
+        && !crate::is_custom_client();
     #[cfg(target_os = "macos")]
     let update_msi = false;
     let query = crate::updater::current_update_artifact_query(update_msi);
@@ -2983,11 +2985,19 @@ pub fn main_set_common(_key: String, _value: String) {
                 new_version_file_str
             );
             #[cfg(target_os = "windows")]
-            let update_res = crate::platform::update_to_verified(
-                new_version_file_str,
-                &artifact.sha256,
-                artifact.size,
-            );
+            let update_res = if crate::platform::is_installed() {
+                crate::platform::update_to_verified(
+                    new_version_file_str,
+                    &artifact.sha256,
+                    artifact.size,
+                )
+            } else {
+                crate::platform::windows::update_portable_to_verified(
+                    new_version_file_str,
+                    &artifact.sha256,
+                    artifact.size,
+                )
+            };
             #[cfg(target_os = "macos")]
             let update_res = crate::platform::macos::update_to_verified_dmg(
                 new_version_file_str,

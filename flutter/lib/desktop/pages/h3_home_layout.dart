@@ -426,7 +426,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
     return Obx(() {
       final url = stateGlobal.updateUrl.value;
       if (url.isEmpty) return const SizedBox.shrink();
-      final instalar = (isWindows || isMacOS) && bind.mainIsInstalled();
+      final instalar = h3AtualizaNoApp();
       final versao = bind.mainGetNewVersion();
       void abrir() {
         if (instalar) {

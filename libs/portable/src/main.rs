@@ -22,6 +22,7 @@ const APP_PREFIX: &str = "rustdesk";
 #[cfg(windows)]
 const VERIFIED_UPDATE_FILE_PREFIX: &str = "rustdesk-verified-";
 const APPNAME_RUNTIME_ENV_KEY: &str = "RUSTDESK_APPNAME";
+const PORTABLE_EXE_ENV_KEY: &str = "H3_PORTABLE_EXE";
 #[cfg(windows)]
 const SET_FOREGROUND_WINDOW_ENV_KEY: &str = "SET_FOREGROUND_WINDOW";
 
@@ -247,6 +248,8 @@ fn execute(path: PathBuf, args: Vec<String>, _ui: bool) {
     }
 
     cmd.env(APPNAME_RUNTIME_ENV_KEY, exe_name);
+    // H3: the app replaces this file in place when it updates itself without installation.
+    cmd.env(PORTABLE_EXE_ENV_KEY, &exe);
     if use_null_stdio() {
         cmd.stdin(Stdio::null())
             .stdout(Stdio::null())

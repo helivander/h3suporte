@@ -9,6 +9,39 @@ import 'package:url_launcher/url_launcher.dart';
 
 const _eventKeyUpdateMe = 'update-me';
 
+/// H3: o app baixa e instala sozinho no Windows (instalado ou portátil) e no macOS instalado,
+/// sem abrir o navegador.
+bool h3AtualizaNoApp() => isWindows || (isMacOS && bind.mainIsInstalled());
+
+bool h3AtualizaPeloServico() =>
+    isWindows && bind.isIncomingOnly() && bind.mainIsInstalled();
+
+String? _h3AutoUrl;
+Timer? _h3AutoTimer;
+
+/// H3: no cliente (só recebe acesso) a atualização começa sozinha, sem nenhum clique,
+/// assim que não houver acesso remoto em andamento.
+/// Instalado no Windows, quem aplica é o serviço (sem pedir permissão de administrador).
+void h3AtualizarAutomaticamente(String releasePageUrl) {
+  if (releasePageUrl.isEmpty || !h3AtualizaNoApp()) return;
+  if (h3AtualizaPeloServico()) return;
+  if (_h3AutoUrl == releasePageUrl) return;
+  _h3AutoUrl = releasePageUrl;
+  _h3AutoTimer?.cancel();
+  void tentar() {
+    if (gFFI.serverModel.clients.isNotEmpty) return;
+    _h3AutoTimer?.cancel();
+    _h3AutoTimer = null;
+    handleUpdate(releasePageUrl);
+  }
+
+  _h3AutoTimer =
+      Timer.periodic(const Duration(seconds: 15), (_) => tentar());
+  Future.delayed(const Duration(seconds: 3), () {
+    if (_h3AutoTimer != null) tentar();
+  });
+}
+
 Future<void> _handleUpdateMe(
     String releasePageUrl, Map<String, dynamic> evt) async {
   platformFFI.unregisterEventHandler(_eventKeyUpdateMe, _eventKeyUpdateMe);
@@ -261,31 +294,38 @@ class UpdateProgressState extends State<UpdateProgress> {
     }
   }
 
-  void updateMsgBox() {
+  // H3: baixou, instala na hora: fecha o app, aplica a versão nova e abre de novo.
+  void updateMsgBox() async {
     final releasePageUrl = widget.releasePageUrl;
     final downloadUrl = widget.downloadUrl;
-    msgBox(
-      gFFI.sessionId,
-      'custom-nocancel',
-      '{$appName} Update',
-      '{$appName}-to-update-tip',
-      '',
-      gFFI.dialogManager,
-      onSubmit: () async {
-        debugPrint('Downloaded, update to new version now');
-        platformFFI.registerEventHandler(_eventKeyUpdateMe, _eventKeyUpdateMe,
-            (evt) => _handleUpdateMe(releasePageUrl, evt),
-            replace: true);
-        try {
-          await bind.mainSetCommon(key: 'update-me', value: downloadUrl);
-        } catch (error) {
-          platformFFI.unregisterEventHandler(
-              _eventKeyUpdateMe, _eventKeyUpdateMe);
-          _showUpdateError(releasePageUrl, error.toString());
-        }
-      },
-      submitTimeout: 5,
+    gFFI.dialogManager.dismissAll();
+    gFFI.dialogManager.show(
+      (setState, close, context) => CustomAlertDialog(
+        title: const Text('Instalando a atualização'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+                'O H3 Suporte vai fechar, instalar a nova versão e abrir de novo sozinho.'),
+            SizedBox(height: 14),
+            LinearProgressIndicator(),
+          ],
+        ),
+        actions: const [],
+      ),
+      tag: 'h3-instalando-atualizacao',
     );
+    debugPrint('Downloaded, update to new version now');
+    platformFFI.registerEventHandler(_eventKeyUpdateMe, _eventKeyUpdateMe,
+        (evt) => _handleUpdateMe(releasePageUrl, evt),
+        replace: true);
+    try {
+      await bind.mainSetCommon(key: 'update-me', value: downloadUrl);
+    } catch (error) {
+      platformFFI.unregisterEventHandler(_eventKeyUpdateMe, _eventKeyUpdateMe);
+      _showUpdateError(releasePageUrl, error.toString());
+    }
   }
 
   @override

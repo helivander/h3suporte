@@ -159,7 +159,13 @@ fn start_auto_update_check_(rx_msg: Receiver<UpdateMsg>) {
     }
 
     let mut last_check_time = Instant::now();
-    let mut check_interval = DUR_ONE_DAY;
+    // H3: o cliente (só recebe acesso) procura de hora em hora; o agente, uma vez por dia.
+    let intervalo_normal = if option_env!("CONN_TYPE") == Some("incoming") {
+        Duration::from_secs(60 * 60)
+    } else {
+        DUR_ONE_DAY
+    };
+    let mut check_interval = intervalo_normal;
     loop {
         let recv_res = rx_msg.recv_timeout(check_interval);
         match &recv_res {
@@ -178,7 +184,7 @@ fn start_auto_update_check_(rx_msg: Receiver<UpdateMsg>) {
                     check_interval = RETRY_INTERVAL;
                 } else {
                     last_check_time = Instant::now();
-                    check_interval = DUR_ONE_DAY;
+                    check_interval = intervalo_normal;
                 }
             }
             Ok(UpdateMsg::Exit) => break,

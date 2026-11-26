@@ -52,6 +52,10 @@ pub(crate) fn current_update_format(update_msi: bool) -> &'static str {
     let _ = update_msi;
     #[cfg(all(target_os = "windows", feature = "flutter"))]
     {
+        // H3: o cliente (só recebe acesso) tem instalador próprio na lista assinada.
+        if option_env!("CONN_TYPE") == Some("incoming") {
+            return "cliente-exe";
+        }
         if update_msi {
             return "msi";
         }
@@ -180,8 +184,8 @@ pub fn get_update_download_file_from_url(url: &str) -> Option<PathBuf> {
     let tag = segments.next()?;
     let filename = segments.next()?;
 
-    if owner != "rustdesk"
-        || repo != "rustdesk"
+    if owner != crate::common::H3_UPDATE_REPO_OWNER
+        || repo != crate::common::H3_UPDATE_REPO_NAME
         || releases != "releases"
         || download != "download"
         || tag.is_empty()
@@ -217,29 +221,30 @@ mod tests {
     #[test]
     fn update_download_file_accepts_expected_github_asset_urls() {
         let file = get_update_download_file_from_url(
-            "https://github.com/rustdesk/rustdesk/releases/download/1.4.0/rustdesk-1.4.0-x86_64.dmg",
+            "https://github.com/helivander/h3suporte/releases/download/1.4.0/h3suporte-1.4.0-x86_64.dmg",
         )
         .expect("valid GitHub release asset URL");
 
         assert_eq!(
             file.file_name().and_then(|name| name.to_str()),
-            Some("rustdesk-1.4.0-x86_64.dmg")
+            Some("h3suporte-1.4.0-x86_64.dmg")
         );
     }
 
     #[test]
     fn update_download_file_rejects_untrusted_or_malformed_urls() {
         for url in [
-            "http://github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe",
+            "http://github.com/helivander/h3suporte/releases/download/1/rustdesk.exe",
             "https://example.com/rustdesk.exe",
             "https://github.com/other/project/releases/download/1/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/nested/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/C:rustdesk.exe",
-            "https://user@github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe",
+            "https://github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe",
+            "https://github.com/helivander/h3suporte/releases/download/1/",
+            "https://github.com/helivander/h3suporte/releases/download/1/nested/rustdesk.exe",
+            "https://github.com/helivander/h3suporte/releases/download/1/C:rustdesk.exe",
+            "https://user@github.com/helivander/h3suporte/releases/download/1/rustdesk.exe",
             "https://github.com:443/rustdesk/rustdesk/releases/download/1/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe?download=1",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe#download",
+            "https://github.com/helivander/h3suporte/releases/download/1/rustdesk.exe?download=1",
+            "https://github.com/helivander/h3suporte/releases/download/1/rustdesk.exe#download",
             "not a url",
         ] {
             assert!(get_update_download_file_from_url(url).is_none(), "{url}");
