@@ -10,7 +10,7 @@ O H3 Suporte tem **duas versões do app de acesso (Windows e macOS)**. A diferen
 | Botão do robô na barra da sessão | não existe | existe |
 | Painel do assistente (`AiChatPanel`) | não é montado na sessão | montado |
 | Quem baixa | qualquer cliente com assinatura | **somente assinatura com plano DEV** (`PLANOS_IA` no servidor-api) |
-| Onde fica o instalador | release público do GitHub + lista assinada do atualizador | **só artefato privado do workflow** (`h3suporte-ia-windows-x86_64`, `h3suporte-ia-macos-aarch64`, `h3suporte-ia-macos-x86_64`; 30 dias) |
+| Onde fica o instalador | release público do GitHub + lista assinada do atualizador | **só artefato do workflow**, fora do release (não é privado: veja Limites) (`h3suporte-ia-windows-x86_64`, `h3suporte-ia-macos-aarch64`, `h3suporte-ia-macos-x86_64`; 30 dias) |
 | Atualização automática | sim, pela lista assinada | **não**: o build `-ia` nunca procura atualização |
 
 No macOS o app e o `.dmg`/`.pkg` da versão com IA saem pelo mesmo caminho de assinatura e notarização da versão padrão.
@@ -50,6 +50,10 @@ O código da Central (portal e painel do administrador) fica fora deste reposit�
 
 ## Limites conhecidos
 
+- **Artefato não é privado:** o repositório `helivander/h3suporte` é um fork público, e no GitHub qualquer usuário
+  logado com acesso de leitura baixa os artefatos do workflow, inclusive os `-ia` (e o
+  `rustdesk-unsigned-windows-x86_64-ia`). A trava do plano DEV vale só para o download pela Central e pelo
+  `servidor-api`. Restringir de fato exige gerar ou guardar o `-ia` fora deste repositório.
 - **Atualização:** o `-ia` não se atualiza (no Rust, `do_check_software_update` em `src/common.rs` sai na hora quando o
   build tem `H3_IA=true`, o que cobre o aviso, a atualização automática do Windows e a do serviço do Mac). A cada
   versão nova o administrador reinstala o `-ia` pelo artefato do workflow.
