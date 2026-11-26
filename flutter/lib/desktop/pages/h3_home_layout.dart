@@ -12,12 +12,15 @@ import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
 import 'package:flutter_hbb/desktop/pages/h3_meus_dispositivos.dart';
 import 'package:flutter_hbb/desktop/pages/h3_permissoes.dart';
+import 'package:flutter_hbb/desktop/widgets/update_progress.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
+import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Paleta da tela inicial e das Configurações (verde-água), nos temas escuro e claro.
 class H3Cores {
@@ -321,7 +324,10 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
       return Obx(() {
         final selecionada = _aba.value;
         final ativo = aba != null && selecionada == aba;
-        final pendente = selo && _ehAviso(widget.helpCards());
+        // O aviso de atualização tem lugar próprio no menu (acima da conta).
+        final pendente = selo &&
+            stateGlobal.updateUrl.value.isEmpty &&
+            _ehAviso(widget.helpCards());
         final ponto = Container(
           width: 8,
           height: 8,
@@ -380,6 +386,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
           item(Icons.settings_outlined, 'Configurações',
               () => DesktopTabPage.onAddSetting()),
           const Spacer(),
+          _atualizacao(compacto),
           _conta(compacto),
         ],
       ),
@@ -405,6 +412,95 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
         ],
       ),
     );
+  }
+
+  /// Nova versão disponível: fica no menu, acima do cartão da conta.
+  Widget _atualizacao(bool compacto) {
+    return Obx(() {
+      final url = stateGlobal.updateUrl.value;
+      if (url.isEmpty) return const SizedBox.shrink();
+      final instalar = (isWindows || isMacOS) && bind.mainIsInstalled();
+      final versao = bind.mainGetNewVersion();
+      void abrir() {
+        if (instalar) {
+          handleUpdate(url);
+        } else {
+          launchUrl(Uri.parse(url));
+        }
+      }
+
+      final icone = Icon(Icons.system_update_alt_rounded,
+          size: 18, color: H3Cores.destaqueTinta);
+      if (compacto) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Tooltip(
+            message: 'Nova versão $versao: ${instalar ? 'atualizar' : 'baixar'}',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: abrir,
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                      color: H3Cores.destaque,
+                      borderRadius: BorderRadius.circular(10)),
+                  child: icone,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: abrir,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                H3Cores.destaque.withOpacity(0.22),
+                H3Cores.destaque.withOpacity(0.06)
+              ]),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: H3Cores.destaque.withOpacity(0.55)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                    color: H3Cores.destaque,
+                    borderRadius: BorderRadius.circular(9)),
+                child: icone,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Atualização disponível',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: H3Cores.texto)),
+                    Text(
+                        '${versao.isEmpty ? 'Nova versão' : 'Versão $versao'} · ${instalar ? 'Atualizar' : 'Baixar'}',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 11, color: H3Cores.destaque)),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+        ),
+      );
+    });
   }
 
   Widget _conta(bool compacto) {
