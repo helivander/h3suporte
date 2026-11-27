@@ -27,6 +27,20 @@ class _H3LoginGateState extends State<H3LoginGate> {
   bool get _logado =>
       gFFI.userModel.isLogin || UserModel.getLocalUserInfo() != null;
 
+  /// O agente só funciona instalado: no Windows pelo instalador, no Mac em Aplicativos e com o serviço.
+  /// O cliente (só recepção) roda sem instalar.
+  bool get _precisaInstalar {
+    if (!isDesktop || bind.isIncomingOnly() || bind.isDisableInstallation()) {
+      return false;
+    }
+    if (isWindows) return !bind.mainIsInstalled();
+    if (isMacOS) {
+      return !bind.mainIsInstalled() ||
+          !bind.mainIsInstalledDaemon(prompt: false);
+    }
+    return false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +54,7 @@ class _H3LoginGateState extends State<H3LoginGate> {
       if (!mounted ||
           bind.isDisableAccount() ||
           bind.isIncomingOnly() ||
+          _precisaInstalar ||
           _logado ||
           _dialogoAberto) {
         return;
@@ -69,10 +84,36 @@ class _H3LoginGateState extends State<H3LoginGate> {
   Widget build(BuildContext context) {
     return Obx(() {
       gFFI.userModel.userName.value;
-      if (bind.isDisableAccount() || bind.isIncomingOnly() || _logado) {
+      if (!_precisaInstalar &&
+          (bind.isDisableAccount() || bind.isIncomingOnly() || _logado)) {
         return widget.child;
       }
       final t = H3Tokens.of(context);
+      final instalar = _precisaInstalar;
+      final foraDeAplicativos = instalar && isMacOS && !bind.mainIsInstalled();
+      final String texto;
+      final String botao;
+      final VoidCallback acao;
+      if (!instalar) {
+        texto = 'Entre com sua conta H3 Suporte para usar o sistema. '
+            'É preciso ter uma assinatura ativa.';
+        botao = 'Entrar';
+        acao = () => loginDialog();
+      } else if (isWindows) {
+        texto = 'O H3 Suporte precisa ser instalado neste computador para ser usado.';
+        botao = 'Instalar';
+        acao = () => bind.mainGotoInstall();
+      } else if (foraDeAplicativos) {
+        texto = 'Arraste o H3 Suporte para a pasta Aplicativos e abra-o por lá para usar.';
+        botao = 'Verificar de novo';
+        acao = () => setState(() {});
+      } else {
+        texto = 'Instale o serviço do H3 Suporte para usar o sistema. '
+            'Depois de instalar, clique em Verificar de novo.';
+        botao = 'Instalar o serviço';
+        acao = () => bind.mainIsInstalledDaemon(prompt: true);
+      }
+      final verificar = instalar && isMacOS && !foraDeAplicativos;
       return Scaffold(
         backgroundColor: t.fundo,
         body: Center(
@@ -98,8 +139,7 @@ class _H3LoginGateState extends State<H3LoginGate> {
                           color: t.texto)),
                   const SizedBox(height: 8),
                   Text(
-                    'Entre com sua conta H3 Suporte para usar o sistema. '
-                    'É preciso ter uma assinatura ativa.',
+                    texto,
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13, height: 1.45, color: t.apagado),
                   ),
@@ -116,11 +156,29 @@ class _H3LoginGateState extends State<H3LoginGate> {
                           borderRadius: BorderRadius.circular(H3Raios.sm),
                         ),
                       ),
-                      onPressed: () => loginDialog(),
-                      child: const Text('Entrar',
+                      onPressed: acao,
+                      child: Text(botao,
                           style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
                   ),
+                  if (verificar) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 42,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: t.texto,
+                          side: BorderSide(color: t.linha),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(H3Raios.sm),
+                          ),
+                        ),
+                        onPressed: () => setState(() {}),
+                        child: const Text('Verificar de novo'),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
