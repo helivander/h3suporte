@@ -81,7 +81,8 @@ ilegíveis: cada dispositivo precisa ser registrado de novo. **Trocar a chave** 
 
 ## Produção (servidor da Central)
 
-O app usa `https://keys.h3info.com/h3suporte` quando nenhum servidor de API foi configurado
+O app usa `https://www.h3info.com/h3suporte` (a Central de produção) quando nenhum servidor de API foi configurado; o build
+de teste, compilado com `H3_CENTRAL=https://keys.h3info.com`, usa `https://keys.h3info.com/h3suporte` (homologação)
 (`src/common.rs`, `get_api_server_`). O container não publica porta: entra na rede interna da Central
 (`central_interna`) e o Caddy dela repassa `/h3suporte/*` para `h3suporte-api:21114`; o servidor-api fala com a
 API da Central direto em `http://api:3001`. O que a Central precisa ter: [docs/central-producao-h3suporte.md](../docs/central-producao-h3suporte.md).

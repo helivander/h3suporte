@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/consts.dart' show kH3Central;
 import 'package:flutter_hbb/desktop/pages/h3_home_layout.dart' show H3Cores;
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Planos do H3 Suporte na vitrine da Central. Depois do pagamento confirmado, a
 /// própria página oferece "Baixar o agente".
-const kH3AssinarUrl = 'https://keys.h3info.com/servicos/h3suporte#comprar';
+const kH3AssinarUrl = '$kH3Central/servicos/h3suporte#comprar';
 
 const _kOpcaoFechada = 'h3-oferta-agente-fechada';
 

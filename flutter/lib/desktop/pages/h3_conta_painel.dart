@@ -4,13 +4,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
+import 'package:flutter_hbb/consts.dart' show kH3Central;
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/user_model.dart';
 import 'package:flutter_hbb/utils/http_service.dart' as http;
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const _portal = 'https://keys.h3info.com/assinante';
+const _portal = '$kH3Central/assinante';
 
 /// Dados da conta, plano e uso em tempo real, exibidos em Configurações > Conta.
 class ContaConteudo extends StatefulWidget {

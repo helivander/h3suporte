@@ -699,7 +699,7 @@ class LoginWidgetUserPass extends StatelessWidget {
 }
 
 // H3: as contas são criadas e recuperadas no portal do assinante da Central de Ativação.
-const _kH3PortalAssinante = 'https://keys.h3info.com/assinante';
+const _kH3PortalAssinante = '$kH3Central/assinante';
 
 class _H3ContaCentralLinks extends StatelessWidget {
   const _H3ContaCentralLinks();

@@ -1076,7 +1076,18 @@ pub fn check_software_update() {
 // H3: as atualizações vêm dos releases deste repositório, anunciadas pelo servidor-api da H3.
 pub(crate) const H3_UPDATE_REPO_OWNER: &str = "helivander";
 pub(crate) const H3_UPDATE_REPO_NAME: &str = "h3suporte";
-const H3_UPDATE_CHECK_URL: &str = "https://keys.h3info.com/h3suporte/api/versao";
+/// Endereço da Central de Ativação da H3: produção por padrão. O build de teste aponta para a homologação com
+/// `H3_CENTRAL=https://keys.h3info.com` no ambiente da compilação (o build.py passa o mesmo valor ao Flutter).
+pub(crate) fn h3_central() -> &'static str {
+    option_env!("H3_CENTRAL")
+        .map(|s| s.trim().trim_end_matches('/'))
+        .filter(|s| !s.is_empty())
+        .unwrap_or("https://www.h3info.com")
+}
+
+fn h3_update_check_url() -> String {
+    format!("{}/h3suporte/api/versao", h3_central())
+}
 
 pub(crate) fn release_id_from_update_url(update_url: &str) -> ResultType<String> {
     let url = url::Url::parse(update_url)?;
@@ -1187,7 +1198,7 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 }
 
 // No need to check `danger_accept_invalid_cert` for now.
-// Because the url is always `H3_UPDATE_CHECK_URL`.
+// Because the url is always `h3_update_check_url()`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
     if option_env!("H3_IA") == Some("true") {
@@ -1195,7 +1206,7 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
     }
     let (request, _) =
         hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
-    let url = H3_UPDATE_CHECK_URL.to_owned();
+    let url = h3_update_check_url();
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);
@@ -1339,7 +1350,7 @@ fn get_api_server_(api: String, custom: String) -> String {
         }
     }
     // Servidor de API da H3 (servidor-api/), atrás do domínio da Central: contas e assinaturas vêm dela.
-    "https://keys.h3info.com/h3suporte".to_owned()
+    format!("{}/h3suporte", h3_central())
 }
 
 #[inline]

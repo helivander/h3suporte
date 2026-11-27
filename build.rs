@@ -105,6 +105,8 @@ fn main() {
     // H3 Suporte: rebuild when the client direction changes (incoming-only client).
     println!("cargo:rerun-if-env-changed=CONN_TYPE");
     println!("cargo:rerun-if-env-changed=H3_IA");
+    // Endereço da Central (src/common.rs, h3_central): trocar entre produção e homologação recompila.
+    println!("cargo:rerun-if-env-changed=H3_CENTRAL");
     if let Ok(conn_type) = std::env::var("CONN_TYPE") {
         if !conn_type.is_empty() && conn_type != "incoming" && conn_type != "outgoing" {
             panic!(
