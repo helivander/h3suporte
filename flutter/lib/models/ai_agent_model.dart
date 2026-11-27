@@ -159,6 +159,9 @@ class AiAgentModel {
     }
   }
 
+  /// Reativo para o botão da barra acender com o painel aberto.
+  final panelVisible = false.obs;
+
   bool get isPanelOpen => _panelEntry != null;
 
   void togglePanel() => isPanelOpen ? hidePanel() : showPanel();
@@ -179,6 +182,7 @@ class AiAgentModel {
                 child: AiChatPanel(model: this))));
     overlayState.insert(entry);
     _panelEntry = entry;
+    panelVisible.value = true;
   }
 
   void hidePanel() {
@@ -190,6 +194,7 @@ class AiAgentModel {
   void _removePanel() {
     final entry = _panelEntry;
     _panelEntry = null;
+    panelVisible.value = false;
     if (entry != null && entry.mounted) entry.remove();
   }
 
