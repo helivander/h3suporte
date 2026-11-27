@@ -1082,7 +1082,7 @@ pub(crate) fn h3_central() -> &'static str {
     option_env!("H3_CENTRAL")
         .map(|s| s.trim().trim_end_matches('/'))
         .filter(|s| !s.is_empty())
-        .unwrap_or("https://www.h3info.com")
+        .unwrap_or("https://h3suporte.com")
 }
 
 fn h3_update_check_url() -> String {

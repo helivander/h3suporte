@@ -732,4 +732,4 @@ const bool kH3IaBuild = bool.fromEnvironment('H3_IA');
 /// o build de teste aponta para a homologação com `H3_CENTRAL=https://keys.h3info.com` (build.py passa o
 /// `--dart-define`; o Rust lê a mesma variável na compilação, em src/common.rs).
 const String kH3Central =
-    String.fromEnvironment('H3_CENTRAL', defaultValue: 'https://www.h3info.com');
+    String.fromEnvironment('H3_CENTRAL', defaultValue: 'https://h3suporte.com');
