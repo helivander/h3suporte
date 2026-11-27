@@ -1076,13 +1076,14 @@ pub fn check_software_update() {
 // H3: as atualizações vêm dos releases deste repositório, anunciadas pelo servidor-api da H3.
 pub(crate) const H3_UPDATE_REPO_OWNER: &str = "helivander";
 pub(crate) const H3_UPDATE_REPO_NAME: &str = "h3suporte";
-/// Endereço da Central de Ativação da H3: produção por padrão. O build de teste aponta para a homologação com
-/// `H3_CENTRAL=https://keys.h3info.com` no ambiente da compilação (o build.py passa o mesmo valor ao Flutter).
+/// Servidor de validação do usuário (contas, assinaturas e versão): a Central da H3 em keys.h3info.com, como antes.
+/// Outro endereço só com `H3_CENTRAL=<url>` no ambiente da compilação (o build.py passa o mesmo valor ao Flutter).
+/// A conexão (ID/relay) não passa por aqui: segue o servidor próprio de `RENDEZVOUS_SERVERS`.
 pub(crate) fn h3_central() -> &'static str {
     option_env!("H3_CENTRAL")
         .map(|s| s.trim().trim_end_matches('/'))
         .filter(|s| !s.is_empty())
-        .unwrap_or("https://h3suporte.com")
+        .unwrap_or("https://keys.h3info.com")
 }
 
 fn h3_update_check_url() -> String {

@@ -728,8 +728,8 @@ const kCheckSoftwareUpdateFinish = 'check_software_update_finish';
 /// Build "com IA" (somente administrador do sistema): `--dart-define=H3_IA=true`. Sem isso o app não tem o assistente.
 const bool kH3IaBuild = bool.fromEnvironment('H3_IA');
 
-/// Endereço da Central de Ativação da H3 (portal do assinante, loja e servidor-api do h3suporte). Produção por padrão;
-/// o build de teste aponta para a homologação com `H3_CENTRAL=https://keys.h3info.com` (build.py passa o
-/// `--dart-define`; o Rust lê a mesma variável na compilação, em src/common.rs).
+/// Endereço da Central da H3 (validação do usuário: portal do assinante, loja e servidor-api do h3suporte):
+/// keys.h3info.com, como antes. Outro endereço só com `H3_CENTRAL=<url>` (build.py passa o `--dart-define`; o Rust lê
+/// a mesma variável na compilação, em src/common.rs).
 const String kH3Central =
-    String.fromEnvironment('H3_CENTRAL', defaultValue: 'https://h3suporte.com');
+    String.fromEnvironment('H3_CENTRAL', defaultValue: 'https://keys.h3info.com');

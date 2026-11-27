@@ -7,7 +7,7 @@ instalador falso para os clientes, nem trocando um arquivo no release.
 ## Como funciona
 
 ```
-App instalado ──POST──► h3suporte.com/h3suporte/api/versao    (servidor-api; build de teste: keys.h3info.com)
+App instalado ──POST──► keys.h3info.com/h3suporte/api/versao  (servidor-api)
                            └─ último release ESTÁVEL do GitHub que tem rustdesk-update.json + .sig
 App ◄── {url: https://github.com/helivander/h3suporte/releases/tag/v1.5.4}
 App ──► baixa rustdesk-update.json e .sig do release, confere a assinatura com a chave pública gravada no app,
