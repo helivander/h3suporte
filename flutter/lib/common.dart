@@ -2642,6 +2642,9 @@ String? bloqueioDoPlano(
   return '$nome: não incluída no plano da sua assinatura.';
 }
 
+/// H3: senha guardada na conta para um computador registrado nela (ligada pela tela principal do desktop).
+Future<String?> Function(String id)? h3SenhaDaConta;
+
 connect(BuildContext context, String id,
     {bool isFileTransfer = false,
     bool isViewCamera = false,
@@ -2679,6 +2682,10 @@ connect(BuildContext context, String id,
   final oldId = id;
   id = await bind.mainHandleRelayId(id: id);
   forceRelay = id != oldId || forceRelay;
+  // H3: computador registrado na conta entra direto, com a senha guardada nela.
+  if (password == null && isSharedPassword != true && h3SenhaDaConta != null) {
+    password = await h3SenhaDaConta!(id);
+  }
   assert(!(isFileTransfer && isTcpTunneling && isRDP),
       "more than one connect type");
 

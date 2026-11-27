@@ -103,6 +103,7 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
   @override
   void initState() {
     super.initState();
+    h3SenhaDaConta = H3Dispositivos.senhaSeRegistrado;
     _timer = Timer.periodic(
         const Duration(seconds: 2), (_) => _atualizarSessoesSaida());
     _atualizarSessoesSaida();
@@ -304,6 +305,11 @@ class _H3HomeLayoutState extends State<H3HomeLayout> {
                       transitionBuilder: (child, animacao) => FadeTransition(
                         opacity: animacao,
                         child: child,
+                      ),
+                      // O padrão centraliza e encolhe a página ao tamanho do conteúdo; cada página ocupa a área toda.
+                      layoutBuilder: (atual, anteriores) => Stack(
+                        fit: StackFit.expand,
+                        children: [...anteriores, if (atual != null) atual],
                       ),
                       child: KeyedSubtree(
                         key: ValueKey(aba),

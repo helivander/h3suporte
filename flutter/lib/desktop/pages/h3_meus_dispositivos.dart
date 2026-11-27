@@ -89,6 +89,20 @@ class H3Dispositivos {
     return s;
   }
 
+  /// Senha guardada na conta para um computador registrado nela; null quando não está registrado,
+  /// sem conta ou se a conta não responder. Usada ao conectar por qualquer caminho (ID digitado, recentes).
+  static Future<String?> senhaSeRegistrado(String id) async {
+    if (!gFFI.userModel.isLogin) return null;
+    try {
+      const limite = Duration(seconds: 5);
+      final lista = await listar().timeout(limite);
+      if (!lista.any((d) => d.id == id)) return null;
+      return await senha(id).timeout(limite);
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> remover(String id) async {
     await _chamar('/remover', corpo: {'id': id});
   }

@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/h3_estilo.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
@@ -43,6 +46,12 @@ class _H3LoginGateState extends State<H3LoginGate> {
         _dialogoAberto = false;
       }
     });
+  }
+
+  /// Sem conta ou sem querer entrar agora: fecha o app (o login volta a ser pedido ao abrir de novo).
+  void _fecharApp() {
+    if (isDesktop) exit(0);
+    SystemNavigator.pop();
   }
 
   @override
@@ -103,6 +112,22 @@ class _H3LoginGateState extends State<H3LoginGate> {
                       onPressed: () => loginDialog(),
                       child: const Text('Entrar',
                           style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 42,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: t.texto,
+                        side: BorderSide(color: t.linha),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(H3Raios.sm),
+                        ),
+                      ),
+                      onPressed: _fecharApp,
+                      child: const Text('Fechar o H3 Suporte'),
                     ),
                   ),
                 ],
