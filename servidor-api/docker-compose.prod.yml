@@ -1,6 +1,6 @@
 # servidor-api do h3suporte no mesmo servidor da Central de Ativação.
 # Sem porta publicada: entra na rede interna da Central e o Caddy dela entrega
-# https://keys.h3info.com/h3suporte/* -> h3suporte-api:21114 (docs/central-producao-h3suporte.md).
+# https://h3info.com/h3suporte/* -> h3suporte-api:21114 (docs/central-producao-h3suporte.md).
 # Subir: docker compose -f docker-compose.prod.yml up -d --build
 name: h3suporte-api
 

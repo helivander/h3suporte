@@ -6,7 +6,7 @@ assinaturas à Central de Ativação** pelas rotas `/api-servico/contas/*`
 ([especificação](../docs/central-contas-assinante.md)).
 
 ```
-App h3suporte ──https──► keys.h3info.com/h3suporte ──Caddy da Central──► este servidor ──Bearer sva_…──► API da Central (rede interna)
+App h3suporte ──https──► h3info.com/h3suporte ──Caddy da Central──► este servidor ──Bearer sva_…──► API da Central (rede interna)
 ```
 
 Node 24, sem dependências externas (`node:http`, `node:sqlite`, `node:test`).

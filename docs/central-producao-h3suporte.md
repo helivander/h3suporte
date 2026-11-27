@@ -15,7 +15,7 @@ Para repassar ao time da Central. Situação conferida no servidor (CT 110 do Pr
 Como fica:
 
 ```
-App h3suporte ──https──► keys.h3info.com/h3suporte/* ──Cloudflare──► Caddy da Central ──► h3suporte-api:21114
+App h3suporte ──https──► h3info.com/h3suporte/* ──Cloudflare──► Caddy da Central ──► h3suporte-api:21114
                                                                                               │ rede interna
                                                                                               ▼
                                                                                    API da Central (api:3001)
@@ -49,7 +49,7 @@ O `make deploy` aplica, em ordem, as migrações pendentes (nenhuma apaga dados)
 
 Só não use `migrate dev` em produção.
 
-Conferir: `curl -s https://keys.h3info.com/api/assinante/painel` deve dar **401** (“Sessão do assinante expirada”), não 404.
+Conferir: `curl -s https://h3info.com/api/assinante/painel` deve dar **401** (“Sessão do assinante expirada”), não 404.
 
 ## 2. Rota `/h3suporte` no Caddy
 
@@ -78,18 +78,15 @@ informe para colocarmos em `REDE_CENTRAL` no `.env` do servidor-api.
 
 ## 3. Cloudflare
 
-**Feito em 15/11/2026** na zona `h3info.com` (plano Free), as duas regras valendo só para `keys.h3info.com` com caminho
-começando em `/h3suporte/` (o resto do domínio não muda):
+**Feito em 15/11/2026** e **estendido em 27/11/2026** (quando o app passou a usar `h3info.com`) na zona `h3info.com`
+(plano Free), as duas regras valendo para `keys.h3info.com` e `h3info.com` com caminho começando em `/h3suporte/` (o
+resto do domínio não muda):
 
 - Regras de segurança → regra personalizada **"h3suporte: app sem desafio"**, primeira da lista, ação **Ignorar**:
   regras personalizadas restantes, Rate Limiting, regras gerenciadas, Verificação de integridade do navegador e Nível
   de segurança. Expressão:
-  `(http.host eq "keys.h3info.com" and starts_with(http.request.uri.path, "/h3suporte/"))`
+  `(http.host in {"keys.h3info.com" "h3info.com"} and starts_with(http.request.uri.path, "/h3suporte/"))`
 - Caching → Cache Rules → **"h3suporte: sem cache"**, mesma expressão, **Ignorar cache**.
-
-**Desde 27/11/2026 o app usa `h3info.com`** (o gestor de assinaturas) no lugar de `keys.h3info.com`. As duas regras
-precisam valer também para esse host; troque a expressão das duas por:
-`(http.host in {"keys.h3info.com" "h3info.com"} and starts_with(http.request.uri.path, "/h3suporte/"))`
 
 Ambas estão dentro da cota gratuita do plano Free (sem cobrança). Limitação: no plano Free o **Modo Bot Fight** (ligado
 na zona) não pode ser pulado por regra. Hoje o app passa normalmente; se aparecerem desafios (respostas HTML ou 403 em
@@ -99,7 +96,7 @@ Fight Mode pode ser pulado na mesma regra).
 Conferir de fora (não pode vir HTML de desafio):
 
 ```bash
-curl -s -X POST https://keys.h3info.com/h3suporte/api/heartbeat -d '{"id":"teste"}'   # deve responder {}
+curl -s -X POST https://h3info.com/h3suporte/api/heartbeat -d '{"id":"teste"}'   # deve responder {}
 ```
 
 ## 4. Produto h3suporte no painel (Admin → Produtos)
@@ -113,7 +110,7 @@ O produto **já nasce no deploy**: a migração `20261115120000_produto_h3suport
    instalações** do produto (vem 1; ajuste se for usar plano sem limite).
 2. Termos de uso, preços (da Central e/ou dos parceiros) e liberação aos parceiros, como qualquer produto.
 3. Revisar as instruções que aparecem na entrega da chave (já vêm preenchidas):
-   > Crie a conta do responsável em https://keys.h3info.com/assinante/criar-conta com a sua chave. Você recebe um e-mail
+   > Crie a conta do responsável em https://h3info.com/assinante/criar-conta com a sua chave. Você recebe um e-mail
    > para criar a senha. Depois convide sua equipe no portal do assinante e entre no H3 Suporte com o seu e-mail e senha.
 
    Na venda direta da Central e na habilitação pelo app, o titular é criado sozinho com o e-mail da compra e recebe o
@@ -166,10 +163,10 @@ alternativa; não use os dois juntos.
 ## 9. Verificação final
 
 ```bash
-curl -s https://keys.h3info.com/h3suporte/saude              # {"ok":true}
-curl -s https://keys.h3info.com/h3suporte/api/login-options  # []
+curl -s https://h3info.com/h3suporte/saude              # {"ok":true}
+curl -s https://h3info.com/h3suporte/api/login-options  # []
 ```
 
 Depois: criar uma conta de titular de teste com uma chave real em `/assinante/criar-conta`, abrir o link do e-mail e
-criar a senha, entrar no app h3suporte (build novo, que já aponta para `https://keys.h3info.com/h3suporte`) e conferir em
+criar a senha, entrar no app h3suporte (build novo, que já aponta para `https://h3info.com/h3suporte`) e conferir em
 Admin → Ativações → a ativação → **Contas do assinante** se o computador aparece.

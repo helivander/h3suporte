@@ -29,4 +29,4 @@ ssh "$DESTINO_SSH" "for i in 1 2 3 4 5 6 7 8 9 10; do
   done; echo 'servidor-api não respondeu'; docker compose -f '$PASTA/docker-compose.prod.yml' logs --tail 50; exit 1"
 echo
 echo "==> pelo domínio (só funciona depois do bloco /h3suporte no Caddy da Central)"
-curl -fsS -m 10 https://keys.h3info.com/h3suporte/saude && echo || echo "ainda não: falta a rota /h3suporte no Caddy da Central"
+curl -fsS -m 10 https://h3info.com/h3suporte/saude && echo || echo "ainda não: falta a rota /h3suporte no Caddy da Central"
