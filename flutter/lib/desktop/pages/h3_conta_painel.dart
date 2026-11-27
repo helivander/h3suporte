@@ -178,11 +178,20 @@ class _ContaConteudoState extends State<ContaConteudo> {
       }),
     );
 
+    String limite(dynamic n, String um, String varios) => n is int && n > 0
+        ? 'Até $n ${n == 1 ? um : varios}'
+        : 'Sem limite';
     final plano = secao('Plano', Icons.workspace_premium_outlined, [
       _linha(t, 'Plano', '${a['plano'] ?? '—'}'),
       _linha(t, 'Situação', ativa ? 'Ativa' : (estado.isEmpty ? '—' : estado),
           cor: ativa ? t.ok : t.aviso),
       _linha(t, 'Válido até', fim == null ? 'Sem data de término' : _data(fim)),
+      _linha(t, 'Computadores',
+          limite(a['limite_dispositivos'], 'computador', 'computadores')),
+      _linha(t, 'Contas da equipe',
+          limite(a['limite_contas'], 'conta', 'contas')),
+      _linha(t, 'Acessos ao mesmo tempo',
+          limite(a['limite_acessos'], 'acesso', 'acessos')),
     ]);
     final uso = secao('Uso em tempo real', Icons.speed_outlined, [
       _barra(t, Icons.swap_horiz, 'Acessos remotos', _uso?['acessos_em_uso'],

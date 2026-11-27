@@ -23,6 +23,7 @@ const CABECALHOS_SEGURANCA = {
   "x-frame-options": "DENY",
   "referrer-policy": "no-referrer",
 };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Token da sessão que a Central abre para a aba "Acesso remoto" do portal. */
 const SESSAO_WEB = /^cw_[A-Za-z0-9_-]{20,128}$/;
 
@@ -35,7 +36,7 @@ const MENSAGENS = {
   CONTA_BLOQUEADA: "Conta bloqueada por tentativas erradas. Tente de novo em alguns minutos.",
   ASSINATURA_INATIVA: "A assinatura do H3 Suporte não está ativa. Regularize o pagamento ou fale com o responsável pela assinatura.",
   LIMITE_DISPOSITIVOS:
-    "O limite de computadores do plano foi atingido. Peça ao responsável para liberar uma vaga no portal do assinante.",
+    "O limite de computadores do plano foi atingido. Remova um computador da conta ou aumente o plano.",
   MUITAS_TENTATIVAS: "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
   CENTRAL_FORA: "Não foi possível falar com a central de licenças. Tente de novo em instantes.",
 };
@@ -238,7 +239,7 @@ export function criarApp({ config, banco, central, versao = async () => null, do
       const r = await central.validar(token);
       if (r?.valida === true && r.conta && r.assinatura) {
         banco.salvarSessao(tokenHash, r, agora);
-        return { conta: r.conta, assinatura: r.assinatura, validadaEm: agora };
+        return { conta: r.conta, assinatura: r.assinatura, uso: r.uso, validadaEm: agora };
       }
       if (r?.valida === false) {
         banco.apagarSessao(tokenHash);
@@ -278,7 +279,7 @@ export function criarApp({ config, banco, central, versao = async () => null, do
       return null;
     }
     banco.salvarSessao(tokenHash, r, agora);
-    return { conta: r.conta, assinatura: r.assinatura, validadaEm: agora };
+    return { conta: r.conta, assinatura: r.assinatura, uso: r.uso, validadaEm: agora };
   }
 
   /** Sessão válida ou `ErroHttp` 401/503. Revalida na Central a cada `revalidarMs`. */
@@ -327,6 +328,33 @@ export function criarApp({ config, banco, central, versao = async () => null, do
     );
   }
 
+  /**
+   * Limite de computadores cheio no login: devolve, a quem já acertou a senha, as vagas ocupadas para o app oferecer
+   * liberar uma (ou aumentar o plano).
+   */
+  function limiteDispositivos(res, d) {
+    const limite = Number.isInteger(d?.limite) ? d.limite : null;
+    const ocupados = (Array.isArray(d?.ocupados) ? d.ocupados : [])
+      .filter((o) => typeof o?.id === "string" && UUID.test(o.id))
+      .slice(0, 200)
+      .map((o) => ({
+        id: o.id,
+        nome: texto(o.rotulo, 80),
+        conta: texto(o.conta?.nome, 120),
+        ultimo_acesso: texto(o.ultimoAcessoEm, 40),
+        pode_liberar: o.podeLiberar === true,
+      }));
+    const mensagem =
+      limite === null
+        ? MENSAGENS.LIMITE_DISPOSITIVOS
+        : `O plano permite ${limite} ${limite === 1 ? "computador" : "computadores"} e ${limite === 1 ? "ele já está" : "todos já estão"} em uso. ` +
+          "Remova um computador da conta para entrar neste ou aumente o plano.";
+    return enviar(res, 409, {
+      error: mensagem,
+      dispositivos: { limite, usados: Number.isInteger(d?.usados) ? d.usados : null, ocupados },
+    });
+  }
+
   async function login(req, res) {
     const corpo = await lerJson(req);
     if (config.loginDesligado) return erro(res, 503, "Login indisponível no momento. Avise o suporte da H3.");
@@ -338,6 +366,9 @@ export function criarApp({ config, banco, central, versao = async () => null, do
       dispositivoId: `h3s-${hash(uuid).slice(0, 48)}`,
       rotulo: texto(corpo.deviceInfo?.name, 80) ?? texto(corpo.id, 80) ?? undefined,
     };
+    // Vaga escolhida pelo usuário para liberar quando o limite de computadores do plano está cheio.
+    const liberar = texto(corpo.liberar_dispositivo, 64);
+    if (liberar && UUID.test(liberar)) base.liberarDispositivo = liberar;
     const codigo = texto(corpo.tfaCode, 32) ?? texto(corpo.verificationCode, 32);
     const email = texto(corpo.username, 254)?.toLowerCase();
     const secret = texto(corpo.secret, 512);
@@ -369,6 +400,7 @@ export function criarApp({ config, banco, central, versao = async () => null, do
       }
       if (!(e instanceof ErroCentral)) throw e;
       if (e.fora) return erro(res, 503, MENSAGENS.CENTRAL_FORA);
+      if (e.codigo === "LIMITE_DISPOSITIVOS") return limiteDispositivos(res, e.corpo?.dispositivos);
       if (MENSAGENS[e.codigo]) return erro(res, e.status, MENSAGENS[e.codigo]);
       // Código desconhecido (credencial sva_ recusada, produto sem contas…): problema de configuração.
       console.error("central recusou o login", e.status, e.codigo, e.message);
@@ -693,7 +725,10 @@ ${id}`;
         return enviar(res, 200, {
           assinatura: resumoAssinatura(sessao.assinatura),
           acessos_em_uso: alvos.size,
-          dispositivos: banco.dispositivosDaAssinatura(sessao.assinatura.id).length,
+          // Vagas ocupadas na Central (as que o limite do plano conta); sem esse dado, os computadores vistos aqui.
+          dispositivos: Number.isInteger(sessao.uso?.dispositivos)
+            ? sessao.uso.dispositivos
+            : banco.dispositivosDaAssinatura(sessao.assinatura.id).length,
           contas: (await equipe(sessao)).filter((c) => c.ativo !== false).length,
         });
       }

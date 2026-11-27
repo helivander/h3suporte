@@ -192,8 +192,12 @@ class UserModel {
   /// throw [RequestException]
   Future<LoginResponse> login(LoginRequest loginRequest) async {
     final url = await bind.mainGetApiServer();
+    final pedido = loginRequest.toJson();
+    if (h3LiberarComputador != null) {
+      pedido['liberar_dispositivo'] = h3LiberarComputador;
+    }
     final resp = await http.post(Uri.parse('$url/api/login'),
-        body: jsonEncode(loginRequest.toJson()));
+        body: jsonEncode(pedido));
 
     final Map<String, dynamic> body;
     try {
@@ -206,6 +210,10 @@ class UserModel {
       }
       rethrow;
     }
+    if (resp.statusCode == 409 && body['dispositivos'] is Map) {
+      throw H3LimiteComputadores(
+          body['error'] ?? '', (body['dispositivos'] as Map).cast<String, dynamic>());
+    }
     if (resp.statusCode != 200) {
       throw RequestException(resp.statusCode, body['error'] ?? '');
     }
@@ -213,7 +221,9 @@ class UserModel {
       throw RequestException(0, body['error']);
     }
 
-    return getLoginResponseFromAuthBody(body);
+    final r = getLoginResponseFromAuthBody(body);
+    if (r.access_token != null) h3LiberarComputador = null;
+    return r;
   }
 
   LoginResponse getLoginResponseFromAuthBody(Map<String, dynamic> body) {
@@ -262,4 +272,34 @@ class UserModel {
         .map((item) => {'name': item.substring('oidc/'.length)})
         .toList();
   }
+}
+
+/// H3: computador escolhido para liberar a vaga no próximo login, quando o limite do plano está cheio.
+String? h3LiberarComputador;
+
+class H3ComputadorOcupado {
+  final String id;
+  final String nome;
+  final String conta;
+  final String? ultimoAcesso;
+  final bool podeLiberar;
+  H3ComputadorOcupado(
+      this.id, this.nome, this.conta, this.ultimoAcesso, this.podeLiberar);
+}
+
+/// H3: o login bateu no limite de computadores do plano; traz os computadores que ocupam as vagas.
+class H3LimiteComputadores extends RequestException {
+  final List<H3ComputadorOcupado> ocupados;
+  H3LimiteComputadores(String mensagem, Map<String, dynamic> dados)
+      : ocupados = (dados['ocupados'] is List ? dados['ocupados'] as List : [])
+            .whereType<Map>()
+            .map((o) => H3ComputadorOcupado(
+                '${o['id'] ?? ''}',
+                '${o['nome'] ?? ''}',
+                '${o['conta'] ?? ''}',
+                o['ultimo_acesso']?.toString(),
+                o['pode_liberar'] == true))
+            .where((o) => o.id.isNotEmpty)
+            .toList(),
+        super(409, mensagem);
 }

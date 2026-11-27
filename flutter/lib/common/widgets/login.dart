@@ -14,6 +14,7 @@ import '../../common.dart';
 import '../../consts.dart';
 import './dialog.dart';
 import './h3_estilo.dart';
+import './h3_limite_computadores.dart';
 import './oidc_auth_status.dart';
 
 const kOpSvgList = [
@@ -877,6 +878,16 @@ Future<bool?> _openLoginDialog() async {
             autoLogin: true,
             type: HttpType.kAuthReqTypeAccount));
         await handleLoginResponse(resp, true, close);
+      } on H3LimiteComputadores catch (err) {
+        curOP.value = '';
+        setState(() => isInProgress = false);
+        final id = await h3EscolherComputadorParaLiberar(err);
+        if (id != null) {
+          h3LiberarComputador = id;
+          await onLogin();
+          return;
+        }
+        passwordMsg = err.cause;
       } on RequestException catch (err) {
         passwordMsg = translate(err.cause);
       } catch (err) {
@@ -1108,6 +1119,16 @@ Future<bool?> verificationCodeDialog(
           default:
             errorText = "Failed, bad response from server";
             break;
+        }
+      } on H3LimiteComputadores catch (err) {
+        // O código de verificação já foi usado: escolhida a vaga, o próximo "Entrar" a libera.
+        final id = await h3EscolherComputadorParaLiberar(err);
+        if (id != null) {
+          h3LiberarComputador = id;
+          errorText =
+              'Computador escolhido. Feche esta janela e clique em Entrar de novo para concluir.';
+        } else {
+          errorText = err.cause;
         }
       } on RequestException catch (err) {
         errorText = translate(err.cause);

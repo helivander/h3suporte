@@ -102,8 +102,8 @@ export function abrirBanco(caminho) {
   };
 
   return {
-    salvarSessao(tokenHash, { conta, assinatura }, agora) {
-      st.salvarSessao.run(tokenHash, conta.id, assinatura.id, JSON.stringify({ conta, assinatura }), agora, agora);
+    salvarSessao(tokenHash, { conta, assinatura, uso }, agora) {
+      st.salvarSessao.run(tokenHash, conta.id, assinatura.id, JSON.stringify({ conta, assinatura, uso }), agora, agora);
     },
     lerSessao(tokenHash) {
       const r = st.lerSessao.get(tokenHash);

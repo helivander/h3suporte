@@ -19,6 +19,9 @@ function reiniciarCentral() {
     sessoes: new Map(),
     desafios: new Map(),
     credencialRecebida: null,
+    cheio: null,
+    uso: undefined,
+    liberarRecebido: undefined,
   });
 }
 const publica = ({ senha, totp, ...c }) => c;
@@ -55,9 +58,13 @@ const central = createServer(async (req, res) => {
       }
     }
     if (estado.assinatura.estado !== "ATIVA") return responder(403, { codigo: "ASSINATURA_INATIVA", message: "x" });
+    estado.liberarRecebido = d.liberarDispositivo;
+    if (estado.cheio && d.liberarDispositivo !== estado.cheio.ocupados[0].id) {
+      return responder(409, { codigo: "LIMITE_DISPOSITIVOS", message: "x", dispositivos: estado.cheio });
+    }
     const token = `cs_${conta.id}_${estado.sessoes.size}`;
     estado.sessoes.set(token, conta.id);
-    return responder(200, { sessao: { token }, conta: publica(conta), assinatura: estado.assinatura });
+    return responder(200, { sessao: { token }, conta: publica(conta), assinatura: estado.assinatura, uso: estado.uso });
   }
   if (rota === "validar") {
     estado.validacoes = (estado.validacoes ?? 0) + 1;
@@ -175,6 +182,33 @@ test("a conta mostra plano, estado e uso da assinatura", async () => {
   assert.equal(uso.json.acessos_em_uso, 0);
   assert.ok(uso.json.dispositivos >= 1);
   assert.equal((await chamar("GET", "/api/conta/uso")).status, 401);
+});
+
+test("limite de computadores: o login lista as vagas e entra liberando a escolhida; a conta mostra o uso da Central", async () => {
+  agora += 60_000; // janela própria no limite de logins por minuto
+  const vaga = "0190c3f1-8a2b-7c3d-9e4f-0a1b2c3d4e5f";
+  estado.cheio = {
+    usados: 1,
+    limite: 1,
+    ocupados: [{ id: vaga, rotulo: "PC-RECEPCAO", conta: { nome: "Bia" }, ultimoAcessoEm: "2026-11-20T10:00:00.000Z", podeLiberar: true }],
+  };
+  estado.uso = { dispositivos: 1 };
+  const cheio = await loginAna();
+  assert.equal(cheio.status, 409);
+  assert.match(cheio.json.error, /permite 1 computador/);
+  assert.deepEqual(cheio.json.dispositivos.ocupados, [
+    { id: vaga, nome: "PC-RECEPCAO", conta: "Bia", ultimo_acesso: "2026-11-20T10:00:00.000Z", pode_liberar: true },
+  ]);
+
+  const r = await loginAna({ liberar_dispositivo: vaga });
+  assert.equal(r.status, 200);
+  assert.equal(estado.liberarRecebido, vaga);
+  const uso = await chamar("GET", "/api/conta/uso", undefined, r.json.access_token);
+  assert.equal(uso.json.dispositivos, 1, "conta as vagas da Central, não os computadores vistos aqui");
+
+  await loginAna({ liberar_dispositivo: "../../nao-e-uuid" });
+  assert.equal(estado.liberarRecebido, undefined, "id fora do formato não chega à Central");
+  agora += 60_000;
 });
 
 test("senha errada e chamadas sem token são recusadas com mensagem em português", async () => {
