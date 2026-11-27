@@ -11,6 +11,7 @@ import 'package:get/get.dart';
 
 /// Trava o app na tela de login: o resto do sistema só aparece depois de entrar
 /// numa conta H3 Suporte com assinatura ativa (o servidor-api só devolve sessão nesse caso).
+/// O cliente (build só de recepção) não pede login: só recebe conexões.
 class H3LoginGate extends StatefulWidget {
   final Widget child;
   const H3LoginGate({Key? key, required this.child}) : super(key: key);
@@ -36,7 +37,11 @@ class _H3LoginGateState extends State<H3LoginGate> {
   void _pedirLogin() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 300));
-      if (!mounted || bind.isDisableAccount() || _logado || _dialogoAberto) {
+      if (!mounted ||
+          bind.isDisableAccount() ||
+          bind.isIncomingOnly() ||
+          _logado ||
+          _dialogoAberto) {
         return;
       }
       _dialogoAberto = true;
@@ -64,7 +69,9 @@ class _H3LoginGateState extends State<H3LoginGate> {
   Widget build(BuildContext context) {
     return Obx(() {
       gFFI.userModel.userName.value;
-      if (bind.isDisableAccount() || _logado) return widget.child;
+      if (bind.isDisableAccount() || bind.isIncomingOnly() || _logado) {
+        return widget.child;
+      }
       final t = H3Tokens.of(context);
       return Scaffold(
         backgroundColor: t.fundo,
