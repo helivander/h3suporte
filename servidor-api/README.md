@@ -81,7 +81,7 @@ ilegíveis: cada dispositivo precisa ser registrado de novo. **Trocar a chave** 
 
 ## Produção (servidor da Central)
 
-O app usa `https://keys.h3info.com/h3suporte` (a Central da H3) quando nenhum servidor de API foi configurado; outro
+O app usa `https://h3info.com/h3suporte` (a Central da H3, gestor de assinaturas) quando nenhum servidor de API foi configurado; outro
 endereço só compilando com `H3_CENTRAL=<url>` (`src/common.rs`, `get_api_server_`). A conexão (ID e relay) não passa
 pela Central: usa o servidor próprio `hbbsserver.h3info.com`. O container não publica porta: entra na rede interna da Central
 (`central_interna`) e o Caddy dela repassa `/h3suporte/*` para `h3suporte-api:21114`; o servidor-api fala com a

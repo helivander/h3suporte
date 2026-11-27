@@ -87,6 +87,10 @@ começando em `/h3suporte/` (o resto do domínio não muda):
   `(http.host eq "keys.h3info.com" and starts_with(http.request.uri.path, "/h3suporte/"))`
 - Caching → Cache Rules → **"h3suporte: sem cache"**, mesma expressão, **Ignorar cache**.
 
+**Desde 27/11/2026 o app usa `h3info.com`** (o gestor de assinaturas) no lugar de `keys.h3info.com`. As duas regras
+precisam valer também para esse host; troque a expressão das duas por:
+`(http.host in {"keys.h3info.com" "h3info.com"} and starts_with(http.request.uri.path, "/h3suporte/"))`
+
 Ambas estão dentro da cota gratuita do plano Free (sem cobrança). Limitação: no plano Free o **Modo Bot Fight** (ligado
 na zona) não pode ser pulado por regra. Hoje o app passa normalmente; se aparecerem desafios (respostas HTML ou 403 em
 `/h3suporte/*`), as saídas são desligar o Bot Fight na zona (vale para todo o `h3info.com`) ou o plano Pro (Super Bot

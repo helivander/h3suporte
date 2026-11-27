@@ -971,7 +971,7 @@ def build_flutter_arch_manjaro(version, features):
 
 def h3_dart_define():
     defs = ' --dart-define=H3_IA=true' if os.environ.get('H3_IA') == 'true' else ''
-    # Central da H3 (validação do usuário): keys.h3info.com por padrão; H3_CENTRAL=<url> troca o endereço.
+    # Central da H3 (validação do usuário): h3info.com por padrão; H3_CENTRAL=<url> troca o endereço.
     # O Rust lê a mesma variável na compilação (src/common.rs), então ela vale para o app inteiro.
     central = os.environ.get('H3_CENTRAL', '').strip().rstrip('/')
     if central:
